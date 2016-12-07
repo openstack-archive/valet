@@ -66,7 +66,6 @@ max_log_size = 1000000
 # Set the maximum number of time-series log files
 max_num_of_logs = 10
 
-
 PRIMARY_SETUP = 1
 RETRY_COUNT = 3          # How many times to retry ping command
 CONNECT_TIMEOUT = 3      # Ping timeout
@@ -74,7 +73,7 @@ MAX_QUICK_STARTS = 10    # we stop if there are > 10 restart in quick succession
 QUICK_RESTART_SEC = 150  # we consider it a quick restart if less than this
 
 # HA Configuration
-HEARTBEAT_SEC = 5                    # Heartbeat interval in seconds
+HEARTBEAT_SEC = 10                    # Heartbeat interval in seconds
 
 
 NAME = 'name'
@@ -100,6 +99,8 @@ havalet_opts = [
     cfg.StrOpt(STOP_COMMAND, help='stop command'),
     cfg.StrOpt(TEST_COMMAND, help='test command')
 ]
+
+# common.init_conf("havalet.log", grp2opt={api_group: havalet_opts, ostro_group: havalet_opts})
 
 CONF.register_group(api_group)
 CONF.register_opts(havalet_opts, api_group)
@@ -225,7 +226,7 @@ class HaValetThread (threading.Thread):
                 time.sleep(HEARTBEAT_SEC)
             else:
                 # No valet running. Wait for higher priority valet to activate.
-                time.sleep(HEARTBEAT_SEC * my_priority)
+                time.sleep(HEARTBEAT_SEC / my_priority)
 
             self.log.info('checking status here - ' + host +
                           ', my priority: ' + str(my_priority))
@@ -388,7 +389,7 @@ class HaValetThread (threading.Thread):
         try:
             self.log.info('activate_command: ' + activate_command)
             subprocess.check_call(activate_command, shell=True)
-            time.sleep(HEARTBEAT_SEC * priority)  # allow some grace period
+            time.sleep(HEARTBEAT_SEC)  # allow some grace period
             return True
         except subprocess.CalledProcessError as e:
             self.log.error(str(e))

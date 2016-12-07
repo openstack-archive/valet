@@ -16,12 +16,16 @@
 """Conf."""
 
 from oslo_config import cfg
+from oslo_log import log as logging
 
-
+CONF = cfg.CONF
 DOMAIN = 'valet'
 
 
-CONF = cfg.CONF
+def get_logger(name):
+    return logging.getLogger(name)
+
+LOG = get_logger("engine")
 
 server_group = cfg.OptGroup(name='server', title='Valet API Server conf')
 server_opts = [
@@ -70,19 +74,34 @@ music_opts = [
     # cfg.ListOpt('db_hosts', default='valet1,valet2,valet3')
 ]
 
-
-def set_domain(project=DOMAIN):
-    """Set Domain."""
-    CONF([], project)
+def load_conf(args=None, project=DOMAIN, default_files=None):
+    CONF(default_config_files=default_files) if default_files else CONF(args or [], project=project)
 
 
-def register_conf():
-    """Register confs."""
-    CONF.register_group(server_group)
-    CONF.register_opts(server_opts, server_group)
-    CONF.register_group(music_group)
-    CONF.register_opts(music_opts, music_group)
-    CONF.register_group(identity_group)
-    CONF.register_opts(identity_opts, identity_group)
-    CONF.register_group(messaging_group)
-    CONF.register_opts(messaging_opts, messaging_group)
+def init_conf(log_file="valet.log", args=None, grp2opt=None, cli_opts=None, default_config_files=None):
+    CONF.log_file = log_file
+    logging.register_options(CONF)
+
+    # init conf
+    general_groups = {server_group: server_opts, music_group: music_opts,
+                      identity_group: identity_opts, messaging_group: messaging_opts}
+
+    general_groups.update(grp2opt or {})
+
+    _register_conf(general_groups, cli_opts)
+    load_conf(args=args, default_files=default_config_files)
+
+    # set logger
+    _set_logger()
+
+
+def _set_logger():
+    logging.setup(CONF, DOMAIN)
+
+def _register_conf(grp2opt, cli_opts):
+    for grp in grp2opt or {}:
+        CONF.register_group(grp)
+        CONF.register_opts(grp2opt[grp], grp)
+
+   for opt in cli_opts or []:
+        CONF.register_cli_opts(opt)

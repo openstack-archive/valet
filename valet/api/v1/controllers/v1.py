@@ -15,22 +15,15 @@
 
 """v1."""
 
-import logging
-
 from pecan import conf, expose, request, response
 from pecan.secure import SecureController
-
+from valet import api
 from valet.api.common.i18n import _
 from valet.api.v1.controllers import error
 from valet.api.v1.controllers.groups import GroupsController
 from valet.api.v1.controllers.placements import PlacementsController
 from valet.api.v1.controllers.plans import PlansController
 from valet.api.v1.controllers.status import StatusController
-
-
-LOG = logging.getLogger(__name__)
-
-# pylint: disable=R0201
 
 
 class V1Controller(SecureController):
@@ -58,11 +51,11 @@ class V1Controller(SecureController):
             token = conf.identity.engine.validate_token(auth_token)
 
         if token:
-            LOG.debug("Checking token permissions")
+            api.LOG.debug("Checking token permissions")
             msg = "Unauthorized - Permission was not granted"
             if V1Controller._permission_granted(request, token):
                 tenant_id = conf.identity.engine.tenant_from_token(token)
-                LOG.info("tenant_id - " + str(tenant_id))
+                api.LOG.info("tenant_id - " + str(tenant_id))
                 if tenant_id:
                     request.context['tenant_id'] = tenant_id
                     user_id = conf.identity.engine.user_from_token(token)

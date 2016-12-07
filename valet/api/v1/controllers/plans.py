@@ -15,22 +15,16 @@
 
 """Plans."""
 
-import logging
-
 from notario import decorators
 from notario.validators import types
 from pecan import expose, request, response
 from pecan_notario import validate
-
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
 from valet.api.db.models import Placement, Plan
-from valet.api.v1.controllers import error
-from valet.api.v1.controllers import set_placements
-from valet.api.v1.controllers import update_placements
-from valet.api.v1.controllers import valid_plan_update_action
+from valet.api.v1.controllers import error, set_placements, update_placements, valid_plan_update_action
+from valet.api import LOG
 
-LOG = logging.getLogger(__name__)
 
 CREATE_SCHEMA = (
     ('plan_name', types.string),

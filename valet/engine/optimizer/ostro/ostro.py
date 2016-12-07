@@ -135,26 +135,26 @@ class Ostro(object):
             resource_status = self.db.get_resource_status(
                 self.resource.datacenter.name)
             if resource_status is None:
+                self.logger.error("Ostro.bootstrap: failed to read from table: " + self.config.db_resource_table)
                 return False
 
             if len(resource_status) > 0:
                 self.logger.info("Ostro.bootstrap: bootstrap from db")
-                if self.resource.bootstrap_from_db(resource_status) is False:
-                    return False
-            else:
-                self.logger.info("bootstrap from OpenStack")
+                if not self.resource.bootstrap_from_db(resource_status):
+                    self.logger.error("Ostro.bootstrap: failed to parse bootstrap data!")
 
-                if self._set_hosts() is False:
-                    self.logger.error('_set_hosts is false')
-                    return False
+            self.logger.info("read bootstrap data from OpenStack")
+            if not self._set_hosts():
+                self.logger.error('_set_hosts is false')
+                return False
 
-                if self._set_flavors() is False:
-                    self.logger.info("_set_flavors is false")
-                    return False
+            if not self._set_flavors():
+                self.logger.info("_set_flavors is false")
+                return False
 
-                if self._set_topology() is False:
-                    self.logger.error("_set_topology is false")
-                    return False
+            if not self._set_topology():
+                self.logger.error("_set_topology is false")
+                return False
 
             self.resource.update_topology()
 
@@ -167,29 +167,31 @@ class Ostro(object):
         return True
 
     def _set_topology(self):
-        if self.topology.set_topology() is False:
+        if not self.topology.set_topology():
             self.status = "datacenter configuration error"
+            self.logger.error("failed to read datacenter topology")
             return False
 
         self.logger.debug("done topology bootstrap")
-
         return True
 
     def _set_hosts(self):
-        if self.compute.set_hosts() is False:
+        if not self.compute.set_hosts():
             self.status = "OpenStack (Nova) internal error"
+            self.logger.error("failed to read hosts from OpenStack (Nova)")
             return False
+
         self.logger.debug("done hosts & groups bootstrap")
         return True
 
     def _set_flavors(self):
         self.logger.debug("start flavors bootstrap")
-        if self.compute.set_flavors() is False:
+        if not self.compute.set_flavors():
             self.status = "OpenStack (Nova) internal error"
+            self.logger.error("failed to read flavors from OpenStack (Nova)")
             return False
 
         self.logger.debug("done flavors bootstrap")
-
         return True
 
     def place_app(self, _app_data):
@@ -263,21 +265,21 @@ class Ostro(object):
                             query_results[q["stack_id"]] = vm_list
                         else:
                             self.status = "unknown paramenter in query"
-                            self.logger.warn("Ostro._query: " + self.status)
+                            self.logger.warn("Ostro._query: unknown paramenter in query")
                             query_results[q["stack_id"]] = None
                     else:
-                        self.status = "no parameters in query"
-                        self.logger.warn("Ostro._query: " + self.status)
+                        self.status = "no paramenter in query"
+                        self.logger.warn("Ostro._query: no parameters in query")
                         query_results[q["stack_id"]] = None
                 elif q["type"] == "all_groups":
                     query_results[q["stack_id"]] = self._get_logical_groups()
                 else:
                     self.status = "unknown query type"
-                    self.logger.warn("Ostro._query: " + self.status)
+                    self.logger.warn("Ostro._query: unknown query type")
                     query_results[q["stack_id"]] = None
             else:
-                self.status = "no type in query"
-                self.logger.warn("Ostro._query: " + self.status)
+                self.status = "unknown type in query"
+                self.logger.warn("Ostro._query: no type in query")
                 query_results[q["stack_id"]] = None
 
         return query_results
@@ -313,20 +315,20 @@ class Ostro(object):
         app_topology = self.app_handler.add_app(_app_data)
         if app_topology is None:
             self.status = self.app_handler.status
-            self.logger.debug("Ostro._place_app: error while register "
-                              "requested apps: " + self.status)
+            self.logger.error("Ostro._place_app: error while register"
+                              "requested apps: " + self.app_handler.status)
             return None
 
         """Check and set vm flavor information."""
         for _, vm in app_topology.vms.iteritems():
             if self._set_vm_flavor_information(vm) is False:
                 self.status = "fail to set flavor information"
-                self.logger.error("Ostro._place_app: " + self.status)
+                self.logger.error("Ostro._place_app: failed to set flavor information ")
                 return None
         for _, vg in app_topology.vgroups.iteritems():
             if self._set_vm_flavor_information(vg) is False:
                 self.status = "fail to set flavor information in a group"
-                self.logger.error("Ostro._place_app: " + self.status)
+                self.logger.error("Ostro._place_app: failed to set flavor information in a group")
                 return None
 
         """Set weights for optimization."""
@@ -688,7 +690,7 @@ class Ostro(object):
                         app_status['message'] = "ping"
 
                         app_result['status'] = app_status
-                        app_result['resources'] = {"ip": self.config.ip}
+                        app_result['resources'] = {"ip": self.config.ip, "id": self.config.priority}
 
                         result[appk] = app_result
 

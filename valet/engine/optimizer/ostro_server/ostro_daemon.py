@@ -18,10 +18,10 @@
 import os
 import sys
 import traceback
+from valet.common.conf import get_logger
 from valet.engine.optimizer.ostro.ostro import Ostro
 from valet.engine.optimizer.ostro_server.configuration import Config
 from valet.engine.optimizer.ostro_server.daemon import Daemon
-from valet.engine.optimizer.util.util import init_logger
 
 
 class OstroDaemon(Daemon):
@@ -38,6 +38,10 @@ class OstroDaemon(Daemon):
         if ostro.bootstrap() is False:
             self.logger.error("ostro bootstrap failed")
             sys.exit(2)
+
+        # write pidfile
+        pid = str(os.getpid())
+        file(self.pidfile, 'w+').write("%s\n" % pid)
 
         ostro.run_ostro()
 
@@ -58,6 +62,8 @@ if __name__ == "__main__":
     # Configuration
     try:
         config = Config()
+        ''' logger '''
+        logger = get_logger("ostro_daemon")
         config_status = config.configure()
         if config_status != "success":
             print(config_status)
@@ -67,9 +73,6 @@ if __name__ == "__main__":
         dirs_list = [config.logging_loc, config.resource_log_loc,
                      config.app_log_loc, os.path.dirname(config.process)]
         verify_dirs(dirs_list)
-
-        """ logger """
-        logger = init_logger(config)
 
         # Start daemon process
         daemon = OstroDaemon(config.priority, config.process, logger)
@@ -85,7 +88,7 @@ if __name__ == "__main__":
         exit_code = exit_code or 0
 
     except Exception:
-        logger.error(traceback.format_exc())
+        print(traceback.format_exc())
         exit_code = 2
 
     sys.exit(int(exit_code))

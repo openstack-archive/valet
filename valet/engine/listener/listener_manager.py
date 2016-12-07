@@ -21,9 +21,9 @@ import pika
 import pprint
 import threading
 import traceback
-from valet.api.db.models.music import Music
+from valet.common.conf import get_logger
+from valet.common.music import Music
 from valet.engine.listener.oslo_messages import OsloMessage
-from valet.engine.optimizer.util.util import init_logger
 import yaml
 
 
@@ -36,7 +36,7 @@ class ListenerManager(threading.Thread):
         self.thread_id = _t_id
         self.thread_name = _t_name
         self.config = _config
-        self.listener_logger = init_logger(self.config.events_listener)
+        self.listener_logger = get_logger("ostro_listener")
         self.MUSIC = None
 
     def run(self):

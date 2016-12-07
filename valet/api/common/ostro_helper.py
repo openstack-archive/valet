@@ -16,7 +16,6 @@
 """Ostro helper library."""
 
 import json
-import logging
 
 from pecan import conf
 import time
@@ -27,8 +26,7 @@ from valet.api.db.models import Group
 from valet.api.db.models import PlacementRequest
 from valet.api.db.models import PlacementResult
 from valet.api.db.models import Query
-
-LOG = logging.getLogger(__name__)
+from valet.api import LOG
 
 SERVICEABLE_RESOURCES = [
     'OS::Nova::Server'
@@ -192,8 +190,8 @@ class Ostro(object):
                                                                   GROUP_TYPE,
                                                                   EXCLUSIVITY)
 
-        group = Group.query.filter_by(  # pylint: disable=E1101
-            name=group_name).first()
+        group = Group.query.filter_by(name=group_name).first()  # pylint: disable=E1101
+
         if not group:
             self.error_uri = '/errors/not_found'
             return_message = "%s '%s' not found" % (GROUP_NAME, group_name)

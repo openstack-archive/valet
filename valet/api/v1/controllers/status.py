@@ -15,14 +15,10 @@
 
 """Status."""
 
-import logging
-
 from pecan import expose, request, response
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
 from valet.api.v1.controllers import error
-
-LOG = logging.getLogger(__name__)
 
 # pylint: disable=R0201
 

@@ -22,11 +22,9 @@ import iso8601
 from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
-import logging
 from pecan import conf
 import pytz
-
-LOG = logging.getLogger(__name__)
+from valet.api import LOG
 
 
 def utcnow():

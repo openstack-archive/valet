@@ -15,18 +15,12 @@
 
 """Placements."""
 
-import logging
-
 from pecan import expose, request, response
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
 from valet.api.db.models import Placement, Plan
-from valet.api.v1.controllers import error
-from valet.api.v1.controllers import reserve_placement
-from valet.api.v1.controllers import update_placements
-
-
-LOG = logging.getLogger(__name__)
+from valet.api.v1.controllers import error, reserve_placement, update_placements
+from valet import api
 
 # pylint: disable=R0201
 
@@ -80,12 +74,11 @@ class PlacementsItemController(object):
         Once reserved, the location effectively becomes immutable.
         """
         res_id = kwargs.get('resource_id')
-        LOG.info(_('Placement reservation request for resource id '
-                 '%(res_id)s, orchestration id %(orch_id)s.'),
-                 {'res_id': res_id, 'orch_id': self.placement.orchestration_id})
+        api.LOG.info(_('Placement reservation request for resource id %(res_id)s, orchestration id %(orch_id)s.'),
+                     {'res_id': res_id, 'orch_id': self.placement.orchestration_id})
         locations = kwargs.get('locations', [])
         locations_str = ', '.join(locations)
-        LOG.info(_('Candidate locations: %s'), locations_str)
+        api.LOG.info(_('Candidate locations: %s'), locations_str)
         if self.placement.location in locations:
             # Ostro's placement is in the list of candidates. Good!
             # Reserve it. Remember the resource id too.
@@ -95,12 +88,8 @@ class PlacementsItemController(object):
         else:
             # Ostro's placement is NOT in the list of candidates.
             # Time for Plan B.
-            LOG.info(_('Placement of resource id %(res_id)s, '
-                       'orchestration id %(orch_id)s in %(loc)s '
-                       'not allowed. Replanning.'),
-                     {'res_id': res_id,
-                      'orch_id': self.placement.orchestration_id,
-                      'loc': self.placement.location})
+            api.LOG.info(_('Placement of resource id %(res_id)s, orchestration id %(orch_id)s in %(loc)s not allowed. Replanning.'),
+                         {'res_id': res_id, 'orch_id': self.placement.orchestration_id, 'loc': self.placement.location})
 
             # Unreserve the placement. Remember the resource id too.
             kwargs = {'resource_id': res_id, 'reserve': False}
@@ -117,9 +106,9 @@ class PlacementsItemController(object):
             exclusions = [x.orchestration_id for x in reserved]
             if exclusions:
                 exclusions_str = ', '.join(exclusions)
-                LOG.info(_('Excluded orchestration IDs: %s'), exclusions_str)
+                api.LOG.info(_('Excluded orchestration IDs: %s'), exclusions_str)
             else:
-                LOG.info(_('No excluded orchestration IDs.'))
+                api.LOG.info(_('No excluded orchestration IDs.'))
 
             # Ask Ostro to try again with new constraints.
             # We may get one or more updated placements in return.
@@ -158,7 +147,7 @@ class PlacementsItemController(object):
         """Delete a Placement."""
         orch_id = self.placement.orchestration_id
         self.placement.delete()
-        LOG.info(_('Placement with orchestration id %s deleted.'), orch_id)
+        api.LOG.info(_('Placement with orchestration id %s deleted.'), orch_id)
         response.status = 204
 
 

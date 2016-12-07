@@ -16,18 +16,14 @@
 """Hooks."""
 
 import json
-import logging
-from valet.api.common.i18n import _
-from valet.api.common import terminate_thread
-from valet.api.v1.controllers import error
-
 from pecan import conf
 from pecan.hooks import PecanHook
 import threading
+from valet import api
+from valet.api.common.i18n import _
+from valet.api.common import terminate_thread
+from valet.api.v1.controllers import error
 import webob
-
-
-LOG = logging.getLogger(__name__)
 
 
 class MessageNotificationHook(PecanHook):
@@ -36,7 +32,7 @@ class MessageNotificationHook(PecanHook):
     def after(self, state):
         """Function sends valet notification."""
         self.dummy = True
-        LOG.info('sending notification')
+        api.LOG.info('sending notification')
         notifier = conf.messaging.notifier
         status_code = state.response.status_code
         status = webob.exc.status_map.get(status_code)
@@ -95,11 +91,11 @@ class MessageNotificationHook(PecanHook):
         notifier_thread = threading.Thread(target=notifier_fn, args=(ctxt, event_type, payload))
         notifier_thread.start()
         # launch a timer to verify no hung threads are left behind
-        # (when timeout expired kill the notifier thread if it still alive)
+        # (when timeout expires kill the notifier thread if it still alive)
         watcher = threading.Timer(conf.messaging.timeout, terminate_thread, args=[notifier_thread])
         watcher.start()
 
-        LOG.info('valet notification hook - end')
+        api.LOG.info('notification sent.')
 
 
 class NotFoundHook(PecanHook):

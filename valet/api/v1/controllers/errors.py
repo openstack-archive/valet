@@ -15,14 +15,10 @@
 
 """Errors."""
 
-import logging
 from pecan import expose, request, response
 from valet.api.common.i18n import _
+from valet.api import LOG
 from webob.exc import status_map
-
-LOG = logging.getLogger(__name__)
-
-# pylint: disable=R0201
 
 
 def error_wrapper(func):

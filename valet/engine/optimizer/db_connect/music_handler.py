@@ -17,7 +17,7 @@
 
 import json
 import operator
-from valet.api.db.models.music import Music
+from valet.common.music import Music
 from valet.engine.optimizer.db_connect.event import Event
 
 

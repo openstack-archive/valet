@@ -184,7 +184,7 @@ class Compute(object):
                 if hasattr(hv, 'servers'):
                     server_list = hv.__getattr__('servers')
                     for s in server_list:
-                        _vm_list.append(s.uuid)
+                        _vm_list.append(s['uuid'])
 
         except (ValueError, KeyError, TypeError):
             self.logger.error(traceback.format_exc())
@@ -198,7 +198,7 @@ class Compute(object):
         try:
             vm_name = server.name
             _vm_detail.append(vm_name)
-            az = server.__getattr("OS-EXT-AZ:availability_zone")
+            az = server.__getattr__("OS-EXT-AZ:availability_zone")
             _vm_detail.append(az)
             metadata = server.metadata
             _vm_detail.append(metadata)

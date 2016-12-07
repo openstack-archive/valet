@@ -18,6 +18,8 @@
 from common.i18n import _
 import os
 from pecan.deploy import deploy
+from valet.common.conf import init_conf, get_logger
+from valet import api
 
 
 def config_file(file_name=None):
@@ -39,15 +41,20 @@ def application(environ, start_response):
 # TODO(JD): Integrate this with a python entry point
 # This way we can run valet-api from the command line in a pinch.
 if __name__ == '__main__':
-    from wsgiref.simple_server import make_server  # disable=C0411,C0413
+    try:
+        from wsgiref.simple_server import make_server  # disable=C0411,C0413
 
-    # TODO(JD): At some point, it would be nice to use pecan_mount
-    from valet.api.conf import register_conf, set_domain
-    register_conf()
-    set_domain()
-    HTTPD = make_server('', 8090,
-                        deploy(config_file('/var/www/valet/config.py')))
-    print(_("Serving HTTP on port 8090..."))
+        # TODO(JD): At some point, it would be nice to use pecan_mount
+        # import pecan_mount
+        # HTTPD = make_server('', 8090, pecan_mount.tree)
+#         from valet.api.conf import register_conf, set_domain
+        init_conf("wsgi.log")
+        api.LOG = get_logger("wsgi")
+        HTTPD = make_server('', 8090, deploy(config_file('/var/www/valet/config.py')))
+        print(_("Serving HTTP on port 8090..."))
 
-    # Respond to requests until process is killed
-    HTTPD.serve_forever()
+        # Respond to requests until process is killed
+        HTTPD.serve_forever()
+    except Exception:
+        import traceback
+        print(traceback.format_exc())

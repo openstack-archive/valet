@@ -15,8 +15,6 @@
 
 """Groups."""
 
-import logging
-
 from notario import decorators
 from notario.validators import types
 from pecan import conf, expose, request, response
@@ -27,8 +25,7 @@ from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
 from valet.api.db.models import Group
 from valet.api.v1.controllers import error, valid_group_name
-
-LOG = logging.getLogger(__name__)
+from valet import api
 
 GROUPS_SCHEMA = (
     (decorators.optional('description'), types.string),
@@ -82,8 +79,8 @@ def tenant_servers_in_group(tenant_id, group):
             if server.tenant_id == tenant_id:
                 servers.append(server_id)
         except Exception as ex:  # TODO(JD): update DB
-            LOG.error("Instance %s could not be found" % server_id)
-            LOG.error(ex)
+            api.LOG.error("Instance %s could not be found" % server_id)
+            api.LOG.error(ex)
     if len(servers) > 0:
         return servers
 
@@ -292,9 +289,14 @@ class GroupsController(object):
     @index.when(method='GET', template='json')
     def index_get(self):
         """List groups."""
-        groups_array = []
-        for group in Group.query.all():  # pylint: disable=E1101
-            groups_array.append(group)
+        try:
+            groups_array = []
+            for group in Group.query.all():  # pylint: disable=E1101
+                groups_array.append(group)
+        except Exception:
+            import traceback
+            api.LOG.error(traceback.format_exc())
+            response.status = 500
         return {'groups': groups_array}
 
     @index.when(method='POST', template='json')

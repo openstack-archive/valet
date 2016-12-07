@@ -18,8 +18,7 @@
 """Database Cleaner."""
 
 from configuration import Config
-import sys
-from valet.api.db.models.music import Music
+from valet.common.music import Music
 
 
 class DBCleaner(object):

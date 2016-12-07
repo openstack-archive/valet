@@ -16,14 +16,12 @@
 """Music Data Store API."""
 
 import json
-import logging
-import time
-
-from valet.api.common.i18n import _
-
 import requests
+import time
+from valet.api.common.i18n import _
+from valet.common.conf import get_logger
 
-LOG = logging.getLogger(__name__)
+LOG = get_logger("music")
 
 
 class REST(object):
@@ -47,7 +45,8 @@ class REST(object):
     def urls(self):
         """Return list of URLs using each host, plus the port/path."""
         if not self._urls:
-            urls = []
+            # make localhost as first option
+            urls = ['http://localhost:%s%s' % (self.port, self.path)]
             for host in self.hosts:
                 # Must end without a slash
                 urls.append('http://%(host)s:%(port)s%(path)s' % {
@@ -81,12 +80,10 @@ class REST(object):
             full_url = url + path
             try:
                 data_json = json.dumps(data) if data else None
-                LOG.debug("Music Request: %s %s%s", method.upper(), full_url,
-                          data_json if data else '')
-                response = method_fn(full_url, data=data_json,
-                                     headers=self.__headers(content_type),
-                                     timeout=self.timeout)
+                LOG.debug("Music Request: %s %s%s", method.upper(), full_url, data_json if data else '')
+                response = method_fn(full_url, data=data_json, headers=self.__headers(content_type), timeout=self.timeout)
                 response.raise_for_status()
+
                 return response
             except requests.exceptions.Timeout as err:
                 response = requests.Response()
@@ -151,6 +148,7 @@ class Music(object):
 
         path = '/keyspaces/%s' % keyspace
         response = self.rest.request(method='post', path=path, data=data)
+
         return response.ok
 
     def create_table(self, keyspace, table, schema):
