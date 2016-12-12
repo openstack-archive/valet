@@ -1,0 +1,13 @@
+
+
+heat --os-username admin  --os-password qwer4321 --os-project-name demo  --os-auth-url http://localhost:5000/v2.0 stack-list
+
+
+heat --os-username admin  --os-password qwer4321 --os-project-name demo  --os-auth-url http://localhost:5000/v2.0 stack-create -f templates/sanityTemplate test_stack
+
+sleep 18
+
+heat --os-username admin  --os-password qwer4321 --os-project-name demo  --os-auth-url http://localhost:5000/v2.0 stack-list
+
+
+heat --os-username admin  --os-password qwer4321 --os-project-name demo  --os-auth-url http://localhost:5000/v2.0 stack-delete test_stack

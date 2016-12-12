@@ -1,0 +1,8 @@
+[run]
+branch = True
+source = valet
+omit = valet/tests/*
+cover_pylib = True
+
+[report]
+ignore_errors = True

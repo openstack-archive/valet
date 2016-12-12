@@ -1,0 +1,48 @@
+heat_template_version: 2015-04-30
+
+description: Affinity template - all VMs should be deployed on the same host
+
+parameters:
+  instance_image:
+    type: string
+  
+  instance_flavor:
+    type: string
+
+resources:
+
+  my-instance-1:
+    type: OS::Nova::Server
+    properties:
+      name: affinity-1
+    #  key_name: ssh-key
+      image: { get_param: instance_image }
+      flavor: { get_param: instance_flavor }
+     # networks:
+      #  - network: 0c405776-0c37-4212-a814-e8aa539b32b5
+
+  my-instance-2:
+    type: OS::Nova::Server
+    properties:
+      name: affinity-2
+      #key_name: ssh-key
+      image: { get_param: instance_image }
+      flavor: { get_param: instance_flavor }
+      #networks:
+       # - network: 0c405776-0c37-4212-a814-e8aa539b32b5
+       # # - network: 0c405776-0c37-4212-a814-e8aa539b32b5
+
+  test-affinity-group3:
+    type: ATT::Valet::GroupAssignment
+    properties:
+      group_type: affinity
+      level: host
+      resources:
+      - {get_resource: my-instance-1}
+      - {get_resource: my-instance-2}
+
+outputs:
+  instance_name-1:
+    value: { get_attr: [my-instance-1, name] }
+  instance_name-2:
+    value: { get_attr: [my-instance-2, name] }

@@ -1,0 +1,76 @@
+heat_template_version: 2015-04-30
+
+description: Nested affinity and diversity template - Host level diversity between 2 groups of affinity
+
+resources:
+
+  my-instance-1:
+    type: OS::Nova::Server
+    properties:
+      name: test-1
+      #key_name: my_key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+
+  my-instance-2:
+    type: OS::Nova::Server
+    properties:
+      name: test-2
+      #key_name: my_key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+
+  my-instance-3:
+    type: OS::Nova::Server
+    properties:
+      name: test-3
+     # key_name: my_key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+
+  my-instance-4:
+    type: OS::Nova::Server
+    properties:
+      name: test-4
+      #key_name: my_key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+      
+
+  test-affinity-group1:
+    type: ATT::Valet::GroupAssignment
+    properties:
+      group_type: affinity
+      level: host
+      resources:
+      - {get_resource: my-instance-1}
+      - {get_resource: my-instance-2}
+  
+  test-affinity-group2:
+    type: ATT::Valet::GroupAssignment
+    properties:
+      group_type: affinity
+      level: host
+      resources:
+      - {get_resource: my-instance-3}
+      - {get_resource: my-instance-4}
+  
+  test-diversity-group:
+    type: ATT::Valet::GroupAssignment
+    properties:
+      group_type: diversity 
+      level: host
+      resources:
+      - {get_resource: test-affinity-group1}
+      - {get_resource: test-affinity-group2}
+
+
+outputs:
+  instance_name-1:
+    value: { get_attr: [my-instance-1, name] }
+  instance_name-2:
+    value: { get_attr: [my-instance-2, name] }
+  instance_name-3:
+    value: { get_attr: [my-instance-3, name] }
+  instance_name-4:
+    value: { get_attr: [my-instance-4, name] }
