@@ -65,6 +65,7 @@ ostro-daemon.pid
 .pydevproject
 .testrepository
 .settings
+.settings/
 
 # Translations
 *.mo
