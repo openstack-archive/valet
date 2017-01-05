@@ -11,11 +11,10 @@
 # under the License.
 
 # Modified: Mar. 15, 2016
-
-import openstack_utils
 import six
 
 from valet.engine.optimizer.app_manager.app_topology_base import VM
+import valet.engine.optimizer.ostro.openstack_utils
 
 _SCOPE = 'aggregate_instance_extra_specs'
 

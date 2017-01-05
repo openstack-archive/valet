@@ -297,7 +297,7 @@ def flush():
     pass
 
 
-from groups import Group  # noqa
-from ostro import PlacementRequest, PlacementResult, Event  # noqa
-from placements import Placement  # noqa
-from plans import Plan  # noqa
+from valet.api.db.models.music.groups import Group
+from valet.api.db.models.music.ostro import PlacementRequest, PlacementResult, Event
+from valet.api.db.models.music.placements import Placement
+from valet.api.db.models.music.plans import Plan
