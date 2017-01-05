@@ -17,7 +17,7 @@ class HealthCheck(object):
 
     def __init__(self, hosts=[], port='8080', keyspace='valet'):
 
-        self.tries = CONF.engine.health_timeout * 2
+        self.tries = CONF.engine.health_timeout * 2  # default health_timeout=10
         self.uuid = str(uuid.uuid4())
 
         kwargs = {
@@ -52,7 +52,7 @@ class HealthCheck(object):
             'table': CONF.music.request_table,
         }
         response = self.rest.request(method='post', path=path, data=data)
-        # print "SEND response: " + str(response.status_code)
+
         return response.status_code == 204 if response else False
 
     def _read_response(self, my_id):
@@ -64,23 +64,23 @@ class HealthCheck(object):
             'uid': self.uuid,
         }
 
-        for i in range(self.tries):  # default: 12 * 0.5 = 6 sec.
+        for i in range(self.tries):  # default 20 tries * 0.5 sec = 10 sec. timeout
             time.sleep(0.5)
-            response = self.rest.request(method='get', path=path)
+            try:
+                response = self.rest.request(method='get', path=path)
 
-            # logger.debug("READ respons body text: " + str(response.text))
+                if response.status_code == 200 and len(response.text) > 3:
 
-            if response.status_code == 200 and len(response.text) > 3:
+                    j = json.loads(response.text)
+                    stack_id = j['row 0']['stack_id']
+                    placement = json.loads(j['row 0']['placement'])
+                    engine_id = placement['resources']['id']
 
-                j = json.loads(response.text)
-                stack_id = j['row 0']['stack_id']
-                placement = json.loads(j['row 0']['placement'])
-                engine_id = placement['resources']['id']
-
-                # logger.debug("health 'stack_id': " + stack_id + ", engine_id=" + str(engine_id))
-                if stack_id == self.uuid and engine_id == my_id:
-                    found = True
-                    break
+                    if stack_id == self.uuid and engine_id == my_id:
+                        found = True
+                        break
+            except Exception:
+                pass
 
         return found
 
@@ -103,8 +103,6 @@ class HealthCheck(object):
                 'uid': self.uuid
             }
             self.rest.request(method='delete', path=path, data=data)
-
-            # print "DELETE response: " + str(response.status_code)
         except Exception:
             pass
 

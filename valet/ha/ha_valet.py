@@ -73,7 +73,7 @@ MAX_QUICK_STARTS = 10    # we stop if there are > 10 restart in quick succession
 QUICK_RESTART_SEC = 150  # we consider it a quick restart if less than this
 
 # HA Configuration
-HEARTBEAT_SEC = 10                    # Heartbeat interval in seconds
+HEARTBEAT_SEC = 20                    # Heartbeat interval in seconds
 
 
 NAME = 'name'

@@ -36,7 +36,7 @@ engine_opts = [
     cfg.BoolOpt('network_control', default=False, help='whether network controller (i.e., Tegu) has been deployed'),
     cfg.StrOpt('network_control_url', default='http://network_control:29444/tegu/api'),
     cfg.StrOpt('ip', default='localhost'),
-    cfg.IntOpt('health_timeout', default=6, help='health check grace period (seconds, default=5)'),
+    cfg.IntOpt('health_timeout', default=10, help='health check grace period (seconds, default=10)'),
     cfg.IntOpt('priority', default=1, help='this instance priority (master=1)'),
     cfg.StrOpt('rpc_server_ip', default='localhost',
                help='Set RPC server ip and port if used. Otherwise, ignore these parameters'),

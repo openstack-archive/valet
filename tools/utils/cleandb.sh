@@ -1,16 +1,30 @@
 #!/usr/bin/env bash
 
+if [ -z $VALET_KEYSPACE ]; then
+   echo "ERR: VALET_KEYSPACE is not defined."
+   exit
+else
+   sed -ie "s/#VALET_KEYSPACE#/${VALET_KEYSPACE}/g" ./populate.cql
+fi
+
+if [ -z $CASSANDRA_BIN ]; then
+   echo "ERR: CASSANDRA_BIN is not defined."
+   exit
+fi
+
 # drop keyspace
-echo "drop valet keyspace"
-/opt/app/apache-cassandra-2.1.1/bin/cqlsh  -e "DROP KEYSPACE valet_test;"
+echo "Drop Valet keyspace - ${VALET_KEYSPACE}"
+${CASSANDRA_BIN}cqlsh  -e "DROP KEYSPACE ${VALET_KEYSPACE};"
 
 sleep 5
 
 # populate tables
-echo "populate valet tables"
-# /opt/app/apache-cassandra-2.1.1/bin/cqlsh  -f ./populate.cql
+echo "Populate Valet Api tables"
 pecan populate /var/www/valet/config.py
 
-/opt/app/apache-cassandra-2.1.1/bin/cqlsh  -e "DESCRIBE KEYSPACE valet_test;"
+echo "Populate Valet Engine tables + Api indexes"
+${CASSANDRA_BIN}cqlsh  -f ./populate.cql
 
-echo "Done populating"
+${CASSANDRA_BIN}cqlsh  -e "DESCRIBE KEYSPACE ${VALET_KEYSPACE};"
+
+echo "Done populating - ${VALET_KEYSPACE}"

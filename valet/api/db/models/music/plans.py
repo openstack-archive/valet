@@ -64,12 +64,9 @@ class Plan(Base):
 
     def placements(self):
         """Return list of placements."""
-        # TODO(UNKNOWN): Make this a property?
-        all_results = Query("Placement").all()
-        results = []
-        for placement in all_results:
-            if placement.plan_id == self.id:
-                results.append(placement)
+
+        # TODO(JD): Make this a property?
+        results = Query("Placement").filter_by(plan_id=self.id)
         return results
 
     @property

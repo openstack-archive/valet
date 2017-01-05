@@ -231,9 +231,39 @@ class Query(object):
         rows = conf.music.engine.read_all_rows(**kwargs)
         return self.__rows_to_objects(rows)
 
+    def all_matching_key(self, key=None, value=None):
+        '''Return all objects matching a particular key/value'''
+        if not key:
+            key = self.model.pk_name()
+        kwargs = self.__kwargs()
+        rows = conf.music.engine.read_row(
+            pk_name=key, pk_value=value, **kwargs)
+        return self.__rows_to_objects(rows)
+
     def filter_by(self, **kwargs):
         """Filter objects"""
+
         # Music doesn't allow filtering on anything but the primary key.
+        # This leads to a default O(n) filtering algorithm. However, we
+        # can make it O(1) in some cases.
+        if len(kwargs) == 1:
+            # *Iff* a secondary key has been manually made via cql, e.g.:
+            #   CREATE INDEX ON keyspace.table (field);
+            # and that field/value is the only one in kwargs, we'll try it.
+            key = kwargs.keys()[0]
+            value = kwargs[key]
+            try:
+                filtered_items = self.all_matching_key(key=key, value=value)
+                return filtered_items
+            except Exception:
+                # If there's any kind of exception, we will take that
+                # to mean there was no primary/secondary key (though
+                # there can be other reasons). In this case, passthrough
+                # and use the original O(n) filtering method.
+                #
+                # Not logging in this module just yet. (Never use print()!)
+                pass
+
         # We need to get all items and then go looking for what we want.
         all_items = self.all()
         filtered_items = Results([])
