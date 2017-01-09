@@ -41,10 +41,9 @@ class Ostro(object):
 
         self.db = MusicHandler(self.config, self.logger)
         if self.db.init_db() is False:
-            self.logger.error("Ostro.__init__: error while initializing MUSIC "
-                              "database")
+            self.logger.error("Ostro: error while initializing MUSIC database")
         else:
-            self.logger.debug("Ostro.__init__: done init music")
+            self.logger.debug("Ostro: done init music")
 
         self.resource = Resource(self.db, self.config, self.logger)
         self.logger.debug("done init resource")
@@ -112,7 +111,7 @@ class Ostro(object):
         for t in self.thread_list:
             t.join()
 
-        self.logger.info("Ostro.run_ostro: exit Ostro")
+        self.logger.info("Ostro: exit Ostro")
 
     def stop_ostro(self):
         """Stop main engine process."""
@@ -135,25 +134,22 @@ class Ostro(object):
             resource_status = self.db.get_resource_status(
                 self.resource.datacenter.name)
             if resource_status is None:
-                self.logger.error("Ostro.bootstrap: failed to read from table: " + self.config.db_resource_table)
+                self.logger.error("Ostro: failed to read from table: " + self.config.db_resource_table)
                 return False
 
             if len(resource_status) > 0:
-                self.logger.info("Ostro.bootstrap: bootstrap from db")
+                self.logger.info("Ostro: bootstrap from db")
                 if not self.resource.bootstrap_from_db(resource_status):
-                    self.logger.error("Ostro.bootstrap: failed to parse bootstrap data!")
+                    self.logger.error("Ostro: failed to parse bootstrap data!")
 
             self.logger.info("read bootstrap data from OpenStack")
             if not self._set_hosts():
-                self.logger.error('_set_hosts is false')
                 return False
 
             if not self._set_flavors():
-                self.logger.info("_set_flavors is false")
                 return False
 
             if not self._set_topology():
-                self.logger.error("_set_topology is false")
                 return False
 
             self.resource.update_topology()
@@ -162,7 +158,7 @@ class Ostro(object):
             self.logger.critical("Ostro.bootstrap failed: " +
                                  traceback.format_exc())
 
-        self.logger.info("Ostro.bootstrap: done bootstrap")
+        self.logger.info("Ostro: done bootstrap")
 
         return True
 
@@ -196,93 +192,77 @@ class Ostro(object):
 
     def place_app(self, _app_data):
         """Place results of query and placement requests in the db."""
-        self.data_lock.acquire()
-
         start_time = time.time()
 
-        query_request_list = []
-        placement_request_list = []
         for req in _app_data:
             if req["action"] == "query":
-                query_request_list.append(req)
+                self.logger.info("Ostro: start query")
+
+                query_result = self._query(req)
+                result = self._get_json_results("query", "ok",
+                                                self.status, query_result)
+
+                if self.db.put_result(result) is False:
+                    return False
+
+                self.logger.info("Ostro: done query")
             else:
-                placement_request_list.append(req)
+                self.logger.info("Ostro: start app placement")
 
-        if len(query_request_list) > 0:
-            self.logger.info("Ostro.place_app: start query")
+                result = None
+                placement_map = self._place_app(req)
 
-            query_results = self._query(query_request_list)
+                if placement_map is None:
+                    result = self._get_json_results("placement", "error",
+                                                    self.status, placement_map)
+                else:
+                    result = self._get_json_results("placement", "ok",
+                                                    "success", placement_map)
 
-            result = self._get_json_results("query", "ok", self.status,
-                                            query_results)
+                if self.db.put_result(result) is False:
+                    return False
 
-            if self.db.put_result(result) is False:
-                self.data_lock.release()
-                return False
-
-            self.logger.info("Ostro.place_app: done query")
-
-        if len(placement_request_list) > 0:
-
-            self.logger.info("Ostro.place_app: start app placement")
-
-            result = None
-
-            placement_map = self._place_app(placement_request_list)
-
-            if placement_map is None:
-                result = self._get_json_results("placement", "error",
-                                                self.status, placement_map)
-            else:
-                result = self._get_json_results("placement", "ok", "success",
-                                                placement_map)
-
-            if self.db.put_result(result) is False:
-                self.data_lock.release()
-                return False
-
-            self.logger.info("Ostro.place_app: done app placement")
+                self.logger.info("Ostro: done app placement")
 
         end_time = time.time()
+        self.logger.info("Ostro: total decision delay of request = " + str(end_time - start_time) + " sec")
 
-        self.logger.info("Ostro.place_app: total decision delay of request = " +
-                         str(end_time - start_time) + " sec")
-
-        self.data_lock.release()
         return True
 
-    def _query(self, _query_list):
-        query_results = {}
+    def _query(self, _q):
+        query_result = {}
 
-        for q in _query_list:
-            if "type" in q.keys():
-                if q["type"] == "group_vms":
-                    if "parameters" in q.keys():
-                        params = q["parameters"]
-                        if "group_name" in params.keys():
-                            vm_list = self._get_vms_from_logical_group(
-                                params["group_name"])
-                            query_results[q["stack_id"]] = vm_list
-                        else:
-                            self.status = "unknown paramenter in query"
-                            self.logger.warn("Ostro._query: unknown paramenter in query")
-                            query_results[q["stack_id"]] = None
+        if "type" in _q.keys():
+            if _q["type"] == "group_vms":
+                if "parameters" in _q.keys():
+                    params = _q["parameters"]
+                    if "group_name" in params.keys():
+                        self.data_lock.acquire()
+                        vm_list = self._get_vms_from_logical_group(params["group_name"])
+                        self.data_lock.release()
+                        query_result[_q["stack_id"]] = vm_list
                     else:
-                        self.status = "no paramenter in query"
-                        self.logger.warn("Ostro._query: no parameters in query")
-                        query_results[q["stack_id"]] = None
-                elif q["type"] == "all_groups":
-                    query_results[q["stack_id"]] = self._get_logical_groups()
+                        self.status = "unknown paramenter in query"
+                        self.logger.warn("Ostro: unknown paramenter in query")
+                        query_result[_q["stack_id"]] = None
                 else:
-                    self.status = "unknown query type"
-                    self.logger.warn("Ostro._query: unknown query type")
-                    query_results[q["stack_id"]] = None
+                    self.status = "no paramenter in query"
+                    self.logger.warn("Ostro: no parameters in query")
+                    query_result[_q["stack_id"]] = None
+            elif _q["type"] == "all_groups":
+                self.data_lock.acquire()
+                query_result[_q["stack_id"]] = self._get_logical_groups()
+                self.data_lock.release()
             else:
-                self.status = "unknown type in query"
-                self.logger.warn("Ostro._query: no type in query")
-                query_results[q["stack_id"]] = None
+                self.status = "unknown query type"
+                self.logger.warn("Ostro: unknown query type")
+                query_result[_q["stack_id"]] = None
+        else:
+            self.status = "unknown type in query"
+            self.logger.warn("Ostro: no type in query")
+            query_result[_q["stack_id"]] = None
 
-        return query_results
+        return query_result
 
     def _get_vms_from_logical_group(self, _group_name):
         vm_list = []
@@ -310,9 +290,9 @@ class Ostro(object):
 
         return logical_groups
 
-    def _place_app(self, _app_data):
+    def _place_app(self, _app):
         """Set application topology."""
-        app_topology = self.app_handler.add_app(_app_data)
+        app_topology = self.app_handler.add_app(_app)
         if app_topology is None:
             self.status = self.app_handler.status
             self.logger.error("Ostro._place_app: error while register"
@@ -323,13 +303,15 @@ class Ostro(object):
         for _, vm in app_topology.vms.iteritems():
             if self._set_vm_flavor_information(vm) is False:
                 self.status = "fail to set flavor information"
-                self.logger.error("Ostro._place_app: failed to set flavor information ")
+                self.logger.error("Ostro: failed to set flavor information ")
                 return None
         for _, vg in app_topology.vgroups.iteritems():
             if self._set_vm_flavor_information(vg) is False:
                 self.status = "fail to set flavor information in a group"
-                self.logger.error("Ostro._place_app: failed to set flavor information in a group")
+                self.logger.error("Ostro: failed to set flavor information in a group")
                 return None
+
+        self.data_lock.acquire()
 
         """Set weights for optimization."""
         app_topology.set_weight()
@@ -341,6 +323,7 @@ class Ostro(object):
             self.status = self.optimizer.status
             self.logger.debug("Ostro._place_app: error while optimizing app "
                               "placement: " + self.status)
+            self.data_lock.release()
             return None
 
         """Update resource and app information."""
@@ -353,6 +336,8 @@ class Ostro(object):
                 for vk in app_topology.planned_vm_map.keys():
                     if vk in placement_map.keys():
                         del placement_map[vk]
+
+        self.data_lock.release()
 
         return placement_map
 

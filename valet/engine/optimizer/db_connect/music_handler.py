@@ -21,6 +21,10 @@ from valet.common.music import Music
 from valet.engine.optimizer.db_connect.event import Event
 
 
+def ensurekey(d, k):
+    return d.setdefault(k, {})
+
+
 class MusicHandler(object):
     """Music Handler Class.
 
@@ -509,42 +513,42 @@ class MusicHandler(object):
             if 'flavors' in _status.keys():
                 flavors = _status['flavors']
                 for fk, f in flavors.iteritems():
-                    if fk in json_resource['flavors'].keys():
+                    if fk in ensurekey(json_resource, 'flavors').keys():
                         del json_resource['flavors'][fk]
                     json_resource['flavors'][fk] = f
 
             if 'logical_groups' in _status.keys():
                 logical_groups = _status['logical_groups']
                 for lgk, lg in logical_groups.iteritems():
-                    if lgk in json_resource['logical_groups'].keys():
+                    if lgk in ensurekey(json_resource, 'logical_groups').keys():
                         del json_resource['logical_groups'][lgk]
                     json_resource['logical_groups'][lgk] = lg
 
             if 'storages' in _status.keys():
                 storages = _status['storages']
                 for stk, st in storages.iteritems():
-                    if stk in json_resource['storages'].keys():
+                    if stk in ensurekey(json_resource, 'storages').keys():
                         del json_resource['storages'][stk]
                     json_resource['storages'][stk] = st
 
             if 'switches' in _status.keys():
                 switches = _status['switches']
                 for sk, s in switches.iteritems():
-                    if sk in json_resource['switches'].keys():
+                    if sk in ensurekey(json_resource, 'switches').keys():
                         del json_resource['switches'][sk]
                     json_resource['switches'][sk] = s
 
             if 'hosts' in _status.keys():
                 hosts = _status['hosts']
                 for hk, h in hosts.iteritems():
-                    if hk in json_resource['hosts'].keys():
+                    if hk in ensurekey(json_resource, 'hosts').keys():
                         del json_resource['hosts'][hk]
                     json_resource['hosts'][hk] = h
 
             if 'host_groups' in _status.keys():
                 host_groupss = _status['host_groups']
                 for hgk, hg in host_groupss.iteritems():
-                    if hgk in json_resource['host_groups'].keys():
+                    if hgk in ensurekey(json_resource, 'host_groups').keys():
                         del json_resource['host_groups'][hgk]
                     json_resource['host_groups'][hgk] = hg
 

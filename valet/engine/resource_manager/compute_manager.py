@@ -98,22 +98,20 @@ class ComputeManager(threading.Thread):
         self.logger.info("ComputeManager: --- start compute_nodes "
                          "status update ---")
 
-        self.data_lock.acquire()
-        try:
-            triggered_host_updates = self.set_hosts()
-            triggered_flavor_updates = self.set_flavors()
+        triggered_host_updates = self.set_hosts()
+        triggered_flavor_updates = self.set_flavors()
 
-            if triggered_host_updates is True and \
-                    triggered_flavor_updates is True:
-                if self.resource.update_topology() is False:
-                    # TODO(UNKNOWN): error in MUSIC. ignore?
-                    pass
-            else:
-                # TODO(UNKNOWN): error handling, e.g.,
-                # 3 times failure then stop Ostro?
-                pass
-        finally:
+        if triggered_host_updates is True and triggered_flavor_updates is True:
+            self.data_lock.acquire()
+            update_status = self.resource.update_topology()
             self.data_lock.release()
+
+            if update_status is False:
+                # TODO(GY): error in MUSIC. ignore?
+                pass
+        else:
+            # TODO(GY): error handling, e.g., 3 times failure then stop Ostro?
+            pass
 
         self.logger.info("ComputeManager: --- done compute_nodes "
                          "status update ---")
@@ -139,8 +137,10 @@ class ComputeManager(threading.Thread):
 
         self._compute_avail_host_resources(hosts)
 
+        self.data_lock.acquire()
         self._check_logical_group_update(logical_groups)
         self._check_host_update(hosts)
+        self.data_lock.release()
 
         return True
 
@@ -387,7 +387,9 @@ class ComputeManager(threading.Thread):
             self.logger.error("ComputeManager: " + status)
             return False
 
+        self.data_lock.acquire()
         self._check_flavor_update(flavors)
+        self.data_lock.release()
 
         return True
 

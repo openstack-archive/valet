@@ -95,14 +95,14 @@ class TopologyManager(threading.Thread):
         self.logger.info("TopologyManager: --- start topology "
                          "status update ---")
 
-        self.data_lock.acquire()
-        try:
-            if self.set_topology() is True:
-                if self.resource.update_topology() is False:
-                    # TODO(UNKOWN): ignore?
-                    pass
-        finally:
+        if self.set_topology() is True:
+            self.data_lock.acquire()
+            update_status = self.resource.update_topology()
             self.data_lock.release()
+
+            if update_status is False:
+                # TODO(GY): ignore?
+                pass
 
         self.logger.info("TopologyManager: --- done topology status update ---")
 
@@ -128,7 +128,9 @@ class TopologyManager(threading.Thread):
             self.logger.error("TopologyManager: " + status)
             return False
 
+        self.data_lock.acquire()
         self._check_update(datacenter, host_groups, hosts, switches)
+        self.data_lock.release()
 
         return True
 
