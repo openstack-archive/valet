@@ -1,17 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Sep. 27, 2016
-
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import json
 
@@ -100,8 +100,6 @@ class AppHandler(object):
 
             if isinstance(v, VM):
                 self.apps[v.app_uuid].add_vm(v, _placement_map[v])
-            # elif isinstance(v, Volume):
-            #     self.apps[v.app_uuid].add_volume(v, _placement_map[v])
             else:
                 if _placement_map[v] in self.resource.hosts.keys():
                     host = self.resource.hosts[_placement_map[v]]
@@ -122,7 +120,7 @@ class AppHandler(object):
             self.resource.datacenter.name, self.last_log_index)
         self.last_log_index = last_index
 
-        # TODO(GJ): error handling
+        # TODO: error handling
 
         logging = open(self.config.app_log_loc + app_logfile, mode)
 

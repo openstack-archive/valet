@@ -1,14 +1,18 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+# Copyright 2014-2017 AT&T Intellectual Property
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 import json
 from oslo_config import cfg
@@ -113,7 +117,6 @@ def cmd_details(args):
 
 
 def get_token(timeout, args):
-    # tenant_name = args.os_tenant_name if args.os_tenant_name else os.environ.get('OS_TENANT_NAME')
     tenant_name = args.os_tenant_name if args.os_tenant_name else CONF.identity.project_name
     auth_name = args.os_username if args.os_username else CONF.identity.username
     password = args.os_password if args.os_password else CONF.identity.password
@@ -141,7 +144,6 @@ def get_token(timeout, args):
         return resp.json()['access']['token']['id']
     except Exception as e:
         message = 'Failed in get_token'
-        # logger.log_exception(message, str(e))
         print(e)
         raise ConnectionError(message)
 

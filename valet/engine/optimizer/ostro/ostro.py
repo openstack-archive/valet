@@ -1,17 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Oct. 1, 2016
-
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from oslo_config import cfg
 import threading
@@ -76,10 +76,6 @@ class Ostro(object):
         self.thread_list.append(self.compute)
         self.thread_list.append(self.listener)
 
-        ''' for monitoring test '''
-        # duration = 30.0
-        # expired = time.time() + duration
-
         while self.end_of_process is False:
             time.sleep(1)
 
@@ -96,12 +92,6 @@ class Ostro(object):
             if len(request_list) > 0:
                 if self.place_app(request_list) is False:
                     break
-
-            ''' for monitoring test '''
-            # current = time.time()
-            # if current > expired:
-            #     self.logger.debug("test: ostro running ......")
-            #     expired = current + duration
 
         self.topology.end_of_process = True
         self.compute.end_of_process = True
@@ -278,7 +268,7 @@ class Ostro(object):
                     break
 
         for vm_id in vm_id_list:
-            if vm_id[2] != "none":   # if physical_uuid != 'none'
+            if vm_id[2] != "none":
                 vm_list.append(vm_id[2])
 
         return vm_list

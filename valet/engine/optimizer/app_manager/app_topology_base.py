@@ -1,17 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Sep. 22, 2016
-
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 LEVELS = ["host", "rack", "cluster"]
 
@@ -37,8 +37,7 @@ class VGroup(object):
         self.exclusivity_groups = {}   # over this level. key=name, value=level
 
         self.availability_zone_list = []
-        # self.host_aggregates = {}      # cumulative aggregates
-        self.extra_specs_list = []      # cumulative extra_specs
+        self.extra_specs_list = []     # cumulative extra_specs
 
         self.vCPUs = 0
         self.mem = 0                   # MB
@@ -80,7 +79,6 @@ class VGroup(object):
                 'diversity_groups': self.diversity_groups,
                 'exclusivity_groups': self.exclusivity_groups,
                 'availability_zones': self.availability_zone_list,
-                # 'host_aggregates':host_aggregates,
                 'extra_specs_list': self.extra_specs_list,
                 'cpus': self.vCPUs,
                 'mem': self.mem,
@@ -114,7 +112,6 @@ class VM(object):
         self.exclusivity_groups = {}
 
         self.availability_zone = None
-        # self.host_aggregates = {}
         self.extra_specs_list = []
 
         self.flavor = None
@@ -160,7 +157,6 @@ class VM(object):
                 'diversity_groups': self.diversity_groups,
                 'exclusivity_groups': self.exclusivity_groups,
                 'availability_zones': availability_zone,
-                # 'host_aggregates':host_aggregates,
                 'extra_specs_list': self.extra_specs_list,
                 'flavor': self.flavor,
                 'cpus': self.vCPUs,

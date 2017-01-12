@@ -1,18 +1,17 @@
-# -*- encoding: utf-8 -*-
 #
-# Copyright (c) 2014-2016 AT&T
+# Copyright 2014-2017 AT&T Intellectual Property
 #
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#        http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-#    implied. See the License for the specific language governing permissions and
-#    limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 '''Valet Nova Scheduler Filter'''
 
@@ -114,7 +113,6 @@ class ValetFilter(filters.BaseHostFilter):
         # TODO(JD): If we can't reach Valet at all, we may opt to fail
         # TODO(JD): all hosts depending on a TBD config flag.
 
-#         if not filter_properties.get(hints_key, {}).has_key(orch_id_key):
         if orch_id_key not in filter_properties.get(hints_key, {}):
             self._authorize()
             LOG.warn(_LW("Valet: Heat Stack Lifecycle Scheduler Hints not found. Performing ad-hoc placement."))

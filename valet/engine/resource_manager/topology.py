@@ -1,17 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Aug. 12, 2016
-
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import copy
 import sys
@@ -52,21 +52,6 @@ class Topology(object):
 
             if region_name not in _datacenter.region_code_list:
                 _datacenter.region_code_list.append(region_name)
-
-            '''
-            if status == "success":
-                if _datacenter.region_code != None:
-                    if _datacenter.region_code == "none":
-                        pass
-                    else:
-                        if _datacenter.region_code != region_name:
-                            _datacenter.region_code = "none"
-                else:
-                    _datacenter.region_code = region_name
-            else:
-                self.logger.warn(status + "  while parsing host_name (" + rhk + ")")
-                _datacenter.region_code = region_name
-            '''
 
             if rack_name not in _host_groups.keys():
                 host_group = HostGroup(rack_name)

@@ -1,16 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Sep. 27, 2016
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from valet.engine.optimizer.app_manager.app_topology_base import VGroup, VGroupLink, VM, VMLink, LEVELS
 
@@ -598,22 +599,6 @@ class Parser(object):
                             if tvk == voll.node.uuid:
                                 self._add_io_link(voll, _vgroup)
                                 break
-            # elif isinstance(svg, Volume):
-            #     for vml in svg.vm_list:
-            #         found = False
-            #         for _, tvgroup in _vgroups.iteritems():
-            #             containing_vg_uuid = self._exist_in_subgroups(vml.node.uuid, tvgroup)
-            #             if containing_vg_uuid is not None:
-            #                 found = True
-            #                 if containing_vg_uuid != _vgroup.uuid and \
-            #                    self._exist_in_subgroups(containing_vg_uuid, _vgroup) is None:
-            #                     self._add_io_link(vml, _vgroup)
-            #                 break
-            #         if found is False:
-            #             for tvk in _vms.keys():
-            #                 if tvk == vml.node.uuid:
-            #                     self._add_io_link(vml, _vgroup)
-            #                     break
             elif isinstance(svg, VGroup):
                 self._set_vgroup_links(svg, _vgroups, _vms, _volumes)
 

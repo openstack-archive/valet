@@ -1,17 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Sep. 27, 2016
-
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import json
 import operator
@@ -235,13 +235,6 @@ class MusicHandler(object):
                         if self.delete_event(event_id) is False:
                             return None
                         continue
-                    '''
-                    else:
-                        filter_properties = args['filter_properties']
-                        if 'scheduler_hints' not in filter_properties.keys():
-                            self.delete_event(event_id)
-                            continue
-                    '''
 
                     if 'instance' not in args.keys():
                         if self.delete_event(event_id) is False:
@@ -280,13 +273,6 @@ class MusicHandler(object):
                         self.logger.warn("MusicHandler.get_events: data missing in compute object event")
 
             elif e.method == "build_and_run_instance":
-                '''
-                if e.heat_resource_name == None or e.heat_resource_name == "none" or \
-                   e.heat_resource_uuid == None or e.heat_resource_uuid == "none" or \
-                   e.heat_root_stack_id == None or e.heat_root_stack_id == "none" or \
-                   e.heat_stack_name == None or e.heat_stack_name == "none" or \
-                   e.uuid == None or e.uuid == "none":
-                '''
                 if e.uuid is None or e.uuid == "none":
                     error_event_list.append(e)
                     self.logger.warn("MusicHandler.get_events: data missing in build event")
@@ -352,12 +338,6 @@ class MusicHandler(object):
             return False
 
         self.logger.info("MusicHandler.put_uuid: uuid (" + _e.uuid + ") added")
-
-        '''
-        self.delete_event(_e.event_id)
-
-        self.logger.info("db: build event (" + _e.event_id + ") deleted")
-        '''
 
         return True
 
@@ -603,7 +583,7 @@ class MusicHandler(object):
 
         return json_app
 
-    # TODO(GY): get all other VMs related to this VM
+    # TODO: get all other VMs related to this VM
     def get_vm_info(self, _s_uuid, _h_uuid, _host):
         updated = False
         json_app = {}
@@ -629,7 +609,7 @@ class MusicHandler(object):
                             vm["planned_host"] = vm["host"]
                             vm["host"] = _host
                             self.logger.warn("db: conflicted placement decision from Ostro")
-                            # TODO(GY): affinity, diversity, exclusivity validation check
+                            # TODO: affinity, diversity, exclusivity validation check
                             updated = True
                         else:
                             self.logger.debug("db: placement as expected")
@@ -689,24 +669,3 @@ class MusicHandler(object):
                 return False
 
         return True
-
-
-# Unit test
-'''
-if __name__ == '__main__':
-    config = Config()
-    config_status = config.configure()
-    if config_status != "success":
-        print "Error while configuring Client: " + config_status
-        sys.exit(2)
-
-    mh = MusicHandler(config, None)
-    event_list = mh.get_events()
-    for e in event_list:
-        print "event id = ", e.event_id
-        print "host = ", e.host
-        print "least disk = ", e.disk_available_least
-        print "disk = ", e.local_disk
-        for nc in e.numa_cell_list:
-            print "numa cell = ", nc
-'''

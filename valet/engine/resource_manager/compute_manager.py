@@ -1,17 +1,17 @@
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
+# Copyright 2014-2017 AT&T Intellectual Property
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
-# Modified: Sep. 22, 2016
-
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import threading
 import time
@@ -38,7 +38,6 @@ class ComputeManager(threading.Thread):
 
         self.logger = _logger
 
-        # self.auth = Authentication(_logger)
         self.admin_token = None
         self.project_token = None
 
@@ -92,10 +91,10 @@ class ComputeManager(threading.Thread):
 
             if triggered_host_updates is True and triggered_flavor_updates is True:
                 if self.resource.update_topology() is False:
-                    # TODO(GY): error in MUSIC. ignore?
+                    # TODO: error in MUSIC. ignore?
                     pass
             else:
-                # TODO(GY): error handling, e.g., 3 times failure then stop Ostro?
+                # TODO: error handling, e.g., 3 times failure then stop Ostro?
                 pass
         finally:
             self.data_lock.release()
@@ -103,22 +102,6 @@ class ComputeManager(threading.Thread):
         self.logger.info("ComputeManager: --- done compute_nodes status update ---")
 
         return True
-
-    # def _set_admin_token(self):
-    #     self.admin_token = self.auth.get_tenant_token(self.config)
-    #     if self.admin_token is None:
-    #         self.logger.error("ComputeManager: " + self.auth.status)
-    #         return False
-    #
-    #     return True
-
-    # def _set_project_token(self):
-    #     self.project_token = self.auth.get_project_token(self.config, self.admin_token)
-    #     if self.project_token is None:
-    #         self.logger.error("ComputeManager: " + self.auth.status)
-    #         return False
-    #
-    #     return True
 
     def set_hosts(self):
         hosts = {}
