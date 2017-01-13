@@ -1,18 +1,19 @@
-#!/usr/bin/env python
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Test Groups."""
 
 from tempest.common.utils import data_utils
 from tempest import test
@@ -21,15 +22,17 @@ from valet.tests.tempest.api import base
 
 
 class ValetGroupsTest(base.BaseValetTest):
-    """Here we test the basic group operations of Valet Groups"""
+    """Here we test the basic group operations of Valet Groups."""
 
     @classmethod
     def setup_clients(cls):
+        """Setup Valet client for Groups Test."""
         super(ValetGroupsTest, cls).setup_clients()
         cls.client = cls.valet_client
 
     @test.idempotent_id('b2655098-5a0d-11e6-9efd-525400af9658')
     def test_list_groups(self):
+        """List groups using client assert no groups missing to verify."""
         group_ids = list()
         fetched_ids = list()
 
@@ -53,6 +56,7 @@ class ValetGroupsTest(base.BaseValetTest):
 
     @test.idempotent_id('2ab0337e-6472-11e6-b6c6-080027824017')
     def test_create_group(self):
+        """Test created group by checking details equal to group details."""
         group_name = data_utils.rand_name('group')
         description = data_utils.rand_name('Description')
         group = self.client.create_group(
@@ -68,6 +72,7 @@ class ValetGroupsTest(base.BaseValetTest):
 
     @test.idempotent_id('35f0aa20-6472-11e6-b6c6-080027824017')
     def test_delete_group(self):
+        """Client Delete group with id, check group with id not in groups."""
         # Create group
         group_name = data_utils.rand_name('group')
         description = data_utils.rand_name('Description')
@@ -89,6 +94,7 @@ class ValetGroupsTest(base.BaseValetTest):
     @test.attr(type='smoke')
     @test.idempotent_id('460d86e4-6472-11e6-b6c6-080027824017')
     def test_update_group(self):
+        """Client Update group with id, using a new description."""
         # Create group
         group_name = data_utils.rand_name('group')
         description = data_utils.rand_name('Description')
@@ -108,6 +114,7 @@ class ValetGroupsTest(base.BaseValetTest):
 
     @test.idempotent_id('4f660e50-6472-11e6-b6c6-080027824017')
     def test_show_group(self):
+        """Test client show group by checking values against group_details."""
         # Create group
         group_name = data_utils.rand_name('group')
         description = data_utils.rand_name('Description')

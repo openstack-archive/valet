@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''v1'''
+"""v1."""
 
 import logging
 
@@ -34,7 +34,7 @@ LOG = logging.getLogger(__name__)
 
 
 class V1Controller(SecureController):
-    ''' v1 Controller  /v1 '''
+    """v1 Controller  /v1."""
 
     groups = GroupsController()
     placements = PlacementsController()
@@ -46,7 +46,7 @@ class V1Controller(SecureController):
 
     @classmethod
     def check_permissions(cls):
-        '''SecureController permission check callback'''
+        """SecureController permission check callback."""
         token = None
         auth_token = request.headers.get('X-Auth-Token')
         msg = "Unauthorized - No auth token"
@@ -74,7 +74,10 @@ class V1Controller(SecureController):
 
     @classmethod
     def _action_is_migrate(cls, request):
-        return "plan" in request.path and hasattr(request, "json") and "action" in request.json and request.json["action"] == "migrate"
+        return "plan" in request.path \
+               and hasattr(request, "json") \
+               and "action" in request.json \
+               and request.json["action"] == "migrate"
 
     @classmethod
     def _permission_granted(cls, request, token):
@@ -84,25 +87,25 @@ class V1Controller(SecureController):
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'GET'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Get canonical URL for each endpoint'''
+        """Get canonical URL for each endpoint."""
         links = []
         for endpoint in V1Controller.endpoints:
             links.append({

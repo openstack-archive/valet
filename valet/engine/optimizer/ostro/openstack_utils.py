@@ -1,27 +1,29 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Openstack utlity functions."""
+
 import collections
 import operator
 
 
 # 1. The following operations are supported:
-#   =, s==, s!=, s>=, s>, s<=, s<, <in>, <all-in>, <or>, ==, !=, >=, <=
+#    =, s==, s!=, s>=, s>, s<=, s<, <in>, <all-in>, <or>, ==, !=, >=, <=
 # 2. Note that <or> is handled in a different way below.
 # 3. If the first word in the extra_specs is not one of the operators,
-#   it is ignored.
+#    it is ignored.
 op_methods = {'=': lambda x, y: float(x) >= float(y),
               '<in>': lambda x, y: y in x,
               '<all-in>': lambda x, y: all(val in x for val in y),
@@ -38,6 +40,7 @@ op_methods = {'=': lambda x, y: float(x) >= float(y),
 
 
 def match(value, req):
+    """Return True if value matches request."""
     words = req.split()
 
     op = method = None
@@ -70,7 +73,10 @@ def match(value, req):
 
 
 def aggregate_metadata_get_by_host(_level, _host, _key=None):
-    """Returns a dict of all metadata based on a metadata key for a specific host. If the key is not provided, returns a dict of all metadata."""
+    """Return a dict of metadata for a specific host."""
+    """Base dict on a metadata key. If the key is not provided,
+    return a dict of all metadata.
+    """
 
     metadatas = {}
 
@@ -90,6 +96,7 @@ def aggregate_metadata_get_by_host(_level, _host, _key=None):
 
 # NOTE: this function not exist in OpenStack
 def availability_zone_get_by_host(_level, _host):
+    """Return a list of availability zones for a specific host."""
     availability_zone_list = []
 
     logical_groups = _host.get_memberships(_level)

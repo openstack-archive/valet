@@ -1,6 +1,6 @@
 heat_template_version: 2015-04-30
 
-description: Nested affinity and diversity template - Host level diversity between 2 groups of affinity
+description: Nested affinity and diversity template - Host level diversity
 
 parameters:
   instance_image:

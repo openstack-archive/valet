@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Analyzer."""
 
 from collections import defaultdict
 import os
@@ -22,12 +24,14 @@ CONF = config.CONF
 
 
 class Analyzer(object):
+    """Class to analyze groups/racks/instances."""
 
     def __init__(self, logger, stack_id, heat, nova):
-        ''' initializing the analyzer - connecting to nova '''
+        """Initializing the analyzer - connecting to Nova."""
         self.heat_client = heat
         self.nova_client = nova
-        self.possible_topdir = os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir))
+        self.possible_topdir = os.path.normpath(os.path.join(
+            os.path.abspath(__file__), os.pardir))
         self.stack_identifier = stack_id
         self.log = logger
         self.resource_name = {}
@@ -35,7 +39,7 @@ class Analyzer(object):
         self.group_instance_name = {}
 
     def check(self, resources):
-        ''' Checking if all instances are on the Appropriate hosts and racks '''
+        """Checking if all instances are on the Appropriate hosts and racks."""
         self.log.log_info("Starting to check instances location")
         result = True
 
@@ -59,18 +63,23 @@ class Analyzer(object):
                     result = result and fn(instances, level)
 
         except Exception as ex:
-            self.log.log_error("Exception at method check: %s" % ex, traceback.format_exc())
+            self.log.log_error("Exception at method check: %s" % ex,
+                               traceback.format_exc())
             result = False
 
         return result
 
     def init_instances_for_group(self, resources):
+        """Init instances for a group with the given resources."""
         ins_group = defaultdict(list)
 
         for grp in resources.groups.keys():
-            self.group_instance_name[grp] = resources.groups[grp].group_resources
-            resources.groups[grp].group_resources.append(resources.groups[grp].level)
-            ins_group[resources.groups[grp].group_type].append(resources.groups[grp].group_resources)
+            self.group_instance_name[grp] = \
+                resources.groups[grp].group_resources
+            resources.groups[grp].group_resources.append(
+                resources.groups[grp].level)
+            ins_group[resources.groups[grp].group_type].append(
+                resources.groups[grp].group_resources)
 
         # replacing group for it's instances
         ins_group = self.organize(ins_group)
@@ -78,25 +87,32 @@ class Analyzer(object):
         return ins_group
 
     def init_resources(self, resources):
+        """Init resources."""
         for ins in resources.instances:
             self.resource_name[ins.resource_name] = ins.name
 
     def init_servers_list(self):
+        """Init server list from nova client."""
         servers_list = self.nova_client.list_servers()
 
         for i in range(len(servers_list["servers"])):
-            server = self.nova_client.show_server(servers_list["servers"][i]["id"])
-            self.instance_on_server[servers_list["servers"][i]["name"]] = server["server"]["OS-EXT-SRV-ATTR:host"]
+            server = \
+                self.nova_client.show_server(servers_list["servers"][i]["id"])
+            self.instance_on_server[servers_list["servers"][i]["name"]] = \
+                server["server"]["OS-EXT-SRV-ATTR:host"]
 
     def get_instance_name(self, res_name):
+        """Return instance name (resource name)."""
         return self.resource_name[res_name]
 
     def get_instance_host(self, res_name):
+        """Return host of instance with matching name."""
         hosts = []
 
         if len(self.instance_on_server) == 0:
             self.init_servers_list()
-            self.log.log_info("instance_on_server: %s" % self.instance_on_server)
+            self.log.log_info("instance_on_server: %s" %
+                              self.instance_on_server)
 
         for res in res_name:
             name = self.get_instance_name(res)
@@ -105,22 +121,26 @@ class Analyzer(object):
         return hosts
 
     def are_the_same(self, res_name, level):
+        """Return true if host aren't the same otherwise return False."""
         self.log.log_info("are_the_same")
         hosts_list = self.get_instance_host(res_name)
         self.log.log_info(hosts_list)
 
         try:
             for h in hosts_list:
-                if self.compare_host(self.get_host_or_rack(level, h), self.get_host_or_rack(level, hosts_list[0])) is False:
+                if self.compare_host(
+                        self.get_host_or_rack(level, h),
+                        self.get_host_or_rack(level, hosts_list[0])) is False:
                     return False
             return True
 
         except Exception as ex:
-            self.log.log_error("Exception at method are_the_same: %s" % ex, traceback.format_exc())
+            self.log.log_error("Exception at method are_the_same: %s" %
+                               ex, traceback.format_exc())
             return False
 
     def are_different(self, res_name, level):
-        ''' Checking if all hosts (and racks) are different for all instances '''
+        """Check if all hosts (and racks) are different for all instances."""
         self.log.log_info("are_different")
         diction = {}
         hosts_list = self.get_instance_host(res_name)
@@ -128,21 +148,25 @@ class Analyzer(object):
 
         try:
             for h in hosts_list:
-                if self.is_already_exists(diction, self.get_host_or_rack(level, h)):
+                if self.is_already_exists(diction, self.get_host_or_rack(level,
+                                                                         h)):
                     return False
             return True
 
         except Exception as ex:
-            self.log.log_error("Exception at method are_all_hosts_different: %s" % ex, traceback.format_exc())
+            self.log.log_error("Exception at method are_all_hosts_different: %s"
+                               % ex, traceback.format_exc())
             return False
 
     def are_we_alone(self, ins_for_group, level):
+        """Return True if no other instances in group on server."""
         self.log.log_info("are_we_alone ")
         self.log.log_info(ins_for_group)
 
         instances = self.instance_on_server.keys()
         if level == "rack":
-            instances = self.get_rack_instances(set(self.instance_on_server.values()))
+            instances = self.get_rack_instances(set(
+                self.instance_on_server.values()))
 
         # instance_on_server should be all the instances on the rack
         if len(instances) < 1:
@@ -155,6 +179,7 @@ class Analyzer(object):
         return not instances
 
     def organize(self, ins_group):
+        """Organize internal groups, return ins_group."""
         internal_ins = []
         for x in ins_group:
             for y in ins_group[x]:
@@ -167,10 +192,11 @@ class Analyzer(object):
         return ins_group
 
     def get_group_instances(self, resources, group_ins):
-        ''' gets the instance object according to the group_ins
+        """Get the instance object according to the group_ins.
 
-        group_ins - the group_resources name of the instances belong to this group (['my-instance-1', 'my-instance-2'])
-        '''
+        group_ins - the group_resources name of the instances belong to this
+        group (['my-instance-1', 'my-instance-2'])
+        """
         ins_for_group = []
         try:
             for instance in resources.instances:
@@ -183,6 +209,7 @@ class Analyzer(object):
             return None
 
     def get_rack_instances(self, hosts):
+        """Get instances on racks, return list of instances."""
         racks = []
         for host in hosts:
             racks.append(self.get_rack(host))
@@ -194,6 +221,7 @@ class Analyzer(object):
         return instances
 
     def is_already_exists(self, diction, item):
+        """Return true if item exists in diction."""
         if item in diction:
             return True
 
@@ -201,15 +229,19 @@ class Analyzer(object):
         return False
 
     def compare_rack(self, current_host, first_host):
+        """Compare racks for hosts, return true if racks equal."""
         self.log.log_debug(current_host)
         return self.get_rack(current_host) == self.get_rack(first_host)
 
     def compare_host(self, current_host, first_host):
+        """Compare current to first host, return True if equal."""
         self.log.log_debug(current_host)
         return current_host == first_host
 
     def get_rack(self, host):
+        """Get rack for current host."""
         return (host.split("r")[1])[:2]
 
     def get_host_or_rack(self, level, host):
+        """Return host or rack based on level."""
         return host if level == "host" else self.get_rack(host)

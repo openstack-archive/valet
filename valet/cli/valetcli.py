@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Valet cli."""
+
 import argparse
 import sys
 import valet.cli.groupcli as groupcli
@@ -20,27 +22,36 @@ import valet.cli.groupcli as groupcli
 
 
 class Cli(object):
+    """Cli."""
+
     def __init__(self):
+        """Init cli."""
         self.args = None
         self.submod = None
         self.parser = None
 
     def create_parser(self):
-        self.parser = argparse.ArgumentParser(prog='valet', description='VALET REST CLI')
-        service_sub = self.parser.add_subparsers(dest='service', metavar='<service>')
+        """Create parser."""
+        self.parser = argparse.ArgumentParser(prog='valet',
+                                              description='VALET REST CLI')
+        service_sub = self.parser.add_subparsers(dest='service',
+                                                 metavar='<service>')
         self.submod = {'group': groupcli}
         for s in self.submod.values():
             s.add_to_parser(service_sub)
 
     def parse(self, argv=sys.argv):
+        """Parse args."""
         sys.argv = argv
         self.args = self.parser.parse_args()
 
     def logic(self):
+        """Logic."""
         self.submod[self.args.service].run(self.args)
 
 
 def main(argv):
+    """Main."""
     cli = Cli()
     cli.create_parser()
     cli.parse(argv)

@@ -23,18 +23,19 @@ Throughout this document, the following installation-specific items are
 required. Have values for these prepared and ready before continuing.
 Suggestions for values are provided in this document where applicable.
 
-  Name                          Description                                         Example
-  ----------------------------- --------------------------------------------------- -------------------------------------------
-  `$USER`                       User id                                             `user1234`
-  `$VENV`                       Python virtual environment path (if any)            `/etc/ostro-listener/venv`
-  `$OSTRO_LISTENER_PATH`        Local git repository's `ostro_listener` directory   `/home/user1234/git/allegro/ostro_listener`
-  `$CONFIG_FILE`                Event Listener configuration file                   `/etc/ostro-listener/ostro-listener.conf`
-  `$RABBITMQ_HOST`              RabbitMQ hostname or IP address                     `localhost`
-  `$RABBITMQ_USERNAME`          RabbitMQ username                                   `guest`
-  `$RABBITMQ_PASSWORD_FILE`     Full path to RabbitMQ password file                 `/etc/ostro-listener/passwd`
-  `$MUSIC_URL`                  Music API endpoints and port in URL format          `http://127.0.0.1:8080/`
-  `$MUSIC_KEYSPACE`             Music keyspace                                      `valet`
-  `$MUSIC_REPLICATION_FACTOR`   Music replication factor                            `1`
+| Name | Description | Example |
+|------|-------------|---------|
+| `$USER` | User id | `user1234` |
+| `$VENV` | Python virtual environment path (if any) | `/etc/ostro-listener/venv` |
+| `$OSTRO_LISTENER_PATH` | Local git repository's `ostro_listener` directory | `/home/user1234/git/allegro/ostro_listener` |
+| `$CONFIG_FILE` | Event Listener configuration file | `/etc/ostro-listener/ostro-listener.conf` |
+| `$RABBITMQ_HOST` | RabbitMQ hostname or IP address | `localhost` |
+| `$RABBITMQ_USERNAME` | RabbitMQ username | `guest` |
+| `$RABBITMQ_PASSWORD_FILE` | Full path to RabbitMQ password file | `/etc/ostro-listener/passwd` |
+| `$MUSIC_URL` | Music API endpoints and port in URL format | `http://127.0.0.1:8080/` |
+| `$MUSIC_KEYSPACE` | Music keyspace | `valet` |
+| `$MUSIC_REPLICATION_FACTOR` | Music replication factor | `1` |
+
 
 Root or sufficient sudo privileges are required for some steps.
 
@@ -250,8 +251,3 @@ $ sudo pip uninstall ostro-listener
 
 Remove previously made configuration file changes, files, and other
 settings as needed.
-
-Contact
--------
-
-Joe D'Andrea <jdandrea@research.att.com>

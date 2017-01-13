@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test Plans."""
+
 from uuid import uuid4
 
 from valet.api.db.models import Plan, Placement
@@ -24,18 +26,23 @@ PLAN_NAME = 'ihaveaplan'
 
 
 class TestPlansController(object):
+    """Test Plans Controller Class."""
+
     def test_get_index_no_plans(self, session):
+        """Test getting plans where there are none, should be empty."""
         result = session.app.get('/v1/plans/')
         assert result.status_int == 200
         assert result.json == []
 
     def test_get_index_a_plan(self, session):
+        """Test get a plan using an index, should get a plan name."""
         Plan(PLAN_NAME, STACK_ID)
         session.commit()
         result = session.app.get('/v1/plans/').json
         assert result == [PLAN_NAME]
 
     def test_single_plan_should_have_one_item(self, session):
+        """Test getting a single plan with one item."""
         Plan(PLAN_NAME, STACK_ID)
         session.commit()
         result = session.app.get('/v1/plans/')
@@ -43,6 +50,7 @@ class TestPlansController(object):
         assert len(result.json) == 1
 
     def test_list_a_few_plans(self, session):
+        """Test returning a list of plans."""
         for plan_number in range(20):
             stack_id = str(uuid4())
             Plan('foo_%s' % plan_number, stack_id)
@@ -55,21 +63,26 @@ class TestPlansController(object):
 
 
 class TestPlansItemController(object):
+    """Test Plans Item Controller Class."""
+
     def test_get_index_single_plan(self, session):
+        """Test get index of a single plan."""
         Plan(PLAN_NAME, STACK_ID)
         session.commit()
-        result = session.app.get('/v1/plans/%s/' % (STACK_ID))
+        result = session.app.get('/v1/plans/%s/' % STACK_ID)
         assert result.status_int == 200
 
     def test_get_index_no_plan(self, session):
-        result = session.app.get('/v1/plans/%s/' % (STACK_ID),
+        """Test getting index of no plan, should return 404."""
+        result = session.app.get('/v1/plans/%s/' % STACK_ID,
                                  expect_errors=True)
         assert result.status_int == 404
 
     def test_get_index_single_plan_data(self, session):
+        """Test getting a single plan data."""
         Plan(PLAN_NAME, STACK_ID)
         session.commit()
-        result = session.app.get('/v1/plans/%s/' % (STACK_ID))
+        result = session.app.get('/v1/plans/%s/' % STACK_ID)
         json = result.json
         assert is_valid_uuid4(json['id'])
         assert json['name'] == PLAN_NAME
@@ -77,6 +90,7 @@ class TestPlansItemController(object):
         assert json['stack_id'] == STACK_ID
 
     def test_get_plan_refs(self, session):
+        """Test get plan refs by getting app json result."""
         plan = Plan(PLAN_NAME, STACK_ID)
         Placement(
             'placement_1', str(uuid4()),
@@ -89,7 +103,7 @@ class TestPlansItemController(object):
             location='foo_2'
         )
         session.commit()
-        result = session.app.get('/v1/plans/%s/' % (STACK_ID))
+        result = session.app.get('/v1/plans/%s/' % STACK_ID)
         json = result.json
         assert is_valid_uuid4(json['id'])
         assert json['name'] == PLAN_NAME

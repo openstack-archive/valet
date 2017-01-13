@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Compute."""
 
 from novaclient import client as nova_client
 from oslo_config import cfg
@@ -25,12 +27,21 @@ CONF = cfg.CONF
 
 
 class Compute(object):
+    """Compute Class.
+
+    This class performs functions of setting hosts, availability zones,
+    aggregates, placed vms, resources, flavors, etc.
+
+    Interacts with nova client to perform these actions.
+    """
+
     def __init__(self, _logger):
+        """Compute init."""
         self.logger = _logger
         self.nova = None
 
     def set_hosts(self, _hosts, _logical_groups):
-
+        """Return success if az's, aggregates, vms, resources, all set."""
         self._get_nova_client()
 
         status = self._set_availability_zones(_hosts, _logical_groups)
@@ -56,7 +67,7 @@ class Compute(object):
         return "success"
 
     def _get_nova_client(self):
-        '''Returns a nova client'''
+        """Return a nova client."""
         self.nova = nova_client.Client(VERSION,
                                        CONF.identity.username,
                                        CONF.identity.password,
@@ -86,7 +97,8 @@ class Compute(object):
                         if host.name not in logical_group.vms_per_host.keys():
                             logical_group.vms_per_host[host.name] = []
 
-                        self.logger.info("adding Host LogicalGroup: " + str(host.__dict__))
+                        self.logger.info("adding Host LogicalGroup: " +
+                                         str(host.__dict__))
 
                         _hosts[host.name] = host
 
@@ -114,7 +126,8 @@ class Compute(object):
                     metadata[mk] = a.metadata.get(mk)
                 aggregate.metadata = metadata
 
-                self.logger.info("adding aggregate LogicalGroup: " + str(aggregate.__dict__))
+                self.logger.info("adding aggregate LogicalGroup: " +
+                                 str(aggregate.__dict__))
 
                 _logical_groups[aggregate.name] = aggregate
 
@@ -141,7 +154,8 @@ class Compute(object):
             if result_status == "success":
                 for vm_uuid in vm_uuid_list:
                     vm_detail = []  # (vm_name, az, metadata, status)
-                    result_status_detail = self._get_vm_detail(vm_uuid, vm_detail)
+                    result_status_detail = self._get_vm_detail(vm_uuid,
+                                                               vm_detail)
 
                     if result_status_detail == "success":
                         vm_id = ("none", vm_detail[0], vm_uuid)
@@ -162,7 +176,8 @@ class Compute(object):
             return error_status
 
     def _get_vms_of_host(self, _hk, _vm_list):
-        hypervisor_list = self.nova.hypervisors.search(hypervisor_match=_hk, servers=True)
+        hypervisor_list = self.nova.hypervisors.search(hypervisor_match=_hk,
+                                                       servers=True)
 
         try:
             for hv in hypervisor_list:
@@ -221,6 +236,7 @@ class Compute(object):
         return "success"
 
     def set_flavors(self, _flavors):
+        """Set flavors."""
         error_status = None
 
         self._get_nova_client()
@@ -260,7 +276,8 @@ class Compute(object):
 
                 ephemeral_gb = 0.0
                 if hasattr(f, "OS-FLV-EXT-DATA:ephemeral"):
-                    ephemeral_gb = float(getattr(f, "OS-FLV-EXT-DATA:ephemeral"))
+                    ephemeral_gb = float(getattr(f,
+                                                 "OS-FLV-EXT-DATA:ephemeral"))
 
                 swap_mb = 0.0
                 if hasattr(f, "swap"):

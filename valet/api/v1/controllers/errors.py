@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Errors'''
+"""Errors."""
 
 import logging
 from pecan import expose, request, response
@@ -26,10 +26,9 @@ LOG = logging.getLogger(__name__)
 
 
 def error_wrapper(func):
-    '''Error decorator.'''
+    """Error decorator."""
     def func_wrapper(self, **kw):
-        '''Wrapper.'''
-
+        """Wrapper."""
         kwargs = func(self, **kw)
         status = status_map.get(response.status_code)
         message = getattr(status, 'explanation', '')
@@ -56,12 +55,12 @@ def error_wrapper(func):
 
 # pylint: disable=W0613
 class ErrorsController(object):
-    ''' Errors Controller /errors/{error_name} '''
+    """Error Controller /errors/{error_name}."""
 
     @expose('json')
     @error_wrapper
     def schema(self, **kw):
-        '''400'''
+        """400."""
         request.context['error_message'] = str(request.validation_error)
         response.status = 400
         return request.context.get('kwargs')
@@ -69,13 +68,13 @@ class ErrorsController(object):
     @expose('json')
     @error_wrapper
     def invalid(self, **kw):
-        '''400'''
+        """400."""
         response.status = 400
         return request.context.get('kwargs')
 
     @expose()
     def unauthorized(self, **kw):
-        '''401'''
+        """401."""
         # This error is terse and opaque on purpose.
         # Don't give any clues to help AuthN along.
         response.status = 401
@@ -92,21 +91,21 @@ class ErrorsController(object):
     @expose('json')
     @error_wrapper
     def forbidden(self, **kw):
-        '''403'''
+        """403."""
         response.status = 403
         return request.context.get('kwargs')
 
     @expose('json')
     @error_wrapper
     def not_found(self, **kw):
-        '''404'''
+        """404."""
         response.status = 404
         return request.context.get('kwargs')
 
     @expose('json')
     @error_wrapper
     def not_allowed(self, **kw):
-        '''405'''
+        """405."""
         kwargs = request.context.get('kwargs')
         if kwargs:
             allow = kwargs.get('allow', None)
@@ -118,20 +117,20 @@ class ErrorsController(object):
     @expose('json')
     @error_wrapper
     def conflict(self, **kw):
-        '''409'''
+        """409."""
         response.status = 409
         return request.context.get('kwargs')
 
     @expose('json')
     @error_wrapper
     def server_error(self, **kw):
-        '''500'''
+        """500."""
         response.status = 500
         return request.context.get('kwargs')
 
     @expose('json')
     @error_wrapper
     def unavailable(self, **kw):
-        '''503'''
+        """503."""
         response.status = 503
         return request.context.get('kwargs')

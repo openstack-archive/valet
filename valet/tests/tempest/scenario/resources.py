@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Resources."""
 
 from oslo_log import log as logging
 import traceback
@@ -23,8 +25,10 @@ TEMPLATE_RES = "resources"
 
 
 class TemplateResources(object):
-    ''' Heat template parser '''
+    """Heat template parser."""
+
     def __init__(self, template):
+        """Init heat template parser."""
         self.instances = []
         self.groups = {}
         self.template_data = None
@@ -47,7 +51,10 @@ class TemplateResources(object):
 
 
 class Instance(object):
+    """Nova Instance."""
+
     def __init__(self, doc, instance_name):
+        """Init instance with name, image, flavor, key and call fill."""
         self.resource_name = instance_name
         self.name = None
         self.image = None
@@ -57,6 +64,7 @@ class Instance(object):
         self.fill(doc, instance_name)
 
     def fill(self, doc, instance_name):
+        """Fill instance based on template."""
         try:
             template_property = doc[TEMPLATE_RES][instance_name]["properties"]
 
@@ -69,12 +77,17 @@ class Instance(object):
             LOG.error(traceback.format_exc())
 
     def get_ins(self):
+        """Return instance and its data."""
         return("type: %s, name: %s, image: %s, flavor: %s, resource_name: %s "
-               % (self.type, self.name, self.image, self.flavor, self.resource_name))
+               % (self.type, self.name, self.image, self.flavor,
+                  self.resource_name))
 
 
 class Group(object):
+    """Class representing group object."""
+
     def __init__(self, doc, group_name):
+        """Init group with type, name, level, resources and call fill."""
         self.group_type = None
         self.group_name = None
         self.level = None
@@ -83,11 +96,13 @@ class Group(object):
         self.fill(doc, group_name)
 
     def fill(self, doc, group_name):
+        """Fill group details from template."""
         try:
             template_property = doc[TEMPLATE_RES][group_name]["properties"]
 
             self.group_type = template_property["group_type"]
-            self.group_name = template_property["group_name"] if "group_name" in template_property else None
+            self.group_name = template_property["group_name"] if \
+                "group_name" in template_property else None
             self.level = template_property["level"]
             for res in template_property[TEMPLATE_RES]:
                 self.group_resources.append(res["get_resource"])

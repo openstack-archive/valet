@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Application'''
+"""Application."""
 
 from pecan.deploy import deploy
 from pecan import make_app
@@ -23,7 +23,7 @@ from valet.api.db import models
 
 
 def setup_app(config):
-    """ App Setup """
+    """App Setup."""
     identity.init_identity()
     messaging.init_messaging()
     models.init_model()
@@ -36,6 +36,7 @@ def setup_app(config):
 
 # entry point for apache2
 def load_app(config_file):
+    """App Load."""
     register_conf()
     set_domain(project='valet')
     return deploy(config_file)

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''GroupAssignment Heat Resource Plugin'''
+"""GroupAssignment Heat Resource Plugin."""
 
 from heat.common.i18n import _
 from heat.engine import constraints
@@ -26,15 +26,20 @@ LOG = logging.getLogger(__name__)
 
 
 class GroupAssignment(resource.Resource):
-    ''' A Group Assignment describes one or more resources assigned to a particular type of group.
+    """Group Assignment.
 
-    Assignments can reference other assignments, so long as there are no circular references.
-    There are three types of groups: affinity, diversity, and exclusivity.
-    Exclusivity groups have a unique name, assigned through Valet.
+    Group Assignment describes one or more resources assigned to a
+    particular type of group.
 
-    This resource is purely informational in nature and makes no changes to heat, nova, or cinder.
-    The Valet Heat Lifecycle Plugin passes this information to the optimizer.
-    '''
+    Assignments can reference other assignments, so long as there are no
+    circular references. There are three types of groups: affinity, diversity,
+    and exclusivity. Exclusivity groups have a unique name, assigned through
+    Valet.
+
+    This resource is purely informational in nature and makes no changes to
+    heat, nova, or cinder. The Valet Heat Lifecycle Plugin passes this
+    information to the optimizer.
+    """
 
     _RELATIONSHIP_TYPES = (
         AFFINITY, DIVERSITY, EXCLUSIVITY,
@@ -52,7 +57,7 @@ class GroupAssignment(resource.Resource):
         GROUP_NAME: properties.Schema(
             properties.Schema.STRING,
             _('Group name. Required for exclusivity groups.'),
-            # TODO(JD): Add a custom constraint
+            # TODO(UNKNOWN): Add a custom constraint
             # Constraint must ensure a valid and allowed name
             # when an exclusivity group is in use.
             # This is presently enforced by valet-api and can also
@@ -87,18 +92,19 @@ class GroupAssignment(resource.Resource):
     }
 
     def handle_create(self):
-        '''Create resource'''
+        """Create resource."""
         self.resource_id_set(self.physical_resource_name())
 
-    def handle_update(self, json_snippet, templ_diff, prop_diff):  # pylint: disable=W0613
-        '''Update resource'''
+    def handle_update(self, json_snippet, templ_diff,   # pylint: disable=W0613
+                      prop_diff):
+        """Update resource."""
         self.resource_id_set(self.physical_resource_name())
 
     def handle_delete(self):
-        '''Delete resource'''
+        """Delete resource."""
         self.resource_id_set(None)
 
 
 def resource_mapping():
-    '''Map names to resources.'''
+    """Map names to resources."""
     return {'ATT::Valet::GroupAssignment': GroupAssignment, }

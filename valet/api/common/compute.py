@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Compute helper library'''
+"""Compute helper library."""
 
 from novaclient import client
 from pecan import conf
@@ -23,7 +23,7 @@ VERSION = 2
 
 
 def nova_client():
-    '''Returns a nova client'''
+    """Return a nova client."""
     sess = conf.identity.engine.session
     nova = client.Client(VERSION, session=sess)
     return nova

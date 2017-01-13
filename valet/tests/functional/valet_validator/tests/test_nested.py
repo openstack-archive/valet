@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test Nested."""
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
@@ -30,14 +32,17 @@ LOG = logging.getLogger(__name__)
 
 
 class TestNested(FunctionalTestCase):
+    """Basic setup and functions for nested tests."""
 
     def setUp(self):
-        ''' Adding configuration and logging mechanism '''
+        """Adding configuration and logging mechanism."""
         super(TestNested, self).setUp()
         self.init_template(CONF.test_nested)
 
     def test_nested(self):
+        """Call run_test on stack and give it the path to the template."""
         self.run_test(self.stack_name, self.template_path)
 
     def get_name(self):
+        """Return name."""
         return __name__

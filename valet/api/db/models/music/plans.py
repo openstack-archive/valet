@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Plan Model'''
+"""Plan Model."""
 
 from . import Base, Query
 
 
 class Plan(Base):
-    '''Plan model'''
+    """Plan model."""
+
     __tablename__ = 'plans'
 
     id = None  # pylint: disable=C0103
@@ -28,7 +29,7 @@ class Plan(Base):
 
     @classmethod
     def schema(cls):
-        '''Return schema.'''
+        """Return schema."""
         schema = {
             'id': 'text',
             'name': 'text',
@@ -39,22 +40,22 @@ class Plan(Base):
 
     @classmethod
     def pk_name(cls):
-        '''Primary key name'''
+        """Primary key name."""
         return 'id'
 
     def pk_value(self):
-        '''Primary key value'''
+        """Primary key value."""
         return self.id
 
     def values(self):
-        '''Values'''
+        """Values."""
         return {
             'name': self.name,
             'stack_id': self.stack_id,
         }
 
     def __init__(self, name, stack_id, _insert=True):
-        '''Initializer'''
+        """Initializer."""
         super(Plan, self).__init__()
         self.name = name
         self.stack_id = stack_id
@@ -62,9 +63,8 @@ class Plan(Base):
             self.insert()
 
     def placements(self):
-        '''Return list of placements'''
-
-        # TODO(JD): Make this a property?
+        """Return list of placements."""
+        # TODO(UNKNOWN): Make this a property?
         all_results = Query("Placement").all()
         results = []
         for placement in all_results:
@@ -74,15 +74,15 @@ class Plan(Base):
 
     @property
     def orchestration_ids(self):
-        '''Return list of orchestration IDs'''
+        """Return list of orchestration IDs."""
         return list(set([p.orchestration_id for p in self.placements()]))
 
     def __repr__(self):
-        '''Object representation'''
+        """Object representation."""
         return '<Plan %r>' % self.name
 
     def __json__(self):
-        '''JSON representation'''
+        """JSON representation."""
         json_ = {}
         json_['id'] = self.id
         json_['stack_id'] = self.stack_id

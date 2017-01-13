@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Root'''
+"""Root."""
 
 import logging
 
@@ -31,32 +31,32 @@ LOG = logging.getLogger(__name__)
 
 
 class RootController(object):
-    ''' Root Controller / '''
+    """Root Controller."""
 
     errors = ErrorsController()
     v1 = V1Controller()  # pylint: disable=C0103
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'GET'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Get canonical URL for each version'''
+        """Get canonical URL for each version."""
         ver = {
             "versions":
             [
@@ -78,7 +78,7 @@ class RootController(object):
 
     @error_wrapper
     def error(self, status):
-        '''Error handler'''
+        """Error handler."""
         try:
             status = int(status)
         except ValueError:  # pragma: no cover

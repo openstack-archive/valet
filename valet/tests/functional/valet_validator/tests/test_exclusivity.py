@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test Exclusivity."""
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
@@ -30,14 +32,17 @@ LOG = logging.getLogger(__name__)
 
 
 class TestExclusivity(FunctionalTestCase):
+    """Test Exclusivity Function Test."""
 
     def setUp(self):
-        ''' Initiating template '''
+        """Initiating template."""
         super(TestExclusivity, self).setUp()
         self.init_template(CONF.test_exclusivity)
 
     def test_exclusivity(self):
+        """Nested run test on stack_name and template_path."""
         self.run_test(self.stack_name, self.template_path)
 
     def get_name(self):
+        """Return name."""
         return __name__

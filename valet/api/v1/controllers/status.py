@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Status'''
+"""Status."""
 
 import logging
 
@@ -28,11 +28,11 @@ LOG = logging.getLogger(__name__)
 
 
 class StatusController(object):
-    ''' Status Controller /v1/status '''
+    """Status Controller /v1/status."""
 
     @classmethod
     def _ping_ostro(cls):
-        '''Ping Ostro'''
+        """Ping Ostro."""
         ostro = Ostro()
         ostro.ping()
         ostro.send()
@@ -40,7 +40,7 @@ class StatusController(object):
 
     @classmethod
     def _ping(cls):
-        '''Ping each subsystem.'''
+        """Ping each subsystem."""
         ostro_response = StatusController._ping_ostro()
         # TODO(JD): Ping Music plus any others.
 
@@ -54,32 +54,31 @@ class StatusController(object):
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'HEAD,GET'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='HEAD', template='json')
     def index_head(self):
-        '''Ping each subsystem and return summary response'''
+        """Ping each subsystem and return summary response."""
         self._ping()  # pylint: disable=W0612
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Ping each subsystem and return detailed response'''
-
+        """Ping each subsystem and return detailed response."""
         _response = self._ping()
         response.status = 200
         return _response

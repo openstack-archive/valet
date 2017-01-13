@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Resources."""
+
 from oslo_log import log as logging
 import traceback
 import yaml
@@ -23,8 +25,10 @@ TEMPLATE_RES = "resources"
 
 
 class TemplateResources(object):
-    ''' Heat template parser '''
+    """Heat template parser."""
+
     def __init__(self, template):
+        """Init Template resources."""
         self.instances = []
         self.groups = {}
         self.template_data = None
@@ -47,7 +51,10 @@ class TemplateResources(object):
 
 
 class Instance(object):
+    """Contains instance details from template (name, image, flavor, etc)."""
+
     def __init__(self, doc, instance_name):
+        """Init Instance Object."""
         self.resource_name = instance_name
         self.name = None
         self.image = None
@@ -57,6 +64,7 @@ class Instance(object):
         self.fill(doc, instance_name)
 
     def fill(self, doc, instance_name):
+        """Fill Instance details from template properties."""
         try:
             template_property = doc[TEMPLATE_RES][instance_name]["properties"]
 
@@ -69,12 +77,17 @@ class Instance(object):
             LOG.error(traceback.format_exc())
 
     def get_ins(self):
+        """Return instance data."""
         return("type: %s, name: %s, image: %s, flavor: %s, resource_name: %s "
-               % (self.type, self.name, self.image, self.flavor, self.resource_name))
+               % (self.type, self.name, self.image,
+                  self.flavor, self.resource_name))
 
 
 class Group(object):
+    """Class containing group details (type, name, resources) from template."""
+
     def __init__(self, doc, group_name):
+        """Init Group Object."""
         self.group_type = None
         self.group_name = None
         self.level = None
@@ -83,11 +96,13 @@ class Group(object):
         self.fill(doc, group_name)
 
     def fill(self, doc, group_name):
+        """Fill group from template properties."""
         try:
             template_property = doc[TEMPLATE_RES][group_name]["properties"]
 
             self.group_type = template_property["group_type"]
-            self.group_name = template_property["group_name"] if "group_name" in template_property else None
+            self.group_name = template_property["group_name"] \
+                if "group_name" in template_property else None
             self.level = template_property["level"]
             for res in template_property[TEMPLATE_RES]:
                 self.group_resources.append(res["get_resource"])

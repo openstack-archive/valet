@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test Affinity 3 Instances."""
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
@@ -29,14 +31,17 @@ LOG = logging.getLogger(__name__)
 
 
 class TestAffinity_3(FunctionalTestCase):
+    """Test Affinity 3 Functional Test."""
 
     def setUp(self):
-        ''' Adding configuration and logging mechanism '''
+        """Adding configuration and logging mechanism."""
         super(TestAffinity_3, self).setUp()
         self.init_template(CONF.test_affinity_3)
 
     def test_affinity(self):
+        """Test Affinity."""
         self.run_test(self.stack_name, self.template_path)
 
     def get_name(self):
+        """Return Name."""
         return __name__

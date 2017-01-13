@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Hooks'''
+"""Hooks."""
 
 import json
 import logging
@@ -31,8 +31,10 @@ LOG = logging.getLogger(__name__)
 
 
 class MessageNotificationHook(PecanHook):
-    '''Send API request/responses out as Oslo msg notifications.'''
+    """Send API request/responses out as Oslo msg notifications."""
+
     def after(self, state):
+        """Function sends valet notification."""
         self.dummy = True
         LOG.info('sending notification')
         notifier = conf.messaging.notifier
@@ -44,7 +46,8 @@ class MessageNotificationHook(PecanHook):
         else:
             notifier_fn = notifier.error
 
-        ctxt = {}  # Not using this just yet.
+        # Not using this just yet.
+        ctxt = {}
 
         request_path = state.request.path
 
@@ -86,7 +89,8 @@ class MessageNotificationHook(PecanHook):
             }
         }
 
-        # notifier_fn blocks in case rabbit mq is down - it prevents Valet API to return its response :(
+        # notifier_fn blocks in case rabbit mq is down
+        # it prevents Valet API to return its response
         # send the notification in a different thread
         notifier_thread = threading.Thread(target=notifier_fn, args=(ctxt, event_type, payload))
         notifier_thread.start()
@@ -99,10 +103,11 @@ class MessageNotificationHook(PecanHook):
 
 
 class NotFoundHook(PecanHook):
-    '''Catchall 'not found' hook for API'''
+    """Catchall 'not found' hook for API."""
+
     def on_error(self, state, exc):
+        """Redirect to app-specific not_found endpoint if 404 only."""
         self.dummy = True
-        '''Redirects to app-specific not_found endpoint if 404 only'''
         if isinstance(exc, webob.exc.WSGIHTTPException) and exc.code == 404:
             message = _('The resource could not be found.')
             error('/errors/not_found', message)

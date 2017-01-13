@@ -1,18 +1,19 @@
-#!/usr/bin/env python
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Test Members."""
 
 from tempest import test
 from tempest_lib.common.utils import data_utils
@@ -20,12 +21,15 @@ from valet.tests.tempest.api import base
 
 
 class ValetGroupsMembersTest(base.BaseValetTest):
+    """Test for Valet Groups and Members."""
 
     @classmethod
     def setup_clients(cls):
+        """Setup client for Valet client and tenants."""
         super(ValetGroupsMembersTest, cls).setup_clients()
         cls.client = cls.valet_client
-        cls.TenantsClient = getattr(cls.os, "tenants_client", cls.os.identity_client)
+        cls.TenantsClient = getattr(cls.os, "tenants_client",
+                                    cls.os.identity_client)
 
     def _create_group(self):
         group_name = data_utils.rand_name('membergroup')
@@ -43,13 +47,15 @@ class ValetGroupsMembersTest(base.BaseValetTest):
     def _create_tenant(self):
         tenant_name = data_utils.rand_name(name='tenant')
         tenant_desc = data_utils.rand_name(name='desc')
-        body = self.TenantsClient.create_tenant(name=tenant_name, description=tenant_desc)
+        body = self.TenantsClient.create_tenant(name=tenant_name,
+                                                description=tenant_desc)
         tenant_id = body['tenant']['id']
         self.addCleanup(self.TenantsClient.delete_tenant, tenant_id)
         return tenant_id
 
     @test.idempotent_id('5aeec320-65d5-11e6-8b77-86f30ca893d3')
     def test_add_single_member_to_a_group(self):
+        """Add single member to group, do comparison to verify."""
         # Create a tenant
         tenants = []
         tenant_id = self._create_tenant()
@@ -69,6 +75,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
 
     @test.idempotent_id('5aeec6f4-65d5-11e6-8b77-86f30ca893d3')
     def test_add_multiple_members_to_a_group(self):
+        """Add multiple members to group, check items equality to verify."""
         # Create multiple tenants
         tenants = []
         for count in range(0, 4):
@@ -90,6 +97,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
 
     @test.idempotent_id('5aeec8b6-65d5-11e6-8b77-86f30ca893d3')
     def test_add_single_member_to_a_group_and_verify_membership(self):
+        """Add a memer to a group, verify membership by checking status."""
         # Create a tenant
         tenants = []
         tenant_id = self._create_tenant()
@@ -105,6 +113,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
 
     @test.idempotent_id('5aeec99c-65d5-11e6-8b77-86f30ca893d3')
     def test_delete_member_from_group(self):
+        """Test deleting a single member from group, check status to verify."""
         # Create multiple tenants
         tenants = []
         for count in range(0, 4):
@@ -121,6 +130,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
 
     @test.idempotent_id('5aeecb68-65d5-11e6-8b77-86f30ca893d3')
     def test_delete_all_members_from_group(self):
+        """Test that all members deleted from group, check status to verify."""
         # Create multiple tenants
         tenants = []
         for count in range(0, 4):

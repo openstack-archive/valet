@@ -28,15 +28,6 @@ Valet1.0/Ostro features
     load spikes of tenant applications. Later, we will deploy more
     dynamic mechanism in the future version of Ostro.
 
--   High availability Ostro replicas run as active-passive way. When
-    active Ostro fails, automatically the passive one is activated via
-    HAValet. All data is updated in MUSIC database at runtime whenever
-    it is changed. When the passive Ostro is activated, it gets data
-    from MUSIC to initialize its status rather than from OpenStack.
-    Ostro also takes ping messages to show if it is alive or not.
-
 -   Runtime update via the Oslo message bus or RO Working on this.
 
 -   Migration tip Working on this.
-
-

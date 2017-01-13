@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Populate command'''
+"""Populate command."""
 
 from pecan.commands.base import BaseCommand
 
@@ -29,14 +29,15 @@ from valet.api.db.models import Plan
 
 
 def out(string):
-    '''Output helper'''
+    """Output helper."""
     print("==> %s" % string)
 
 
 class PopulateCommand(BaseCommand):
-    '''Load a pecan environment and initializate the database.'''
+    """Load a pecan environment and initializate the database."""
 
     def run(self, args):
+        """Function creates and initializes database and environment."""
         super(PopulateCommand, self).run(args)
         out(_("Loading environment"))
         register_conf()

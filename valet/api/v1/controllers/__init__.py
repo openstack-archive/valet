@@ -1,22 +1,19 @@
-# -*- encoding: utf-8 -*-
 #
-# Copyright (c) 2014-2016 AT&T
+# Copyright 2014-2017 AT&T Intellectual Property
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied.
-#
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Controllers Package'''
+"""Controllers Package."""
 
 import logging
 from notario.decorators import instance_of
@@ -36,7 +33,7 @@ LOG = logging.getLogger(__name__)
 #
 
 def valid_group_name(value):
-    '''Validator for group name type.'''
+    """Validator for group name type."""
     if not value or not set(value) <= set(string.letters + string.digits + "-._~"):
         LOG.error("group name is not valid")
         LOG.error("group name must contain only uppercase and lowercase letters, decimal digits, \
@@ -45,12 +42,12 @@ def valid_group_name(value):
 
 @instance_of((list, dict))
 def valid_plan_resources(value):
-    '''Validator for plan resources.'''
+    """Validator for plan resources."""
     ensure(len(value) > 0)
 
 
 def valid_plan_update_action(value):
-    '''Validator for plan update action.'''
+    """Validator for plan update action."""
     assert value in ['update', 'migrate'], _("must be update or migrate")
 
 #
@@ -59,7 +56,7 @@ def valid_plan_update_action(value):
 
 
 def set_placements(plan, resources, placements):
-    '''Set placements'''
+    """Set placements."""
     for uuid in placements.iterkeys():
         name = resources[uuid]['name']
         properties = placements[uuid]['properties']
@@ -70,11 +67,11 @@ def set_placements(plan, resources, placements):
 
 
 def reserve_placement(placement, resource_id=None, reserve=True, update=True):
-    ''' Reserve placement. Can optionally set the physical resource id.
+    """Reserve placement. Can optionally set the physical resource id.
 
     Set reserve=False to unreserve. Set update=False to not update
     the data store (if the update will be made later).
-    '''
+    """
     if placement:
         LOG.info(_('%(rsrv)s placement of %(orch_id)s in %(loc)s.'),
                  {'rsrv': _("Reserving") if reserve else _("Unreserving"),
@@ -92,7 +89,7 @@ def reserve_placement(placement, resource_id=None, reserve=True, update=True):
 
 
 def update_placements(placements, reserve_id=None, unlock_all=False):
-    '''Update placements. Optionally reserve one placement.'''
+    """Update placements. Optionally reserve one placement."""
     for uuid in placements.iterkeys():
         placement = Placement.query.filter_by(  # pylint: disable=E1101
             orchestration_id=uuid).first()
@@ -119,7 +116,7 @@ def update_placements(placements, reserve_id=None, unlock_all=False):
 #
 
 def error(url, msg=None, **kwargs):
-    '''Error handler'''
+    """Error handler."""
     if msg:
         request.context['error_message'] = msg
     if kwargs:

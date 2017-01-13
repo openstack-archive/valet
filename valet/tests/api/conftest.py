@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Conf Test - Test config file (app, connection, session, etc)."""
+
 from copy import deepcopy
 import os
 from pecan import conf
@@ -33,12 +35,14 @@ BIND = 'mysql+pymysql://root:password@127.0.0.1'
 
 
 def config_file():
+    """Return config file."""
     here = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(here, 'config.py')
 
 
 @pytest.fixture(scope='session')
 def app(request):
+    """Return test app based on config file."""
     config = configuration.conf_from_file(config_file()).to_dict()
 
     # Add the appropriate connection string to the app config.
@@ -60,8 +64,10 @@ def connection(app, request):
     print("=" * 80)
     print("CREATING TEMPORARY DATABASE FOR TESTS")
     print("=" * 80)
-    subprocess.call(['mysqladmin', '-f', '-uroot', '-ppassword', 'drop', DBNAME])
-    subprocess.call(['mysqladmin', '-f', '-uroot', '-ppassword', 'create', DBNAME])
+    subprocess.call(['mysqladmin', '-f', '-uroot', '-ppassword', 'drop',
+                     DBNAME])
+    subprocess.call(['mysqladmin', '-f', '-uroot', '-ppassword', 'create',
+                     DBNAME])
 
     # Bind and create the database tables
     _db.clear()
@@ -94,7 +100,7 @@ def connection(app, request):
 
 @pytest.fixture(scope='function')
 def session(connection, request):
-    """Creates a new database session for a test."""
+    """Create new database session for a test."""
     _config = configuration.conf_from_file(config_file()).to_dict()
     config = deepcopy(_config)
 
@@ -137,11 +143,16 @@ def session(connection, request):
 
 
 class TestApp(object):
-    """ A controller test starts a database transaction and creates a fake WSGI app. """
+    """Test App Class.
+
+    A controller test starts a database transaction
+    and creates a fake WSGI app.
+    """
 
     __headers__ = {}
 
     def __init__(self, app):
+        """Init Test App."""
         self.app = app
 
     def _do_request(self, url, method='GET', **kwargs):
@@ -156,7 +167,7 @@ class TestApp(object):
         return methods.get(method, self.app.get)(str(url), **kwargs)
 
     def post_json(self, url, **kwargs):
-        """ note:
+        """Post json.
 
         @param (string) url - The URL to emulate a POST request to
         @returns (paste.fixture.TestResponse)
@@ -164,7 +175,7 @@ class TestApp(object):
         return self._do_request(url, 'POSTJ', **kwargs)
 
     def post(self, url, **kwargs):
-        """ note:
+        """Post.
 
         @param (string) url - The URL to emulate a POST request to
         @returns (paste.fixture.TestResponse)
@@ -172,7 +183,7 @@ class TestApp(object):
         return self._do_request(url, 'POST', **kwargs)
 
     def get(self, url, **kwargs):
-        """ note:
+        """Get.
 
         @param (string) url - The URL to emulate a GET request to
         @returns (paste.fixture.TestResponse)
@@ -180,7 +191,7 @@ class TestApp(object):
         return self._do_request(url, 'GET', **kwargs)
 
     def put(self, url, **kwargs):
-        """ note:
+        """Put.
 
         @param (string) url - The URL to emulate a PUT request to
         @returns (paste.fixture.TestResponse)
@@ -188,7 +199,7 @@ class TestApp(object):
         return self._do_request(url, 'PUT', **kwargs)
 
     def delete(self, url, **kwargs):
-        """ note:
+        """Delete.
 
         @param (string) url - The URL to emulate a DELETE request to
         @returns (paste.fixture.TestResponse)

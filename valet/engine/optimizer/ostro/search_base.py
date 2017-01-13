@@ -1,39 +1,67 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup, VM, Volume, LEVELS
+"""Resources utlized by search engine."""
+
+from valet.engine.optimizer.app_manager.app_topology_base \
+    import VGroup, VM, Volume, LEVELS
 
 
 class Resource(object):
+    """Resource."""
 
     def __init__(self):
-        self.level = None                   # level of placement
+        """Initialization."""
+        # level of placement
+        self.level = None
 
         self.host_name = None
-        self.host_memberships = {}          # all mapped logical groups to host
-        self.host_vCPUs = 0                 # original total vCPUs before overcommit
-        self.host_avail_vCPUs = 0           # remaining vCPUs after overcommit
-        self.host_mem = 0                   # original total mem cap before overcommit
-        self.host_avail_mem = 0             # remaining mem cap after
-        self.host_local_disk = 0            # original total local disk cap before overcommit
-        self.host_avail_local_disk = 0      # remaining local disk cap after overcommit
-        self.host_avail_switches = {}       # all mapped switches to host
-        self.host_avail_storages = {}       # all mapped storage_resources to host
-        self.host_num_of_placed_vms = 0     # the number of vms currently placed in this host
 
-        self.rack_name = None               # where this host is located
+        # all mapped logical groups to host
+        self.host_memberships = {}
+
+        # original total vCPUs before overcommit
+        self.host_vCPUs = 0
+
+        # remaining vCPUs after overcommit
+        self.host_avail_vCPUs = 0
+
+        # original total mem cap before overcommit
+        self.host_mem = 0
+
+        # remaining mem cap after
+        self.host_avail_mem = 0
+
+        # original total local disk cap before overcommit
+        self.host_local_disk = 0
+
+        # remaining local disk cap after overcommit
+        self.host_avail_local_disk = 0
+
+        # all mapped switches to host
+        self.host_avail_switches = {}
+
+        # all mapped storage_resources to host
+        self.host_avail_storages = {}
+
+        # the number of vms currently placed in this host
+        self.host_num_of_placed_vms = 0
+
+        # where this host is located
+        self.rack_name = None
+
         self.rack_memberships = {}
         self.rack_vCPUs = 0
         self.rack_avail_vCPUs = 0
@@ -41,11 +69,18 @@ class Resource(object):
         self.rack_avail_mem = 0
         self.rack_local_disk = 0
         self.rack_avail_local_disk = 0
-        self.rack_avail_switches = {}       # all mapped switches to rack
-        self.rack_avail_storages = {}       # all mapped storage_resources to rack
+
+        # all mapped switches to rack
+        self.rack_avail_switches = {}
+
+        # all mapped storage_resources to rack
+        self.rack_avail_storages = {}
+
         self.rack_num_of_placed_vms = 0
 
-        self.cluster_name = None            # where this host and rack are located
+        # where this host and rack are located
+        self.cluster_name = None
+
         self.cluster_memberships = {}
         self.cluster_vCPUs = 0
         self.cluster_avail_vCPUs = 0
@@ -53,15 +88,24 @@ class Resource(object):
         self.cluster_avail_mem = 0
         self.cluster_local_disk = 0
         self.cluster_avail_local_disk = 0
-        self.cluster_avail_switches = {}    # all mapped switches to cluster
-        self.cluster_avail_storages = {}    # all mapped storage_resources to cluster
+
+        # all mapped switches to cluster
+        self.cluster_avail_switches = {}
+
+        # all mapped storage_resources to cluster
+        self.cluster_avail_storages = {}
         self.cluster_num_of_placed_vms = 0
 
-        self.storage = None                 # selected best storage for volume among host_avail_storages
+        # selected best storage for volume among host_avail_storages
+        self.storage = None
 
-        self.sort_base = 0                  # order to place
+        # order to place
+        self.sort_base = 0
 
     def get_common_placement(self, _resource):
+        """Get common placement level."""
+        """Get the common level between this resource and the one
+        provided."""
         level = None
 
         if self.cluster_name != _resource.cluster_name:
@@ -78,6 +122,7 @@ class Resource(object):
         return level
 
     def get_resource_name(self, _level):
+        """Get the name of this resource at the specified level."""
         name = "unknown"
 
         if _level == "cluster":
@@ -90,6 +135,7 @@ class Resource(object):
         return name
 
     def get_memberships(self, _level):
+        """Get the memberships of this resource at the specified level."""
         memberships = None
 
         if _level == "cluster":
@@ -102,6 +148,7 @@ class Resource(object):
         return memberships
 
     def get_num_of_placed_vms(self, _level):
+        """Get the number of placed vms of this resource at the specified level."""
         num_of_vms = 0
 
         if _level == "cluster":
@@ -114,6 +161,7 @@ class Resource(object):
         return num_of_vms
 
     def get_avail_resources(self, _level):
+        """Get the available vCPUs, memory, local disk of this resource at the specified level."""
         avail_vCPUs = 0
         avail_mem = 0
         avail_local_disk = 0
@@ -134,6 +182,7 @@ class Resource(object):
         return (avail_vCPUs, avail_mem, avail_local_disk)
 
     def get_local_disk(self, _level):
+        """Get the local disk and available local disk of this resource at the specified level."""
         local_disk = 0
         avail_local_disk = 0
 
@@ -150,6 +199,7 @@ class Resource(object):
         return (local_disk, avail_local_disk)
 
     def get_vCPUs(self, _level):
+        """Get the vCPUs and available vCPUs of this resource at the specified level."""
         vCPUs = 0
         avail_vCPUs = 0
 
@@ -166,6 +216,7 @@ class Resource(object):
         return (vCPUs, avail_vCPUs)
 
     def get_mem(self, _level):
+        """Get the memory and available memory of this resource at the specified level."""
         mem = 0
         avail_mem = 0
 
@@ -182,6 +233,7 @@ class Resource(object):
         return (mem, avail_mem)
 
     def get_avail_storages(self, _level):
+        """Get the available storages of this resource at the specified level."""
         avail_storages = None
 
         if _level == "cluster":
@@ -194,6 +246,7 @@ class Resource(object):
         return avail_storages
 
     def get_avail_switches(self, _level):
+        """Get the available switches of this resource at the specified level."""
         avail_switches = None
 
         if _level == "cluster":
@@ -207,20 +260,26 @@ class Resource(object):
 
 
 class LogicalGroupResource(object):
+    """LogicalGroupResource."""
 
     def __init__(self):
+        """Initialization."""
         self.name = None
         self.group_type = "AGGR"
 
         self.metadata = {}
 
         self.num_of_placed_vms = 0
-        self.num_of_placed_vms_per_host = {}   # key = host (i.e., id of host or rack), value = num_of_placed_vms
+
+        # key = host (i.e., id of host or rack), value = num_of_placed_vms
+        self.num_of_placed_vms_per_host = {}
 
 
 class StorageResource(object):
+    """StorageResource."""
 
     def __init__(self):
+        """Initialization."""
         self.storage_name = None
         self.storage_class = None
         self.storage_avail_disk = 0
@@ -229,8 +288,10 @@ class StorageResource(object):
 
 
 class SwitchResource(object):
+    """SwitchResource."""
 
     def __init__(self):
+        """Initialization."""
         self.switch_name = None
         self.switch_type = None
         self.avail_bandwidths = []          # out-bound bandwidths
@@ -239,13 +300,16 @@ class SwitchResource(object):
 
 
 class Node(object):
+    """Node."""
 
     def __init__(self):
+        """Initialization."""
         self.node = None                    # VM, Volume, or VGroup
 
         self.sort_base = -1
 
     def get_all_links(self):
+        """Return a list of links for vms, volumes, and/or vgroups."""
         link_list = []
 
         if isinstance(self.node, VM):
@@ -263,6 +327,7 @@ class Node(object):
         return link_list
 
     def get_bandwidth_of_link(self, _link):
+        """Return bandwidth of link."""
         bandwidth = 0
 
         if isinstance(self.node, VGroup) or isinstance(self.node, VM):
@@ -276,6 +341,7 @@ class Node(object):
         return bandwidth
 
     def get_common_diversity(self, _diversity_groups):
+        """Return the common level of the given diversity groups."""
         common_level = "ANY"
 
         for dk in self.node.diversity_groups.keys():
@@ -290,16 +356,19 @@ class Node(object):
         return common_level
 
     def get_affinity_id(self):
+        """Return the affinity id."""
         aff_id = None
 
-        if isinstance(self.node, VGroup) and self.node.vgroup_type == "AFF" and \
-           self.node.name != "any":
+        if isinstance(self.node, VGroup) and \
+                self.node.vgroup_type == "AFF" and \
+                self.node.name != "any":
             aff_id = self.node.level + ":" + self.node.name
 
         return aff_id
 
 
 def compute_reservation(_level, _placement_level, _bandwidth):
+    """Compute and return the reservation."""
     reservation = 0
 
     if _placement_level != "ANY":

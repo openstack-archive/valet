@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Generic Daemon."""
 
 import atexit
 import os
@@ -21,12 +23,14 @@ import time
 
 
 class Daemon(object):
-    """ A generic daemon class.
+    """A generic daemon class."""
 
-    Usage: subclass the Daemon class and override the run() method
+    """Usage: subclass the Daemon class and override the run() method
     """
 
-    def __init__(self, priority, pidfile, logger, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
+    def __init__(self, priority, pidfile, logger, stdin='/dev/null',
+                 stdout='/dev/null', stderr='/dev/null'):
+        """Initialization."""
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
@@ -35,9 +39,9 @@ class Daemon(object):
         self.logger = logger
 
     def daemonize(self):
-        """ Do the UNIX double-fork magic, see Stevens' "Advanced
-
-        Programming in the UNIX Environment" for details (ISBN 0201563177)
+        """Do the UNIX double-fork magic."""
+        """See Stevens' "Advanced Programming in the UNIX Environment"
+        for details. (ISBN 0201563177).
         http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
         """
         try:
@@ -47,7 +51,8 @@ class Daemon(object):
                 sys.exit(0)
         except OSError as e:
             self.logger.error("Daemon error at step1: " + e.strerror)
-            sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
+            sys.stderr.write("fork #1 failed: %d (%s)\n" %
+                             (e.errno, e.strerror))
             sys.exit(1)
 
         # decouple from parent environment
@@ -63,7 +68,8 @@ class Daemon(object):
                 sys.exit(0)
         except OSError as e:
             self.logger.error("Daemon error at step2: " + e.strerror)
-            sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
+            sys.stderr.write("fork #2 failed: %d (%s)\n" %
+                             (e.errno, e.strerror))
             sys.exit(1)
 
         # redirect standard file descriptors
@@ -82,10 +88,11 @@ class Daemon(object):
         file(self.pidfile, 'w+').write("%s\n" % pid)
 
     def delpid(self):
+        """Remove pidfile."""
         os.remove(self.pidfile)
 
     def getpid(self):
-        """returns the content of pidfile or None."""
+        """Return the content of pidfile or None."""
         try:
             pf = file(self.pidfile, 'r')
             pid = int(pf.read().strip())
@@ -95,7 +102,7 @@ class Daemon(object):
         return pid
 
     def checkpid(self, pid):
-        """ Check For the existence of a unix pid. """
+        """Check for the existence of a UNIX pid."""
         if pid is None:
             return False
 
@@ -108,7 +115,7 @@ class Daemon(object):
             return True
 
     def start(self):
-        """Start the daemon"""
+        """Start thedaemon."""
         # Check for a pidfile to see if the daemon already runs
         pid = self.getpid()
 
@@ -122,7 +129,7 @@ class Daemon(object):
         self.run()
 
     def stop(self):
-        """Stop the daemon"""
+        """Stop the daemon."""
         # Get the pid from the pidfile
         pid = self.getpid()
 
@@ -146,12 +153,12 @@ class Daemon(object):
                 sys.exit(1)
 
     def restart(self):
-        """Restart the daemon"""
+        """Restart the daemon."""
         self.stop()
         self.start()
 
     def status(self):
-        """ returns instance's priority """
+        """Return instance's priority."""
         # Check for a pidfile to see if the daemon already runs
         pid = self.getpid()
 
@@ -161,13 +168,14 @@ class Daemon(object):
             message = "status: pidfile %s exist. Daemon is running\n"
             status = self.priority
         else:
-            message = "status: pidfile %s does not exist. Daemon is not running\n"
+            message = "status: pidfile %s does not exist. Daemon is not " \
+                      "running\n"
 
         sys.stderr.write(message % self.pidfile)
         return status
 
     def run(self):
-        """ You should override this method when you subclass Daemon.
-
-        It will be called after the process has been daemonized by start() or restart().
+        """You should override this method when you subclass Daemon."""
+        """It will be called after the process has been daemonized by
+        start() or restart().
         """

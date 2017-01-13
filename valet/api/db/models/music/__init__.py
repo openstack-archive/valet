@@ -1,22 +1,19 @@
-# -*- encoding: utf-8 -*-
 #
-# Copyright (c) 2014-2016 AT&T
+# Copyright 2014-2017 AT&T Intellectual Property
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-# implied.
-#
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Music ORM - Common Methods'''
+"""Music ORM - Common Methods"""
 
 from abc import ABCMeta, abstractmethod
 import inspect
@@ -28,7 +25,7 @@ from valet.api.db.models.music.music import Music
 
 
 def get_class(kls):
-    '''Returns a class given a fully qualified class name'''
+    """Returns a class given a fully qualified class name"""
     parts = kls.split('.')
     module = ".".join(parts[:-1])
     mod = __import__(module)
@@ -38,7 +35,7 @@ def get_class(kls):
 
 
 class abstractclassmethod(classmethod):  # pylint: disable=C0103,R0903
-    '''Abstract Class Method from Python 3.3's abc module'''
+    """Abstract Class Method from Python 3.3's abc module"""
 
     __isabstractmethod__ = True
 
@@ -48,28 +45,28 @@ class abstractclassmethod(classmethod):  # pylint: disable=C0103,R0903
 
 
 class ClassPropertyDescriptor(object):  # pylint: disable=R0903
-    '''Supports the notion of a class property'''
+    """Supports the notion of a class property"""
 
     def __init__(self, fget, fset=None):
-        '''Initializer'''
+        """Initializer"""
         self.fget = fget
         self.fset = fset
 
     def __get__(self, obj, klass=None):
-        '''Get attribute'''
+        """Get attribute"""
         if klass is None:
             klass = type(obj)
         return self.fget.__get__(obj, klass)()
 
     def __set__(self, obj, value):
-        '''Set attribute'''
+        """Set attribute"""
         if not self.fset:
             raise AttributeError(_("Can't set attribute"))
         type_ = type(obj)
         return self.fset.__get__(obj, type_)(value)
 
     def setter(self, func):
-        '''Setter'''
+        """Setter"""
         if not isinstance(func, (classmethod, staticmethod)):
             func = classmethod(func)
         self.fset = func
@@ -77,7 +74,7 @@ class ClassPropertyDescriptor(object):  # pylint: disable=R0903
 
 
 def classproperty(func):
-    '''Class Property decorator'''
+    """Class Property decorator"""
     if not isinstance(func, (classmethod, staticmethod)):
         func = classmethod(func)
 
@@ -85,36 +82,36 @@ def classproperty(func):
 
 
 class Results(list):
-    '''Query results'''
+    """Query results"""
 
     def __init__(self, *args, **kwargs):  # pylint: disable=W0613
-        '''Initializer'''
+        """Initializer"""
         super(Results, self).__init__(args[0])
 
     def all(self):
-        '''Return all'''
+        """Return all"""
         return self
 
     def first(self):
-        '''Return first'''
+        """Return first"""
         if len(self) > 0:
             return self[0]
 
 
 @six.add_metaclass(ABCMeta)
 class Base(object):
-    ''' A custom declarative base that provides some Elixir-inspired shortcuts. '''
+    """ A custom declarative base that provides some Elixir-inspired shortcuts. """
 
     __tablename__ = None
 
     @classproperty
     def query(cls):  # pylint: disable=E0213
-        '''Return a query object a la sqlalchemy'''
+        """Return a query object a la sqlalchemy"""
         return Query(cls)
 
     @classmethod
     def __kwargs(cls):
-        '''Return common keyword args'''
+        """Return common keyword args"""
         keyspace = conf.music.get('keyspace')
         kwargs = {
             'keyspace': keyspace,
@@ -124,33 +121,33 @@ class Base(object):
 
     @classmethod
     def create_table(cls):
-        '''Create table'''
+        """Create table"""
         kwargs = cls.__kwargs()
         kwargs['schema'] = cls.schema()
         conf.music.engine.create_table(**kwargs)
 
     @abstractclassmethod
     def schema(cls):
-        '''Return schema'''
+        """Return schema"""
         return cls()
 
     @abstractclassmethod
     def pk_name(cls):
-        '''Primary key name'''
+        """Primary key name"""
         return cls()
 
     @abstractmethod
     def pk_value(self):
-        '''Primary key value'''
+        """Primary key value"""
         pass
 
     @abstractmethod
     def values(self):
-        '''Values'''
+        """Values"""
         pass
 
     def insert(self):
-        '''Insert row'''
+        """Insert row"""
         kwargs = self.__kwargs()
         kwargs['values'] = self.values()
         pk_name = self.pk_name()
@@ -161,7 +158,7 @@ class Base(object):
         conf.music.engine.create_row(**kwargs)
 
     def update(self):
-        '''Update row'''
+        """Update row"""
         kwargs = self.__kwargs()
         kwargs['pk_name'] = self.pk_name()
         kwargs['pk_value'] = self.pk_value()
@@ -169,7 +166,7 @@ class Base(object):
         conf.music.engine.update_row_eventually(**kwargs)
 
     def delete(self):
-        '''Delete row'''
+        """Delete row"""
         kwargs = self.__kwargs()
         kwargs['pk_name'] = self.pk_name()
         kwargs['pk_value'] = self.pk_value()
@@ -177,26 +174,26 @@ class Base(object):
 
     @classmethod
     def filter_by(cls, **kwargs):
-        '''Filter objects'''
+        """Filter objects"""
         return cls.query.filter_by(**kwargs)  # pylint: disable=E1101
 
     def flush(self, *args, **kwargs):
-        '''Flush changes to storage'''
+        """Flush changes to storage"""
         # TODO(JD): Implement in music? May be a no-op
         pass
 
     def as_dict(self):
-        '''Return object representation as a dictionary'''
+        """Return object representation as a dictionary"""
         return dict((k, v) for k, v in self.__dict__.items()
                     if not k.startswith('_'))
 
 
 class Query(object):
-    '''Data Query'''
+    """Data Query"""
     model = None
 
     def __init__(self, model):
-        '''Initializer'''
+        """Initializer"""
         if inspect.isclass(model):
             self.model = model
         elif isinstance(model, basestring):
@@ -204,7 +201,7 @@ class Query(object):
         assert inspect.isclass(self.model)
 
     def __kwargs(self):
-        '''Return common keyword args'''
+        """Return common keyword args"""
         keyspace = conf.music.get('keyspace')
         kwargs = {
             'keyspace': keyspace,
@@ -213,7 +210,7 @@ class Query(object):
         return kwargs
 
     def __rows_to_objects(self, rows):
-        '''Convert query response rows to objects'''
+        """Convert query response rows to objects"""
         results = []
         pk_name = self.model.pk_name()  # pylint: disable=E1101
         for __, row in rows.iteritems():  # pylint: disable=W0612
@@ -224,13 +221,13 @@ class Query(object):
         return Results(results)
 
     def all(self):
-        '''Return all objects'''
+        """Return all objects"""
         kwargs = self.__kwargs()
         rows = conf.music.engine.read_all_rows(**kwargs)
         return self.__rows_to_objects(rows)
 
     def filter_by(self, **kwargs):
-        '''Filter objects'''
+        """Filter objects"""
         # Music doesn't allow filtering on anything but the primary key.
         # We need to get all items and then go looking for what we want.
         all_items = self.all()
@@ -250,14 +247,14 @@ class Query(object):
 
 
 def init_model():
-    '''Data Store Initialization'''
+    """Data Store Initialization"""
     conf.music.engine = _engine_from_config(conf.music)
     keyspace = conf.music.get('keyspace')
     conf.music.engine.create_keyspace(keyspace)
 
 
 def _engine_from_config(configuration):
-    '''Create database engine object based on configuration'''
+    """Create database engine object based on configuration"""
     configuration = dict(configuration)
     kwargs = {
         'host': configuration.get('host'),
@@ -268,36 +265,30 @@ def _engine_from_config(configuration):
 
 
 def start():
-    '''Start transaction'''
+    """Start transaction"""
     pass
 
 
 def start_read_only():
-    '''Start read-only transaction'''
+    """Start read-only transaction"""
     start()
 
 
 def commit():
-    '''Commit transaction'''
+    """Commit transaction"""
     pass
 
 
 def rollback():
-    '''Rollback transaction'''
+    """Rollback transaction"""
     pass
 
 
 def clear():
-    '''Clear transaction'''
+    """Clear transaction"""
     pass
 
 
 def flush():
-    '''Flush to disk'''
+    """Flush to disk"""
     pass
-
-
-from valet.api.db.models.music.groups import Group
-from valet.api.db.models.music.ostro import PlacementRequest, PlacementResult, Event
-from valet.api.db.models.music.placements import Placement
-from valet.api.db.models.music.plans import Plan

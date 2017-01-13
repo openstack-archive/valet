@@ -1,18 +1,19 @@
-#!/usr/bin/env python
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Disabled Test Plan."""
 
 from tempest import test
 from tempest_lib.common.utils import data_utils
@@ -20,9 +21,11 @@ from valet.tests.tempest.api import base
 
 
 class ValetPlanTest(base.BaseValetTest):
+    """Test plan operations for valet plans."""
 
     @classmethod
     def setup_clients(cls):
+        """Setup Valet client for Plan Test."""
         super(ValetPlanTest, cls).setup_clients()
         cls.client = cls.valet_client
 
@@ -40,7 +43,7 @@ class ValetPlanTest(base.BaseValetTest):
 
     def _get_resource_property(self):
         properties = {}
-        # TODO(kr336r): Use tempest to get/create flavour, image, networks
+        # TODO(UNKNOWN): Use tempest to get/create flavour, image, networks
         # Is it required really ???
         properties['flavor'] = "m1.small"
         properties['image'] = "ubuntu_1204"
@@ -75,7 +78,9 @@ class ValetPlanTest(base.BaseValetTest):
         plan_name = resp['plan']['name']
         for key, value in resp['plan']['placements'].iteritems():
             stack_and_plan['resource_id'] = key
-        location = resp['plan']['placements'][stack_and_plan['resource_id']]['location']
+        location = resp['plan']['placements'][
+            stack_and_plan['resource_id']
+        ]['location']
         stack_and_plan['stack_id'] = stack_id
         stack_and_plan['plan_id'] = plan_id
         stack_and_plan['name'] = plan_name
@@ -84,6 +89,7 @@ class ValetPlanTest(base.BaseValetTest):
 
     @test.idempotent_id('f25ea766-c91e-40ca-b96c-dff42129803d')
     def test_create_plan(self):
+        """Test plan was created by asserting stack_id and plan_name equal."""
         stack_and_plan = self._get_stack_and_plan_id()
         stack_id = stack_and_plan['stack_id']
         plan_id = stack_and_plan['plan_id']
@@ -93,6 +99,7 @@ class ValetPlanTest(base.BaseValetTest):
 
     @test.idempotent_id('973635f4-b5c9-4b78-81e7-d273e1782afc')
     def test_update_plan_action_migrate(self):
+        """Test plan updated successfully."""
         stack_and_plan = self._get_stack_and_plan_id()
         stack_id = stack_and_plan['stack_id']
         plan_id = stack_and_plan['plan_id']

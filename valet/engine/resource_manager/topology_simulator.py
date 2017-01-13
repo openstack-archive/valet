@@ -1,29 +1,36 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# - Simulate datacenter configurations (i.e., layout, cabling)
+"""Simulate datacenter configurations (i.e., layout, cabling)."""
 
-from valet.engine.resource_manager.resource_base import HostGroup, Host, Switch, Link
+from valet.engine.resource_manager.resource_base \
+    import HostGroup, Host, Switch, Link
 
 
 class SimTopology(object):
+    """Simulate Topology class.
+
+    Sim network and host topology for datacenters.
+    """
 
     def __init__(self, _config):
+        """Init."""
         self.config = _config
 
     def set_topology(self, _datacenter, _host_groups, _hosts, _switches):
+        """Return success after setting network and host topology."""
         self._set_network_topology(_switches)
         self._set_host_topology(_datacenter, _host_groups, _hosts, _switches)
 
@@ -64,7 +71,8 @@ class SimTopology(object):
                     ps = None
                     if (s_num % 2) == 0:
                         if (s_num + 1) < self.config.num_of_spine_switches:
-                            ps = _switches[root_switch.name + "s" + str(s_num + 1)]
+                            ps = _switches[root_switch.name + "s" +
+                                           str(s_num + 1)]
                     else:
                         ps = _switches[root_switch.name + "s" + str(s_num - 1)]
                     if ps is not None:
@@ -80,7 +88,8 @@ class SimTopology(object):
             parent_switch_list = []
             if self.config.num_of_spine_switches > 0:
                 for s_num in range(0, self.config.num_of_spine_switches):
-                    parent_switch_list.append(_switches[root_switch.name + "s" + str(s_num)])
+                    parent_switch_list.append(_switches[root_switch.name +
+                                                        "s" + str(s_num)])
             else:
                 parent_switch_list.append(_switches[root_switch.name])
 

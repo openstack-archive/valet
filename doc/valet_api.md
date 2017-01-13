@@ -4,7 +4,7 @@ Valet gives OpenStack the ability to optimize cloud resources while simultaneous
 
 This document covers installation of valet-api, the API engine used to interact with Valet.
 
-**IMPORTANT**: [Overall Installation of Valet is covered in a separate document](https://github.com/att-comdev/valet/blob/master/doc/valet_os.md). These instructions are to be used by the Bedminster and Tel Aviv development teams.
+**IMPORTANT**: [Overall Installation of Valet is covered in a separate document](https://github.com/att-comdev/valet/blob/master/doc/valet_os.md).
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ Prior to installation:
 * Ubuntu 14.04 LTS
 * Python 2.7.6 with pip
 * An OpenStack Kilo cloud
-* Music 6.0
+* [Music](https://github.com/att-comdev/valet) 6.0
 * [Ostro](https://github.com/att-comdev/valet/blob/master/doc/ostro.md) 2.0
 
 Throughout this document, the following installation-specific items are required. Have values for these prepared and ready before continuing. Suggestions for values are provided in this document where applicable.
@@ -249,7 +249,3 @@ $ sudo pip uninstall valet-api
 ```
 
 Remove previously made configuration file changes, OpenStack user accounts, and other settings as needed.
-
-## Contact
-
-Joe D'Andrea <jdandrea@research.att.com>

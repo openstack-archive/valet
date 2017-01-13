@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Groups'''
+"""Groups."""
 
 import logging
 
@@ -48,7 +48,7 @@ MEMBERS_SCHEMA = (
 
 
 def server_list_for_group(group):
-    '''Returns a list of VMs associated with a member/group.'''
+    """Return a list of VMs associated with a member/group."""
     args = {
         "type": "group_vms",
         "parameters": {
@@ -72,7 +72,7 @@ def server_list_for_group(group):
 
 
 def tenant_servers_in_group(tenant_id, group):
-    ''' Returns a list of servers the current tenant has in group_name '''
+    """Return a list of servers the current tenant has in group_name."""
     servers = []
     server_list = server_list_for_group(group)
     nova = nova_client()
@@ -89,20 +89,23 @@ def tenant_servers_in_group(tenant_id, group):
 
 
 def no_tenant_servers_in_group(tenant_id, group):
-    ''' Verify no servers from tenant_id are in group.
+    """Verify no servers from tenant_id are in group.
 
     Throws a 409 Conflict if any are found.
-    '''
+    """
     server_list = tenant_servers_in_group(tenant_id, group)
     if server_list:
-        error('/errors/conflict', _('Tenant Member {0} has servers in group "{1}": {2}').format(tenant_id, group.name, server_list))
+        error('/errors/conflict', _('Tenant Member {0} has servers in group '
+                                    '"{1}": {2}').format(tenant_id,
+                                                         group.name,
+                                                         server_list))
 
 
 class MembersItemController(object):
-    ''' Members Item Controller /v1/groups/{group_id}/members/{member_id} '''
+    """Member Item Controller /v1/groups/{group_id}/members/{member_id}."""
 
     def __init__(self, member_id):
-        '''Initialize group member'''
+        """Initialize group member."""
         group = request.context['group']
         if member_id not in group.members:
             error('/errors/not_found', _('Member not found in group'))
@@ -110,30 +113,30 @@ class MembersItemController(object):
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'GET,DELETE'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catch all for unallowed methods'''
+        """Catch all for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Verify group member'''
+        """Verify group member."""
         response.status = 204
 
     @index.when(method='DELETE', template='json')
     def index_delete(self):
-        '''Delete group member'''
+        """Delete group member."""
         group = request.context['group']
         member_id = request.context['member_id']
 
@@ -146,34 +149,35 @@ class MembersItemController(object):
 
 
 class MembersController(object):
-    ''' Members Controller /v1/groups/{group_id}/members '''
+    """Members Controller /v1/groups/{group_id}/members."""
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'PUT,DELETE'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='PUT', template='json')
     @validate(MEMBERS_SCHEMA, '/errors/schema')
     def index_put(self, **kwargs):
-        '''Add one or more members to a group'''
+        """Add one or more members to a group."""
         new_members = kwargs.get('members', None)
 
         if not conf.identity.engine.is_tenant_list_valid(new_members):
-            error('/errors/conflict', _('Member list contains invalid tenant IDs'))
+            error('/errors/conflict', _('Member list contains '
+                                        'invalid tenant IDs'))
 
         group = request.context['group']
         group.members = list(set(group.members + new_members))
@@ -186,7 +190,7 @@ class MembersController(object):
 
     @index.when(method='DELETE', template='json')
     def index_delete(self):
-        '''Delete all group members'''
+        """Delete all group members."""
         group = request.context['group']
 
         # Can't delete a member if it has associated VMs.
@@ -199,49 +203,50 @@ class MembersController(object):
 
     @expose()
     def _lookup(self, member_id, *remainder):
-        '''Pecan subcontroller routing callback'''
+        """Pecan subcontroller routing callback."""
         return MembersItemController(member_id), remainder
 
 
 class GroupsItemController(object):
-    ''' Groups Item Controller /v1/groups/{group_id} '''
+    """Group Item Controller /v1/groups/{group_id}."""
 
     members = MembersController()
 
     def __init__(self, group_id):
-        '''Initialize group'''
-        group = Group.query.filter_by(id=group_id).first()  # pylint: disable=E1101
+        """Initialize group."""
+        # pylint:disable=E1101
+        group = Group.query.filter_by(id=group_id).first()
         if not group:
             error('/errors/not_found', _('Group not found'))
         request.context['group'] = group
 
     @classmethod
     def allow(cls):
-        ''' Allowed methods '''
+        """Allowed methods."""
         return 'GET,PUT,DELETE'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Display a group'''
+        """Display a group."""
         return {"group": request.context['group']}
 
     @index.when(method='PUT', template='json')
     @validate(UPDATE_GROUPS_SCHEMA, '/errors/schema')
     def index_put(self, **kwargs):
-        '''Update a group'''
+        """Update a group."""
         # Name and type are immutable.
         # Group Members are updated in MembersController.
         group = request.context['group']
@@ -255,7 +260,7 @@ class GroupsItemController(object):
 
     @index.when(method='DELETE', template='json')
     def index_delete(self):
-        '''Delete a group'''
+        """Delete a group."""
         group = request.context['group']
         if isinstance(group.members, list) and len(group.members) > 0:
             error('/errors/conflict', _('Unable to delete a Group with members.'))
@@ -264,29 +269,29 @@ class GroupsItemController(object):
 
 
 class GroupsController(object):
-    ''' Groups Controller /v1/groups '''
+    """Group Controller /v1/groups."""
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'GET,POST'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catch all for unallowed methods'''
+        """Catch all for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''List groups'''
+        """List groups."""
         groups_array = []
         for group in Group.query.all():  # pylint: disable=E1101
             groups_array.append(group)
@@ -295,7 +300,7 @@ class GroupsController(object):
     @index.when(method='POST', template='json')
     @validate(GROUPS_SCHEMA, '/errors/schema')
     def index_post(self, **kwargs):
-        '''Create a group'''
+        """Create a group."""
         group_name = kwargs.get('name', None)
         description = kwargs.get('description', None)
         group_type = kwargs.get('type', None)
@@ -314,5 +319,5 @@ class GroupsController(object):
 
     @expose()
     def _lookup(self, group_id, *remainder):
-        '''Pecan subcontroller routing callback'''
+        """Pecan subcontroller routing callback."""
         return GroupsItemController(group_id), remainder

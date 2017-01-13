@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Ostro helper library'''
+"""Ostro helper library."""
 
 import json
 import logging
@@ -42,13 +42,13 @@ EXCLUSIVITY = 'exclusivity'
 
 
 def _log(text, title="Ostro"):
-    '''Log helper'''
+    """Log helper."""
     log_text = "%s: %s" % (title, text)
     LOG.debug(log_text)
 
 
 class Ostro(object):
-    '''Ostro optimization engine helper class.'''
+    """Ostro optimization engine helper class."""
 
     args = None
     request = None
@@ -56,12 +56,15 @@ class Ostro(object):
     error_uri = None
     tenant_id = None
 
-    tries = None  # Number of times to poll for placement.
-    interval = None  # Interval in seconds to poll for placement.
+    # Number of times to poll for placement.
+    tries = None
+
+    # Interval in seconds to poll for placement.
+    interval = None
 
     @classmethod
     def _build_error(cls, message):
-        '''Build an Ostro-style error message'''
+        """Build an Ostro-style error message."""
         if not message:
             message = _("Unknown error")
         error = {
@@ -74,7 +77,7 @@ class Ostro(object):
 
     @classmethod
     def _build_uuid_map(cls, resources):
-        '''Build a dict mapping names to UUIDs.'''
+        """Build a dict mapping names to UUIDs."""
         mapping = {}
         for key in resources.iterkeys():
             if 'name' in resources[key]:
@@ -84,7 +87,7 @@ class Ostro(object):
 
     @classmethod
     def _sanitize_resources(cls, resources):
-        '''Ensure lowercase keys at the top level of each resource.'''
+        """Ensure lowercase keys at the top level of each resource."""
         for res in resources.itervalues():
             for key in list(res.keys()):
                 if not key.islower():
@@ -92,12 +95,12 @@ class Ostro(object):
         return resources
 
     def __init__(self):
-        '''Initializer'''
+        """Initializer."""
         self.tries = conf.music.get('tries', 10)
         self.interval = conf.music.get('interval', 1)
 
     def _map_names_to_uuids(self, mapping, data):
-        '''Map resource names to their UUID equivalents.'''
+        """Map resource names to their UUID equivalents."""
         if isinstance(data, dict):
             for key in data.iterkeys():
                 if key != 'name':
@@ -110,11 +113,11 @@ class Ostro(object):
         return data
 
     def _prepare_resources(self, resources):
-        ''' Pre-digests resource data for use by Ostro.
+        """Pre-digest resource data for use by Ostro.
 
         Maps Heat resource names to Orchestration UUIDs.
         Ensures exclusivity groups exist and have tenant_id as a member.
-        '''
+        """
         mapping = self._build_uuid_map(resources)
         ostro_resources = self._map_names_to_uuids(mapping, resources)
         self._sanitize_resources(ostro_resources)
@@ -126,8 +129,7 @@ class Ostro(object):
 
     # TODO(JD): This really belongs in valet-engine once it exists.
     def _send(self, stack_id, request):
-        '''Send request.'''
-
+        """Send request."""
         # Creating the placement request effectively enqueues it.
         PlacementRequest(stack_id=stack_id, request=request)  # pylint: disable=W0612
 
@@ -149,13 +151,13 @@ class Ostro(object):
         return json.dumps(response)
 
     def _verify_groups(self, resources, tenant_id):
-        ''' Verifies group settings. Returns an error status dict if the
+        """Verify group settings.
 
-        group type is invalid, if a group name is used when the type
-        is affinity or diversity, if a nonexistant exclusivity group
-        is found, or if the tenant is not a group member.
-        Returns None if ok.
-        '''
+        Returns an error status dict if the group type is invalid, if a
+        group name is used when the type is affinity or diversity, if a
+        nonexistant exclusivity group is found, or if the tenant
+        is not a group member. Returns None if ok.
+        """
         message = None
         for res in resources.itervalues():
             res_type = res.get('type')
@@ -167,13 +169,17 @@ class Ostro(object):
                    group_type == DIVERSITY:
                     if group_name:
                         self.error_uri = '/errors/conflict'
-                        message = _("%s must not be used when {0} is '{1}'. ").format(GROUP_NAME, GROUP_TYPE, group_type)
+                        message = _("%s must not be used when"
+                                    " {0} is '{1}'.").format(GROUP_NAME,
+                                                             GROUP_TYPE,
+                                                             group_type)
                         break
                 elif group_type == EXCLUSIVITY:
                     message = self._verify_exclusivity(group_name, tenant_id)
                 else:
                     self.error_uri = '/errors/invalid'
-                    message = _("{0} '{1}' is invalid.").format(GROUP_TYPE, group_type)
+                    message = _("{0} '{1}' is invalid.").format(GROUP_TYPE,
+                                                                group_type)
                     break
         if message:
             return self._build_error(message)
@@ -182,7 +188,9 @@ class Ostro(object):
         return_message = None
         if not group_name:
             self.error_uri = '/errors/invalid'
-            return _("%s must be used when {0} is '{1}'.").format(GROUP_NAME, GROUP_TYPE, EXCLUSIVITY)
+            return _("%s must be used when {0} is '{1}'.").format(GROUP_NAME,
+                                                                  GROUP_TYPE,
+                                                                  EXCLUSIVITY)
 
         group = Group.query.filter_by(  # pylint: disable=E1101
             name=group_name).first()
@@ -191,15 +199,19 @@ class Ostro(object):
             return_message = "%s '%s' not found" % (GROUP_NAME, group_name)
         elif group and tenant_id not in group.members:
             self.error_uri = '/errors/conflict'
-            return_message = _("Tenant ID %s not a member of {0} '{1}' ({2})").format(self.tenant_id, GROUP_NAME, group.name, group.id)
+            return_message = _("Tenant ID %s not a member of "
+                               "{0} '{1}' ({2})").format(self.tenant_id,
+                                                         GROUP_NAME,
+                                                         group.name,
+                                                         group.id)
         return return_message
 
     def build_request(self, **kwargs):
-        ''' Build an Ostro request. If False is returned,
+        """Build an Ostro request.
 
-        the response attribute contains status as to the error.
-        '''
-
+        If False is returned then the response attribute contains
+        status as to the error.
+        """
         # TODO(JD): Refactor this into create and update methods?
         self.args = kwargs.get('args')
         self.tenant_id = kwargs.get('tenant_id')
@@ -235,7 +247,7 @@ class Ostro(object):
         return True
 
     def is_request_serviceable(self):
-        ''' Returns true if the request has at least one serviceable resource. '''
+        """Return true if request has at least one serviceable resource."""
         # TODO(JD): Ostro should return no placements vs throw an error.
         resources = self.request.get('resources', {})
         for res in resources.itervalues():
@@ -245,7 +257,7 @@ class Ostro(object):
         return False
 
     def ping(self):
-        '''Send a ping request and obtain a response.'''
+        """Send a ping request and obtain a response."""
         stack_id = str(uuid.uuid4())
         self.args = {'stack_id': stack_id}
         self.response = None
@@ -256,7 +268,7 @@ class Ostro(object):
         }
 
     def replan(self, **kwargs):
-        '''Replan a placement.'''
+        """Replan a placement."""
         self.args = kwargs.get('args')
         self.response = None
         self.error_uri = None
@@ -269,7 +281,7 @@ class Ostro(object):
         }
 
     def migrate(self, **kwargs):
-        '''Replan the placement for an existing resource.'''
+        """Replan the placement for an existing resource."""
         self.args = kwargs.get('args')
         self.response = None
         self.error_uri = None
@@ -281,7 +293,7 @@ class Ostro(object):
         }
 
     def query(self, **kwargs):
-        '''Send a query.'''
+        """Send a query."""
         stack_id = str(uuid.uuid4())
         self.args = kwargs.get('args')
         self.args['stack_id'] = stack_id
@@ -295,7 +307,7 @@ class Ostro(object):
         }
 
     def send(self):
-        '''Send the request and obtain a response.'''
+        """Send the request and obtain a response."""
         request_json = json.dumps([self.request])
 
         # TODO(JD): Pass timeout value?

@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Placement Model'''
+"""Placement Model."""
 
 from . import Base, Query
 
 
 class Placement(Base):
-    '''Placement Model'''
+    """Placement Model."""
+
     __tablename__ = 'placements'
 
     id = None  # pylint: disable=C0103
@@ -32,7 +33,7 @@ class Placement(Base):
 
     @classmethod
     def schema(cls):
-        '''Return schema.'''
+        """Return schema."""
         schema = {
             'id': 'text',
             'name': 'text',
@@ -47,15 +48,15 @@ class Placement(Base):
 
     @classmethod
     def pk_name(cls):
-        '''Primary key name'''
+        """Primary key name."""
         return 'id'
 
     def pk_value(self):
-        '''Primary key value'''
+        """Primary key value."""
         return self.id
 
     def values(self):
-        '''Values'''
+        """Values."""
         return {
             'name': self.name,
             'orchestration_id': self.orchestration_id,
@@ -67,7 +68,7 @@ class Placement(Base):
 
     def __init__(self, name, orchestration_id, resource_id=None, plan=None,
                  plan_id=None, location=None, reserved=False, _insert=True):
-        '''Initializer'''
+        """Initializer."""
         super(Placement, self).__init__()
         self.name = name
         self.orchestration_id = orchestration_id
@@ -82,11 +83,11 @@ class Placement(Base):
             self.insert()
 
     def __repr__(self):
-        '''Object representation'''
+        """Object representation."""
         return '<Placement %r>' % self.name
 
     def __json__(self):
-        '''JSON representation'''
+        """JSON representation."""
         json_ = {}
         json_['id'] = self.id
         json_['name'] = self.name

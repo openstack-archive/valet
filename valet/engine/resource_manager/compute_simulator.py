@@ -1,28 +1,37 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from valet.engine.resource_manager.resource_base import Host, LogicalGroup, Flavor
+"""Compute Simulator."""
+
+from valet.engine.resource_manager.resource_base \
+    import Host, LogicalGroup, Flavor
 
 
 class SimCompute(object):
+    """Sim Compute Class.
+
+    This class simulates a compute datacenter using classes from resource_base.
+    """
 
     def __init__(self, _config):
+        """Init Sim Compute class (object)."""
         self.config = _config
         self.datacenter_name = "sim"
 
     def set_hosts(self, _hosts, _logical_groups):
+        """Set hosts and logical groups using resource_base, return success."""
         self._set_availability_zones(_hosts, _logical_groups)
 
         self._set_aggregates(_hosts, _logical_groups)
@@ -40,7 +49,8 @@ class SimCompute(object):
 
         for r_num in range(0, self.config.num_of_racks):
             for h_num in range(0, self.config.num_of_hosts_per_rack):
-                host = Host(self.datacenter_name + "0r" + str(r_num) + "c" + str(h_num))
+                host = Host(self.datacenter_name + "0r" + str(r_num) +
+                            "c" + str(h_num))
                 host.tag.append("nova")
                 host.memberships["nova"] = logical_group
 
@@ -63,9 +73,11 @@ class SimCompute(object):
             aggregate = _logical_groups["aggregate" + str(a_num)]
             for r_num in range(0, self.config.num_of_racks):
                 for h_num in range(0, self.config.num_of_hosts_per_rack):
-                    host_name = self.datacenter_name + "0r" + str(r_num) + "c" + str(h_num)
+                    host_name = self.datacenter_name + "0r" + str(r_num) +\
+                        "c" + str(h_num)
                     if host_name in _hosts.keys():
-                        if (h_num % (self.config.aggregated_ratio + a_num)) == 0:
+                        if (h_num %
+                                (self.config.aggregated_ratio + a_num)) == 0:
                             host = _hosts[host_name]
                             host.memberships[aggregate.name] = aggregate
 
@@ -77,23 +89,28 @@ class SimCompute(object):
     def _set_resources(self, _hosts):
         for r_num in range(0, self.config.num_of_racks):
             for h_num in range(0, self.config.num_of_hosts_per_rack):
-                host_name = self.datacenter_name + "0r" + str(r_num) + "c" + str(h_num)
+                host_name = self.datacenter_name + "0r" + str(r_num) +\
+                    "c" + str(h_num)
                 if host_name in _hosts.keys():
                     host = _hosts[host_name]
                     host.original_vCPUs = float(self.config.cpus_per_host)
                     host.vCPUs_used = 0.0
                     host.original_mem_cap = float(self.config.mem_per_host)
                     host.free_mem_mb = host.original_mem_cap
-                    host.original_local_disk_cap = float(self.config.disk_per_host)
+                    host.original_local_disk_cap = \
+                        float(self.config.disk_per_host)
                     host.free_disk_gb = host.original_local_disk_cap
                     host.disk_available_least = host.original_local_disk_cap
 
     def set_flavors(self, _flavors):
+        """Set flavors in compute sim, return success."""
         for f_num in range(0, self.config.num_of_basic_flavors):
             flavor = Flavor("bflavor" + str(f_num))
             flavor.vCPUs = float(self.config.base_flavor_cpus * (f_num + 1))
             flavor.mem_cap = float(self.config.base_flavor_mem * (f_num + 1))
-            flavor.disk_cap = float(self.config.base_flavor_disk * (f_num + 1)) + 10.0 + 20.0 / 1024.0
+            flavor.disk_cap = \
+                float(self.config.base_flavor_disk * (f_num + 1)) + \
+                10.0 + 20.0 / 1024.0
 
             _flavors[flavor.name] = flavor
 

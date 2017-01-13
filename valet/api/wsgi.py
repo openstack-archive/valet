@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''WSGI Wrapper'''
+"""WSGI Wrapper."""
 
 from common.i18n import _
 import os
@@ -21,7 +21,7 @@ from pecan.deploy import deploy
 
 
 def config_file(file_name=None):
-    """Returns absolute location of the config file"""
+    """Return absolute location of the config file."""
     file_name = file_name or 'config.py'
     _file = os.path.abspath(__file__)
 
@@ -32,7 +32,7 @@ def config_file(file_name=None):
 
 
 def application(environ, start_response):
-    """Returns a WSGI app object"""
+    """Return a WSGI app object."""
     wsgi_app = deploy(config_file('prod.py'))
     return wsgi_app(environ, start_response)
 
@@ -45,7 +45,8 @@ if __name__ == '__main__':
     from valet.api.conf import register_conf, set_domain
     register_conf()
     set_domain()
-    HTTPD = make_server('', 8090, deploy(config_file('/var/www/valet/config.py')))
+    HTTPD = make_server('', 8090,
+                        deploy(config_file('/var/www/valet/config.py')))
     print(_("Serving HTTP on port 8090..."))
 
     # Respond to requests until process is killed

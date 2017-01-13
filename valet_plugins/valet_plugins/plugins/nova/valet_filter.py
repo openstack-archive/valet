@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Valet Nova Scheduler Filter'''
+"""Valet Nova Scheduler Filter."""
 
 from keystoneclient.v2_0 import client
 
@@ -31,7 +31,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ValetFilter(filters.BaseHostFilter):
-    '''Filter on Valet assignment.'''
+    """Filter on Valet assignment."""
 
     # Host state does not change within a request
     run_filter_once_per_request = True
@@ -40,7 +40,7 @@ class ValetFilter(filters.BaseHostFilter):
     _auth_token = None
 
     def __init__(self):
-        '''Initializer'''
+        """Initializer."""
         self.api = valet_api.ValetAPIWrapper()
         self.opt_group_str = 'valet'
         self.opt_failure_mode_str = 'failure_mode'
@@ -51,7 +51,7 @@ class ValetFilter(filters.BaseHostFilter):
         self._register_opts()
 
     def _authorize(self):
-        '''Keystone AuthN'''
+        """Keystone AuthN."""
         opt = getattr(cfg.CONF, self.opt_group_str)
         project_name = opt[self.opt_project_name_str]
         username = opt[self.opt_username_str]
@@ -68,32 +68,38 @@ class ValetFilter(filters.BaseHostFilter):
         self._auth_token = keystone_client.auth_token
 
     def _is_same_host(self, host, location):  # pylint: disable=R0201
-        '''Returns true if host matches location'''
+        """Return true if host matches location."""
         return host == location
 
     def _register_opts(self):
-        '''Register Options'''
+        """Register Options."""
         opts = []
-        option = cfg.StrOpt(self.opt_failure_mode_str, choices=['reject', 'yield'], default='reject',
-                            help=_('Mode to operate in if Valet planning fails for any reason.'))
+        option = cfg.StrOpt(
+            self.opt_failure_mode_str,
+            choices=['reject', 'yield'],
+            default='reject',
+            help=_('Mode to operate in if Valet planning fails for any reason.'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_project_name_str, default=None, help=_('Valet Project Name'))
+        option = cfg.StrOpt(self.opt_project_name_str, default=None,
+                            help=_('Valet Project Name'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_username_str, default=None, help=_('Valet Username'))
+        option = cfg.StrOpt(self.opt_username_str, default=None,
+                            help=_('Valet Username'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_password_str, default=None, help=_('Valet Password'))
+        option = cfg.StrOpt(self.opt_password_str, default=None,
+                            help=_('Valet Password'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_auth_uri_str, default=None, help=_('Keystone Authorization API Endpoint'))
+        option = cfg.StrOpt(self.opt_auth_uri_str, default=None,
+                            help=_('Keystone Authorization API Endpoint'))
         opts.append(option)
 
         opt_group = cfg.OptGroup(self.opt_group_str)
         cfg.CONF.register_group(opt_group)
         cfg.CONF.register_opts(opts, group=opt_group)
 
-    # TODO(JD): Factor out common code between this and the cinder filter
+    # TODO(UNKNOWN): Factor out common code between this and the cinder filter
     def filter_all(self, filter_obj_list, filter_properties):
-        '''Filter all hosts in one swell foop'''
-
+        """Filter all hosts in one swell foop."""
         hints_key = 'scheduler_hints'
         orch_id_key = 'heat_resource_uuid'
 
@@ -115,14 +121,15 @@ class ValetFilter(filters.BaseHostFilter):
 
         if orch_id_key not in filter_properties.get(hints_key, {}):
             self._authorize()
-            LOG.warn(_LW("Valet: Heat Stack Lifecycle Scheduler Hints not found. Performing ad-hoc placement."))
+            LOG.warn(_LW("Valet: Heat Stack Lifecycle Scheduler Hints not "
+                         "found. Performing ad-hoc placement."))
             ad_hoc = True
 
             # We'll need the flavor.
             instance_type = filter_properties.get('instance_type')
             flavor = instance_type.get('name')
 
-            # Beacuse this wasn't orchestrated, there's no stack.
+            # Because this wasn't orchestrated, there's no stack.
             # We're going to compose a resource as if there as one.
             # In this particular case we use the physical
             # resource id as both the orchestration and stack id.
@@ -150,10 +157,12 @@ class ValetFilter(filters.BaseHostFilter):
                 'resources': resources
             }
             try:
-                response = self.api.plans_create(None, plan, auth_token=self._auth_token)
+                response = self.api.plans_create(None, plan,
+                                                 auth_token=self._auth_token)
             except Exception:
-                # TODO(JD): Get context from exception
-                LOG.error(_LE("Valet did not respond to ad hoc placement request."))
+                # TODO(UNKNOWN): Get context from exception
+                LOG.error(_LE("Valet did not respond to ad hoc placement "
+                              "request."))
                 response = None
 
             if response and response.get('plan'):
@@ -165,9 +174,11 @@ class ValetFilter(filters.BaseHostFilter):
                         location = placement['location']
 
             if not location:
-                LOG.error(_LE("Valet ad-hoc placement unknown for resource id %s.") % res_id)
+                LOG.error(_LE("Valet ad-hoc placement unknown for resource id "
+                              "%s.") % res_id)
                 if failure_mode == 'yield':
-                    LOG.warn(_LW("Valet will yield to Nova for placement decisions."))
+                    LOG.warn(_LW("Valet will yield to Nova for placement "
+                                 "decisions."))
                     yield_all = True
                 else:
                     yield_all = False
@@ -177,7 +188,8 @@ class ValetFilter(filters.BaseHostFilter):
             hosts = [obj.host for obj in filter_obj_list]
 
             try:
-                response = self.api.placement(orch_id, res_id, hosts=hosts, auth_token=self._auth_token)
+                response = self.api.placement(orch_id, res_id, hosts=hosts,
+                                              auth_token=self._auth_token)
             except Exception:
                 print("Exception in creating placement")
                 LOG.error(_LW("Valet did not respond to placement request."))
@@ -190,10 +202,12 @@ class ValetFilter(filters.BaseHostFilter):
                     location = placement['location']
 
             if not location:
-                # TODO(JD): Get context from exception
-                LOG.error(_LE("Valet placement unknown for resource id {0}, orchestration id {1}.").format(res_id, orch_id))
+                # TODO(UNKNOWN): Get context from exception
+                LOG.error(_LE("Valet placement unknown for resource id {0},"
+                              "orchestration id {1}.").format(res_id, orch_id))
                 if failure_mode == 'yield':
-                    LOG.warn(_LW("Valet will yield to Nova for placement decisions."))
+                    LOG.warn(_LW("Valet will yield to Nova for placement"
+                                 "decisions."))
                     yield_all = True
                 else:
                     yield_all = False
@@ -206,15 +220,19 @@ class ValetFilter(filters.BaseHostFilter):
                 match = self._is_same_host(obj.host, location)
                 if match:
                     if ad_hoc:
-                        LOG.info(_LI("Valet ad-hoc placement for resource id {0}: {1}.").format(res_id, obj.host))
+                        LOG.info(_LI("Valet ad-hoc placement for resource "
+                                     "id {0}: {1}.").format(res_id, obj.host))
                     else:
-                        LOG.info(_LI("Valet placement for resource id %s, orchestration id {0}: {1}.").format(res_id, orch_id, obj.host))
+                        LOG.info(_LI("Valet placement for resource id %s, "
+                                     "orchestration id {0}: {1}.").format(
+                            res_id, orch_id, obj.host))
             else:
                 match = None
             if yield_all or match:
                 yield obj
 
-    def host_passes(self, host_state, filter_properties):  # pylint: disable=W0613,R0201
-        '''Individual host pass check'''
+    def host_passes(self, host_state,   # pylint: disable=W0613,R0201
+                    filter_properties):
+        """Individual host pass check."""
         # Intentionally let filter_all() handle in one swell foop.
         return False

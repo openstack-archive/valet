@@ -13,14 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Group Model'''
+"""Group Model."""
 
 from . import Base
 import simplejson
 
 
 class Group(Base):
-    '''Group model'''
+    """Group model."""
+
     __tablename__ = 'groups'
 
     id = None  # pylint: disable=C0103
@@ -31,7 +32,7 @@ class Group(Base):
 
     @classmethod
     def schema(cls):
-        '''Return schema.'''
+        """Return schema."""
         schema = {
             'id': 'text',
             'name': 'text',
@@ -44,16 +45,16 @@ class Group(Base):
 
     @classmethod
     def pk_name(cls):
-        '''Primary key name'''
+        """Primary key name."""
         return 'id'
 
     def pk_value(self):
-        '''Primary key value'''
+        """Primary key value."""
         return self.id
 
     def values(self):
-        '''Values'''
-        # TODO(JD): Support lists in Music
+        """Values."""
+        # TODO(UNKNOWN): Support lists in Music
         # Lists aren't directly supported in Music, so we have to
         # convert to/from json on the way out/in.
         return {
@@ -64,7 +65,7 @@ class Group(Base):
         }
 
     def __init__(self, name, description, type, members, _insert=True):
-        '''Initializer'''
+        """Initializer."""
         super(Group, self).__init__()
         self.name = name
         self.description = description or ""
@@ -73,15 +74,15 @@ class Group(Base):
             self.members = []  # members ignored at init time
             self.insert()
         else:
-            # TODO(JD): Support lists in Music
+            # TODO(UNKNOWN): Support lists in Music
             self.members = simplejson.loads(members)
 
     def __repr__(self):
-        '''Object representation'''
+        """Object representation."""
         return '<Group %r>' % self.name
 
     def __json__(self):
-        '''JSON representation'''
+        """JSON representation."""
         json_ = {}
         json_['id'] = self.id
         json_['name'] = self.name

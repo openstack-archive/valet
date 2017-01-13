@@ -1,24 +1,38 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""App Topology Base.
+
+This file contains different datatype base classes to be used when
+buliding out app topology. These classes include VGroups, Volumes and Vms,
+as well as 'Link' classes for each.
+"""
+
 LEVELS = ["host", "rack", "cluster"]
 
 
 class VGroup(object):
+    """VGroup Class.
+
+    This class represents a VGroup object (virtual group). It contains
+    data about the volumes or vms it contains (such as compute resources),
+    and data about the group itself (group type, etc).
+    """
 
     def __init__(self, _app_uuid, _uuid):
+        """Init VGroup Class."""
         self.app_uuid = _app_uuid
         self.uuid = _uuid
         self.name = None
@@ -55,6 +69,7 @@ class VGroup(object):
         self.host = None
 
     def get_json_info(self):
+        """Return JSON info of VGroup Object."""
         survgroup_id = None
         if self.survgroup is None:
             survgroup_id = "none"
@@ -95,8 +110,14 @@ class VGroup(object):
 
 
 class VM(object):
+    """VM Class.
+
+    This class represents a Virtual Machine object. Examples of data this
+    class contains are compute resources, the host, and status.
+    """
 
     def __init__(self, _app_uuid, _uuid):
+        """Init VM Class."""
         self.app_uuid = _app_uuid
         self.uuid = _uuid
         self.name = None
@@ -129,6 +150,7 @@ class VM(object):
         self.host = None              # where this vm is placed
 
     def get_json_info(self):
+        """Return JSON info for VM object."""
         survgroup_id = None
         if self.survgroup is None:
             survgroup_id = "none"
@@ -172,8 +194,15 @@ class VM(object):
 
 
 class Volume(object):
+    """Volume Class.
+
+    This class represents a volume, containing an app id and name, as well as
+    a list of links to VMs and the groups it belongs to. This also contains
+    data about the resources needed such as size, bandwidth and weight.
+    """
 
     def __init__(self, _app_uuid, _uuid):
+        """Init Volume Class."""
         self.app_uuid = _app_uuid
         self.uuid = _uuid
         self.name = None
@@ -198,6 +227,7 @@ class Volume(object):
         self.storage_host = None
 
     def get_json_info(self):
+        """Return JSON info for a Volume."""
         survgroup_id = None
         if self.survgroup is None:
             survgroup_id = "none"
@@ -229,35 +259,53 @@ class Volume(object):
 
 
 class VGroupLink(object):
+    """VGroup Link Class.
+
+    This class represents a link between VGroups.
+    """
 
     def __init__(self, _n):
+        """Init VGroup Link."""
         self.node = _n                # target VM or Volume
         self.nw_bandwidth = 0
         self.io_bandwidth = 0
 
     def get_json_info(self):
+        """Return JSON info of VGroup Link Object."""
         return {'target': self.node.uuid,
                 'nw_bandwidth': self.nw_bandwidth,
                 'io_bandwidth': self.io_bandwidth}
 
 
 class VMLink(object):
+    """VM Link Class.
+
+    This class represents a link between VMs.
+    """
 
     def __init__(self, _n):
+        """Init VM Link."""
         self.node = _n                # target VM
         self.nw_bandwidth = 0         # Mbps
 
     def get_json_info(self):
+        """Return JSON info of VM Link Object."""
         return {'target': self.node.uuid,
                 'nw_bandwidth': self.nw_bandwidth}
 
 
 class VolumeLink(object):
+    """Volume Link Class.
+
+    This class represents a link between volumes.
+    """
 
     def __init__(self, _n):
+        """Init Volume Link."""
         self.node = _n                # target Volume
         self.io_bandwidth = 0         # Mbps
 
     def get_json_info(self):
+        """Return JSON info of Volume Link Object."""
         return {'target': self.node.uuid,
                 'io_bandwidth': self.io_bandwidth}

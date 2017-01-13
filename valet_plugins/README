@@ -1,9 +1,5 @@
 Ostro version 2.0.2 Installation and Usage Guide
 
-Author: Gueyoung Jung
-Contact: gjung@research.att.com
-
-
 INSTALLATION
 
 You can download the latest Ostro python code from repository (GitHub).
@@ -53,5 +49,3 @@ Ostro will run as a daemon process. Go to “ostro_server” directory, then sta
 To stop this daemon process:
 
 	python ostro_daemon.py stop
-
-

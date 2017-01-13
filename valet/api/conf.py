@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Conf."""
+
 from oslo_config import cfg
 
 
@@ -70,10 +72,12 @@ music_opts = [
 
 
 def set_domain(project=DOMAIN):
+    """Set Domain."""
     CONF([], project)
 
 
 def register_conf():
+    """Register confs."""
     CONF.register_group(server_group)
     CONF.register_opts(server_opts, server_group)
     CONF.register_group(music_group)

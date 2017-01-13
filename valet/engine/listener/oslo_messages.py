@@ -1,19 +1,19 @@
 #
 # Copyright 2015-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''OsloMessage Database Model'''
+"""OsloMessage Database Model."""
 
 # This is based on Music models used in Valet.
 
@@ -21,6 +21,8 @@ import uuid
 
 
 class OsloMessage(object):
+    """OsloMessage class."""
+
     __tablename__ = 'oslo_messages'
 
     _database = None
@@ -32,7 +34,7 @@ class OsloMessage(object):
 
     @classmethod
     def schema(cls):
-        '''Return schema.'''
+        """Return schema."""
         schema = {
             'timestamp': 'text',
             'args': 'text',
@@ -44,13 +46,15 @@ class OsloMessage(object):
 
     @classmethod
     def pk_name(cls):
+        """Return timestamp string."""
         return 'timestamp'
 
     def pk_value(self):
+        """Return self.timestamp."""
         return self.timestamp
 
     def insert(self):
-        '''Insert row.'''
+        """Insert row."""
         keyspace = self._database.get('keyspace')
         kwargs = {
             'keyspace': keyspace,
@@ -66,6 +70,7 @@ class OsloMessage(object):
         engine.create_row(**kwargs)
 
     def values(self):
+        """Return values."""
         return {
             'timestamp': self.timestamp,
             'args': self.args,
@@ -75,6 +80,7 @@ class OsloMessage(object):
 
     def __init__(self, timestamp, args, exchange,
                  method, database, _insert=True):
+        """Init."""
         self._database = database
         self.timestamp = timestamp
         self.args = args
@@ -84,6 +90,7 @@ class OsloMessage(object):
             self.insert()
 
     def __json__(self):
+        """Return json."""
         json_ = {}
         json_['timestamp'] = self.timestamp
         json_['args'] = self.args

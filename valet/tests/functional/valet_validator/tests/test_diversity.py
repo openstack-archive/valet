@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test Diversity."""
+
 from oslo_config import cfg
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
@@ -30,15 +32,17 @@ LOG = logging.getLogger(__name__)
 
 
 class TestDiversity(FunctionalTestCase):
+    """Test Diversity Functional Test."""
 
     def setUp(self):
-        ''' Initiating template '''
+        """Initiating template."""
         super(TestDiversity, self).setUp()
         self.init_template(CONF.test_diversity)
 
     def test_diversity(self):
-
+        """Test diversity."""
         self.run_test(self.stack_name, self.template_path)
 
     def get_name(self):
+        """Return Name."""
         return __name__

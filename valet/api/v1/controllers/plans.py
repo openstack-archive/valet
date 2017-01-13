@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''Plans'''
+"""Plans."""
 
 import logging
 
@@ -48,19 +48,22 @@ UPDATE_SCHEMA = (
     (decorators.optional('timeout'), types.string)
 )
 
+
 # pylint: disable=R0201
 
 
 class PlansItemController(object):
-    ''' Plans Item Controller /v1/plans/{plan_id} '''
+    """Plan Item Controller /v1/plans/{plan_id}."""
 
     def __init__(self, uuid4):
-        '''Initializer.'''
+        """Initializer."""
         self.uuid = uuid4
-        self.plan = Plan.query.filter_by(id=self.uuid).first()  # pylint: disable=E1101
+        self.plan = Plan.query.filter_by(id=self.uuid).first()
+        # pylint: disable=E1101
 
         if not self.plan:
-            self.plan = Plan.query.filter_by(stack_id=self.uuid).first()  # pylint: disable=E1101
+            self.plan = Plan.query.filter_by(stack_id=self.uuid).first()
+            # pylint: disable=E1101
 
             if not self.plan:
                 error('/errors/not_found', _('Plan not found'))
@@ -68,32 +71,31 @@ class PlansItemController(object):
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'GET,PUT,DELETE'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Get plan'''
+        """Get plan."""
         return {"plan": self.plan}
 
     @index.when(method='PUT', template='json')
     @validate(UPDATE_SCHEMA, '/errors/schema')
     def index_put(self, **kwargs):
-        '''Update a Plan'''
-
+        """Update a Plan."""
         action = kwargs.get('action')
         if action == 'migrate':
             # Replan the placement of an existing resource.
@@ -102,17 +104,24 @@ class PlansItemController(object):
 
             # TODO(JD): Support replan of more than one existing resource
             if not isinstance(resources, list) or len(resources) != 1:
-                error('/errors/invalid', _('resources must be a list of length 1.'))
+                error('/errors/invalid',
+                      _('resources must be a list of length 1.'))
 
             # We either got a resource or orchestration id.
             the_id = resources[0]
-            placement = Placement.query.filter_by(resource_id=the_id).first()  # pylint: disable=E1101
+            placement = Placement.query.filter_by(resource_id=the_id).first()
+            # pylint: disable=E1101
             if not placement:
-                placement = Placement.query.filter_by(orchestration_id=the_id).first()  # pylint: disable=E1101
+                placement = Placement.query.filter_by(
+                    orchestration_id=the_id).first()  # pylint: disable=E1101
                 if not placement:
-                    error('/errors/invalid', _('Unknown resource or orchestration id: %s') % the_id)
+                    error('/errors/invalid', _('Unknown resource or '
+                                               'orchestration id: %s') % the_id)
 
-            LOG.info(_('Migration request for resource id {0}, orchestration id {1}.').format(placement.resource_id, placement.orchestration_id))
+            LOG.info(_('Migration request for resource id {0}, '
+                       'orchestration id {1}.').format(
+                placement.resource_id, placement.orchestration_id))
+
             args = {
                 "stack_id": self.plan.stack_id,
                 "excluded_hosts": excluded_hosts,
@@ -136,7 +145,8 @@ class PlansItemController(object):
 
             # Flush so that the DB is current.
             self.plan.flush()
-            self.plan = Plan.query.filter_by(stack_id=self.plan.stack_id).first()  # pylint: disable=E1101
+            self.plan = Plan.query.filter_by(
+                stack_id=self.plan.stack_id).first()  # pylint: disable=E1101
             LOG.info(_('Plan with stack id %s updated.'), self.plan.stack_id)
             return {"plan": self.plan}
 
@@ -186,7 +196,7 @@ class PlansItemController(object):
 
     @index.when(method='DELETE', template='json')
     def index_delete(self):
-        '''Delete a Plan'''
+        """Delete a Plan."""
         for placement in self.plan.placements():
             placement.delete()
         stack_id = self.plan.stack_id
@@ -196,29 +206,29 @@ class PlansItemController(object):
 
 
 class PlansController(object):
-    ''' Plans Controller /v1/plans '''
+    """Plans Controller /v1/plans."""
 
     @classmethod
     def allow(cls):
-        '''Allowed methods'''
+        """Allowed methods."""
         return 'GET,POST'
 
     @expose(generic=True, template='json')
     def index(self):
-        '''Catchall for unallowed methods'''
+        """Catchall for unallowed methods."""
         message = _('The %s method is not allowed.') % request.method
         kwargs = {'allow': self.allow()}
         error('/errors/not_allowed', message, **kwargs)
 
     @index.when(method='OPTIONS', template='json')
     def index_options(self):
-        '''Options'''
+        """Index Options."""
         response.headers['Allow'] = self.allow()
         response.status = 204
 
     @index.when(method='GET', template='json')
     def index_get(self):
-        '''Get all the plans'''
+        """Get all the plans."""
         plans_array = []
         for plan in Plan.query.all():  # pylint: disable=E1101
             plans_array.append(plan)
@@ -227,7 +237,7 @@ class PlansController(object):
     @index.when(method='POST', template='json')
     @validate(CREATE_SCHEMA, '/errors/schema')
     def index_post(self):
-        '''Create a Plan'''
+        """Create a Plan."""
         ostro = Ostro()
         args = request.json
 
@@ -277,5 +287,5 @@ class PlansController(object):
 
     @expose()
     def _lookup(self, uuid4, *remainder):
-        '''Pecan subcontroller routing callback'''
+        """Pecan subcontroller routing callback."""
         return PlansItemController(uuid4), remainder

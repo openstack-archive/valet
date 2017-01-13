@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""App Handler."""
 
 import json
 
@@ -22,14 +24,21 @@ from valet.engine.optimizer.util import util as util
 
 
 class AppHandler(object):
+    """App Handler Class.
+
+    This class handles operations for the management of applications.
+    Functions related to adding apps and adding/removing them from
+    placement and updating topology info.
+    """
 
     def __init__(self, _resource, _db, _config, _logger):
+        """Init App Handler Class."""
         self.resource = _resource
         self.db = _db
         self.config = _config
         self.logger = _logger
 
-        ''' current app requested, a temporary copy '''
+        """ current app requested, a temporary copy """
         self.apps = {}
 
         self.last_log_index = 0
@@ -37,6 +46,7 @@ class AppHandler(object):
         self.status = "success"
 
     def add_app(self, _app_data):
+        """Add app and set or regenerate topology, return updated topology."""
         self.apps.clear()
 
         app_topology = AppTopology(self.resource, self.logger)
@@ -60,10 +70,12 @@ class AppHandler(object):
             if action == "ping":
                 self.logger.debug("AppHandler: got ping")
             elif action == "replan" or action == "migrate":
-                re_app = self._regenerate_app_topology(stack_id, app, app_topology, action)
+                re_app = self._regenerate_app_topology(stack_id, app,
+                                                       app_topology, action)
                 if re_app is None:
                     self.apps[stack_id] = None
-                    self.status = "cannot locate the original plan for stack = " + stack_id
+                    self.status = "cannot locate the original plan for " \
+                                  "stack = " + stack_id
                     return None
 
                 if action == "replan":
@@ -93,6 +105,7 @@ class AppHandler(object):
         return app_topology
 
     def add_placement(self, _placement_map, _timestamp):
+        """Change requested apps to scheduled and place them."""
         for v in _placement_map.keys():
             if self.apps[v.app_uuid].status == "requested":
                 self.apps[v.app_uuid].status = "scheduled"
@@ -116,11 +129,12 @@ class AppHandler(object):
 
     def _store_app_placements(self):
         (app_logfile, last_index, mode) = util.get_last_logfile(
-            self.config.app_log_loc, self.config.max_log_size, self.config.max_num_of_logs,
-            self.resource.datacenter.name, self.last_log_index)
+            self.config.app_log_loc, self.config.max_log_size,
+            self.config.max_num_of_logs, self.resource.datacenter.name,
+            self.last_log_index)
         self.last_log_index = last_index
 
-        # TODO: error handling
+        # TODO(UNKNOWN): error handling
 
         logging = open(self.config.app_log_loc + app_logfile, mode)
 
@@ -141,19 +155,23 @@ class AppHandler(object):
                 if self.db.add_app(appk, json_info) is False:
                     return False
 
-            if self.db.update_app_log_index(self.resource.datacenter.name, self.last_log_index) is False:
+            if self.db.update_app_log_index(self.resource.datacenter.name,
+                                            self.last_log_index) is False:
                 return False
 
         return True
 
     def remove_placement(self):
+        """Remove App from placement."""
         if self.db is not None:
             for appk, _ in self.apps.iteritems():
                 if self.db.add_app(appk, None) is False:
-                    self.logger.error("AppHandler: error while adding app info to MUSIC")
+                    self.logger.error("AppHandler: error while adding app "
+                                      "info to MUSIC")
                     # NOTE: ignore?
 
     def get_vm_info(self, _s_uuid, _h_uuid, _host):
+        """Return vm_info from database."""
         vm_info = {}
 
         if _h_uuid is not None and _h_uuid != "none" and \
@@ -163,6 +181,7 @@ class AppHandler(object):
         return vm_info
 
     def update_vm_info(self, _s_uuid, _h_uuid):
+        """Update vm info (the ids) in the database."""
         s_uuid_exist = bool(_s_uuid is not None and _s_uuid != "none")
         h_uuid_exist = bool(_h_uuid is not None and _h_uuid != "none")
         if s_uuid_exist and h_uuid_exist:
@@ -216,26 +235,32 @@ class AppHandler(object):
 
                 if _action == "replan":
                     if vmk == _app["orchestration_id"]:
-                        _app_topology.candidate_list_map[vmk] = _app["locations"]
+                        _app_topology.candidate_list_map[vmk] = \
+                            _app["locations"]
 
-                        self.logger.debug("AppHandler: re-requested vm = " + vm["name"] + " in")
+                        self.logger.debug("AppHandler: re-requested vm = " +
+                                          vm["name"] + " in")
                         for hk in _app["locations"]:
                             self.logger.debug("    " + hk)
 
                     elif vmk in _app["exclusions"]:
                         _app_topology.planned_vm_map[vmk] = vm["host"]
 
-                        self.logger.debug("AppHandler: exception from replan = " + vm["name"])
+                        self.logger.debug("AppHandler: exception from "
+                                          "replan = " + vm["name"])
 
                 elif _action == "migrate":
                     if vmk == _app["orchestration_id"]:
-                        _app_topology.exclusion_list_map[vmk] = _app["excluded_hosts"]
+                        _app_topology.exclusion_list_map[vmk] = _app[
+                            "excluded_hosts"]
                         if vm["host"] not in _app["excluded_hosts"]:
-                            _app_topology.exclusion_list_map[vmk].append(vm["host"])
+                            _app_topology.exclusion_list_map[vmk].append(
+                                vm["host"])
                     else:
                         _app_topology.planned_vm_map[vmk] = vm["host"]
 
-                _app_topology.old_vm_map[vmk] = (vm["host"], vm["cpus"], vm["mem"], vm["local_volume"])
+                _app_topology.old_vm_map[vmk] = (vm["host"], vm["cpus"],
+                                                 vm["mem"], vm["local_volume"])
 
         if "VGroups" in old_app.keys():
             for gk, affinity in old_app["VGroups"].iteritems():
@@ -251,14 +276,16 @@ class AppHandler(object):
                 resources[gk]["properties"] = properties
 
                 if len(affinity["diversity_groups"]) > 0:
-                    for divk, level_name in affinity["diversity_groups"].iteritems():
+                    for divk, level_name in \
+                            affinity["diversity_groups"].iteritems():
                         div_id = divk + ":" + level_name
                         if div_id not in diversity_groups.keys():
                             diversity_groups[div_id] = []
                         diversity_groups[div_id].append(gk)
 
                 if len(affinity["exclusivity_groups"]) > 0:
-                    for exk, level_name in affinity["exclusivity_groups"].iteritems():
+                    for exk, level_name in \
+                            affinity["exclusivity_groups"].iteritems():
                         ex_id = exk + ":" + level_name
                         if ex_id not in exclusivity_groups.keys():
                             exclusivity_groups[ex_id] = []
@@ -269,7 +296,8 @@ class AppHandler(object):
         for div_id, resource_list in diversity_groups.iteritems():
             divk_level_name = div_id.split(":")
             resources[divk_level_name[0]] = {}
-            resources[divk_level_name[0]]["type"] = "ATT::Valet::GroupAssignment"
+            resources[divk_level_name[0]]["type"] = \
+                "ATT::Valet::GroupAssignment"
             properties = {}
             properties["group_type"] = "diversity"
             properties["group_name"] = divk_level_name[2]

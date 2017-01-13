@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Test v1."""
 
 import mock
 import pecan
@@ -21,9 +23,11 @@ from valet.tests.unit.api.v1.api_base import ApiBase
 
 
 class TestV1(ApiBase):
+    """Unit tests for valet.api.v1.controllers."""
 
     @mock.patch.object(pecan, 'conf')
     def setUp(self, mock_conf):
+        """Setup v1 controller for testing."""
         super(TestV1, self).setUp()
 
         mock_conf.identity.engine.validate_token.return_value = True
@@ -35,6 +39,7 @@ class TestV1(ApiBase):
 
     @mock.patch.object(v1, 'request')
     def test_check_permissions(self, mock_request):
+        """Test v1_controller check permissions."""
         mock_request.headers.get.return_value = "auth_token"
         mock_request.path.return_value = "bla bla bla"
         mock_request.json.return_value = {"action": "create"}
@@ -45,6 +50,7 @@ class TestV1(ApiBase):
     @mock.patch.object(v1, 'error', ApiBase.mock_error)
     @mock.patch.object(v1, 'request')
     def test_check_permissions_auth_unhappy(self, mock_request):
+        """Test v1_controller check permissions when unauthorized(no token)."""
         mock_request.headers.get.return_value = None
         mock_request.path.return_value = "bla bla bla"
         mock_request.json.return_value = {"action": "create"}
@@ -54,21 +60,25 @@ class TestV1(ApiBase):
         self.validate_test("Unauthorized - No auth token" in ApiBase.response)
 
     def test_allow(self):
+        """Test v1_controller allow method."""
         self.validate_test(self.v1_controller.allow() == 'GET')
 
     @mock.patch.object(v1, 'error', ApiBase.mock_error)
     @mock.patch.object(v1, 'request')
     def test_index(self, mock_request):
+        """Test v1_controller index method with error."""
         mock_request.method = "PUT"
         self.v1_controller.index()
         self.validate_test("The PUT method is not allowed" in ApiBase.response)
 
     def test_index_options(self):
+        """Test v1_controller index_options method (return status 204)."""
         self.v1_controller.index_options()
         self.validate_test(v1.response.status == 204)
 
     @mock.patch.object(v1, 'request')
     def test_index_get(self, mock_request):
+        """Test v1_controller index_get."""
         mock_request.application_url.return_value = "application_url"
         response = self.v1_controller.index_get()
 

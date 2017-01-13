@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Tests Base."""
 
 from oslo_config import fixture as fixture_config
 from oslo_log import log as logging
@@ -25,23 +27,27 @@ class Base(BaseTestCase):
     """Test case base class for all unit tests."""
 
     def __init__(self, *args, **kwds):
-        '''  '''
+        """Initialize."""
         super(Base, self).__init__(*args, **kwds)
 
         self.CONF = self.useFixture(fixture_config.Config()).conf
 
     def setUp(self):
+        """Setup."""
         super(Base, self).setUp()
 
     def run_test(self, stack_name, template_path):
-        ''' main function '''
+        """Main function."""
         pass
 
     def validate(self, result):
+        """Validate."""
         self.assertEqual(True, result.ok, result.message)
 
     def validate_test(self, result):
+        """Validate Test."""
         self.assertTrue(result)
 
     def get_name(self):
+        """Get Name."""
         pass

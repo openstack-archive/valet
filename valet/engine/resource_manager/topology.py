@@ -1,17 +1,19 @@
 #
 # Copyright 2014-2017 AT&T Intellectual Property
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""Topology class - performs actual setting up of Topology object."""
 
 import copy
 import sys
@@ -21,18 +23,24 @@ from valet.engine.resource_manager.resource_base import HostGroup, Switch, Link
 
 
 class Topology(object):
+    """Topology class."""
 
     def __init__(self, _config, _logger):
+        """Init config and logger."""
         self.config = _config
         self.logger = _logger
 
     # Triggered by rhosts change
-    def set_topology(self, _datacenter, _host_groups, _hosts, _rhosts, _switches):
-        result_status = self._set_host_topology(_datacenter, _host_groups, _hosts, _rhosts)
+    def set_topology(self, _datacenter, _host_groups, _hosts, _rhosts,
+                     _switches):
+        """Return result status if setting host or network topology fails."""
+        result_status = self._set_host_topology(_datacenter, _host_groups,
+                                                _hosts, _rhosts)
         if result_status != "success":
             return result_status
 
-        result_status = self._set_network_topology(_datacenter, _host_groups, _hosts, _switches)
+        result_status = self._set_network_topology(_datacenter, _host_groups,
+                                                   _hosts, _switches)
         if result_status != "success":
             return result_status
 
@@ -80,7 +88,8 @@ class Topology(object):
         return "success"
 
     # NOTE: this is just muck-ups
-    def _set_network_topology(self, _datacenter, _host_groups, _hosts, _switches):
+    def _set_network_topology(self, _datacenter, _host_groups, _hosts,
+                              _switches):
         root_switch = Switch(_datacenter.name)
         root_switch.switch_type = "root"
 
@@ -134,7 +143,8 @@ class Topology(object):
             if index >= self.config.num_of_region_chars:
                 if not isdigit(c):
                     if index == self.config.num_of_region_chars:
-                        status = "invalid region name = " + _host_name[:index] + c
+                        status = "invalid region name = " + \
+                                 _host_name[:index] + c
                         validated_name = False
                         break
 
@@ -152,7 +162,9 @@ class Topology(object):
                         validated_name = False
                         break
 
-                    if end_of_rack_index == 0 and index > (end_of_region_index + 1):
+                    if end_of_rack_index == 0 and \
+                        index > (end_of_region_index + 1):
+
                         end_of_rack_index = index
                         num_of_fields += 1
 
@@ -179,7 +191,8 @@ class Topology(object):
             validated_name = False
 
         if num_of_fields != 3:
-            status = "invalid number of identification fields = " + str(num_of_fields)
+            status = "invalid number of identification fields = " + \
+                     str(num_of_fields)
             validated_name = False
 
         if validated_name is False:
