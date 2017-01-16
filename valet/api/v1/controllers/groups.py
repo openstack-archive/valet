@@ -74,13 +74,16 @@ def tenant_servers_in_group(tenant_id, group):
     server_list = server_list_for_group(group)
     nova = nova_client()
     for server_id in server_list:
-        try:
-            server = nova.servers.get(server_id)
-            if server.tenant_id == tenant_id:
-                servers.append(server_id)
-        except Exception as ex:  # TODO(JD): update DB
-            api.LOG.error("Instance %s could not be found" % server_id)
-            api.LOG.error(ex)
+        if server_id == "none":
+            servers.append(server_id)
+        else:
+            try:
+                server = nova.servers.get(server_id)
+                if server.tenant_id == tenant_id:
+                    servers.append(server_id)
+            except Exception as ex:  # TODO(JD): update DB
+                api.LOG.error("Instance %s could not be found" % server_id)
+                api.LOG.error(ex)
     if len(servers) > 0:
         return servers
 

@@ -9,39 +9,46 @@ parameters:
   instance_flavor:
     type: string
 
+  network:
+    type: string
+
 resources:
 
   my-instance-1:
     type: OS::Nova::Server
     properties:
       name: test-1
-      #key_name: my_key
       image: { get_param: instance_image }
       flavor: { get_param: instance_flavor }
+      networks:
+      - network: { get_param: network }
 
   my-instance-2:
     type: OS::Nova::Server
     properties:
       name: test-2
-      #key_name: my_key
       image: { get_param: instance_image }
       flavor: { get_param: instance_flavor }
+      networks:
+      - network: { get_param: network }
 
   my-instance-3:
     type: OS::Nova::Server
     properties:
       name: test-3
-     # key_name: my_key
       image: { get_param: instance_image }
       flavor: { get_param: instance_flavor }
+      networks:
+      - network: { get_param: network }
 
   my-instance-4:
     type: OS::Nova::Server
     properties:
       name: test-4
-      #key_name: my_key
       image: { get_param: instance_image }
       flavor: { get_param: instance_flavor }
+      networks:
+      - network: { get_param: network }
       
 
   test-affinity-group1:

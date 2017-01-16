@@ -378,9 +378,13 @@ class MusicHandler(object):
         if _e.heat_resource_uuid is not None and \
                 _e.heat_resource_uuid != "none":
             heat_resource_uuid = _e.heat_resource_uuid
+        else:
+            heat_resource_uuid = _e.uuid
         if _e.heat_root_stack_id is not None and \
                 _e.heat_root_stack_id != "none":
             heat_root_stack_id = _e.heat_root_stack_id
+        else:
+            heat_root_stack_id = _e.uuid
 
         data = {
             'uuid': _e.uuid,

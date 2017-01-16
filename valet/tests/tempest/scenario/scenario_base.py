@@ -114,8 +114,9 @@ class ScenarioTestCase(test.BaseTestCase):
                         instance.name, generated_name)
                 instance.name = generated_name
 
-            self.wait_for_stack(stack_name, env_data, template_resources)
+            res = self.wait_for_stack(stack_name, env_data, template_resources)
             self.addCleanup(self.delete_stack)
+            return res
 
         except Exception:
             self.log.log_error("Failed to create stack", traceback.format_exc())
@@ -139,14 +140,21 @@ class ScenarioTestCase(test.BaseTestCase):
                                traceback.format_exc())
 
     def get_env_file(self, template):
-        """Return file.read for env file or return None."""
-        env_url = template.replace(".yml", ".env")
+        try:
+            env_url = template.replace(".yml", ".env")
 
-        if os.path.exists(env_url):
-            with open(env_url, "r") as f:
-                return f.read()
-        else:
-            return None
+            if os.path.exists(env_url):
+                with open(env_url, "r") as f:
+                    filedata = f.read()
+                    filedata = filedata.replace('image_place_holder', CONF.compute.image_ref)
+                    filedata = filedata.replace('flavor_place_holder', CONF.compute.flavor_ref)
+                    filedata = filedata.replace('network_place_holder', CONF.compute.fixed_network_name)
+
+                    return filedata
+            else:
+                return None
+        except Exception:
+            self.log.log_error("Failed to load environment file", traceback.format_exc())
 
     def _delete_group(self, group_id):
         self.valet_client.delete_all_members(group_id)
@@ -166,7 +174,8 @@ class ScenarioTestCase(test.BaseTestCase):
     def wait_for_stack(self, stack_name, env_data, template_resources):
         """Use heat client to create stack, then wait for status."""
         try:
-            self.log.log_info("Trying to create stack")
+            self.log.log_info("Trying to create stack "
+                              "Waiting for stack status")
             new_stack = self.heat_client.create_stack(
                 stack_name, environment=env_data,
                 template=template_resources.template_data)
@@ -178,18 +187,15 @@ class ScenarioTestCase(test.BaseTestCase):
                 failure_pattern='^.*CREATE_FAILED$')
 
         except exceptions.StackBuildErrorException as ex:
-            if "Ostro error" in str(ex):
-                if self.tries > 0:
-                    self.log.log_error(
-                        "Ostro error - try number %d" %
+            if "Ostro error" in str(ex) and self.tries > 0:
+                self.log.log_error("Ostro error - try number %d" %
                         (CONF.valet.TRIES_TO_CREATE - self.tries + 2))
-                    self.tries -= 1
-                    self.delete_stack()
-                    time.sleep(CONF.valet.PAUSE)
-                    self.wait_for_stack(stack_name, env_data,
-                                        template_resources)
-                else:
-                    raise
+                self.tries -= 1
+                self.delete_stack()
+                time.sleep(CONF.valet.PAUSE)
+                self.wait_for_stack(stack_name, env_data, template_resources)
             else:
-                self.log.log_error("Failed to create stack",
-                                   traceback.format_exc())
+                self.log.log_error("Failed to create stack", traceback.format_exc())
+                return False
+
+        return True

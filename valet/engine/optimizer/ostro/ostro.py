@@ -277,8 +277,7 @@ class Ostro(object):
                     break
 
         for vm_id in vm_id_list:
-            if vm_id[2] != "none":
-                vm_list.append(vm_id[2])
+            vm_list.append(vm_id[2])
 
         return vm_list
 
