@@ -44,4 +44,5 @@ opt_valet = \
     [
         cfg.IntOpt('TRIES_TO_CREATE', default=5),
         cfg.IntOpt('PAUSE', default=5),
+        cfg.IntOpt('TRIES_TO_SHOW_SERVER', default=10),
     ]

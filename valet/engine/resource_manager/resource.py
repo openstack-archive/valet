@@ -1031,12 +1031,20 @@ class Resource(object):
                           str(host.local_disk_cap) + ", avail_local_disk = " +
                           str(host.avail_local_disk_cap))
 
-    def get_flavor(self, _name):
+    def get_flavor(self, _id):
         """Return flavor according to name passed in."""
         flavor = None
 
-        if _name in self.flavors.keys():
-            if self.flavors[_name].status == "enabled":
-                flavor = self.flavors[_name]
+        if _id in self.flavors.keys():
+            flavor = self.flavors[_id]
+        else:
+            for _, f in self.flavors.iteritems():
+                if f.flavor_id == _id:
+                    flavor = f
+                    break
+
+        if flavor is not None:
+            if flavor.status != "enabled":
+                flavor = None
 
         return flavor

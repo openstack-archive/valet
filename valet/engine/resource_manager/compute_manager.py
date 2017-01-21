@@ -384,7 +384,7 @@ class ComputeManager(threading.Thread):
 
         status = compute.set_flavors(flavors)
         if status != "success":
-            self.logger.error("ComputeManager: " + status)
+            self.logger.error(status)
             return False
 
         self.data_lock.acquire()

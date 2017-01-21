@@ -18,6 +18,7 @@
 from collections import defaultdict
 import os
 from tempest import config
+import time
 import traceback
 
 CONF = config.CONF
@@ -37,6 +38,7 @@ class Analyzer(object):
         self.resource_name = {}
         self.instance_on_server = {}
         self.group_instance_name = {}
+        self.tries = CONF.valet.TRIES_TO_SHOW_SERVER
 
     def check(self, resources):
         """Checking if all instances are on the Appropriate hosts and racks."""
@@ -96,10 +98,19 @@ class Analyzer(object):
         servers_list = self.nova_client.list_servers()
 
         for i in range(len(servers_list["servers"])):
-            server = \
-                self.nova_client.show_server(servers_list["servers"][i]["id"])
-            self.instance_on_server[servers_list["servers"][i]["name"]] = \
-                server["server"]["OS-EXT-SRV-ATTR:host"]
+            self.log.log_debug("show_server %s from list %s " % 
+                    (servers_list["servers"][i]["id"], servers_list["servers"]))
+            try:
+                server = \
+                        self.nova_client.show_server(servers_list["servers"][i]["id"])
+                self.instance_on_server[servers_list["servers"][i]["name"]] = \
+                        server["server"]["OS-EXT-SRV-ATTR:host"]
+            except Exception:
+                self.log.log_error("Exception trying to show_server: %s" % traceback.format_exc())
+                if self.tries > 0:
+                    time.sleep(CONF.valet.PAUSE)
+                    self.init_servers_list()
+                    self.tries -= 1
 
     def get_instance_name(self, res_name):
         """Return instance name (resource name)."""

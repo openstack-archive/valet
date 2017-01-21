@@ -97,9 +97,6 @@ class Compute(object):
                         if host.name not in logical_group.vms_per_host.keys():
                             logical_group.vms_per_host[host.name] = []
 
-                        self.logger.info("adding Host LogicalGroup: " +
-                                         str(host.__dict__))
-
                         _hosts[host.name] = host
 
             except (ValueError, KeyError, TypeError):
@@ -125,9 +122,6 @@ class Compute(object):
                 for mk in a.metadata.keys():
                     metadata[mk] = a.metadata.get(mk)
                 aggregate.metadata = metadata
-
-                self.logger.info("adding aggregate LogicalGroup: " +
-                                 str(aggregate.__dict__))
 
                 _logical_groups[aggregate.name] = aggregate
 
@@ -287,7 +281,7 @@ class Compute(object):
 
                 flavor.disk_cap = root_gb + ephemeral_gb + swap_mb / float(1024)
 
-                self.logger.info("adding flavor " + str(flavor.__dict__))
+                # self.logger.info("adding flavor " + str(flavor.__dict__))
 
                 _flavors[flavor.name] = flavor
 
