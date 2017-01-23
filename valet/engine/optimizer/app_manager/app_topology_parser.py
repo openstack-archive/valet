@@ -101,7 +101,7 @@ class Parser(object):
 
                 vms[vm.uuid] = vm
 
-                self.logger.debug("Parser: get a vm = " + vm.name)
+                self.logger.debug("vm = " + vm.uuid)
 
             elif r["type"] == "OS::Cinder::Volume":
                 self.logger.warn("Parser: do nothing for volume at this "
@@ -149,7 +149,7 @@ class Parser(object):
 
                 vgroups[vgroup.uuid] = vgroup
 
-                self.logger.debug("Parser: get a group = " + vgroup.name)
+                self.logger.debug("group = " + vgroup.name)
                 vgroup_captured = True
 
         self._set_vm_links(_elements, vms)
@@ -159,7 +159,7 @@ class Parser(object):
 
         self._set_total_link_capacities(vms, volumes)
 
-        self.logger.debug("Parser: all vms parsed")
+        self.logger.debug("all vms parsed")
 
         if self._merge_diversity_groups(_elements, vgroups, vms, volumes) \
                 is False:
@@ -184,7 +184,7 @@ class Parser(object):
             self._set_vgroup_links(vgroup, vgroups, vms, volumes)
 
         if vgroup_captured is True:
-            self.logger.debug("Parser: all groups resolved")
+            self.logger.debug("all groups resolved")
 
         return vgroups, vms, volumes
 

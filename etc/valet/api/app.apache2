@@ -1,7 +1,7 @@
 # valet user/group required (or substitute as needed).
 # Place in /opt/apache2/sites-available, symlink from
 # /opt/apache2/sites-enabled, and run 'apachectl restart' as root.
-# Optional: Append python-path=PATH_TO_VENV_PACKAGES to WSGIDaemonProcess
+# Optional: Append python-path=PATH_TO_VENV_PACKAGES to WSGIDaemonProcess  
 
 Listen 8090
 ServerName valet
@@ -9,7 +9,7 @@ ServerName valet
 <VirtualHost *:8090>
 
     ServerName valet
-    WSGIDaemonProcess valet user=m04060 group=m04060 threads=5
+    WSGIDaemonProcess valet user=m04060 group=m04060 threads=20
     WSGIScriptAlias / /var/www/valet/app.wsgi
 
     SetEnv APACHE_RUN_USER m04060

@@ -15,15 +15,13 @@
 
 """Resource - Handles data, metadata, status of resources."""
 
-import json
 import sys
 import time
 import traceback
 
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
-from valet.engine.optimizer.util import util as util
 from valet.engine.resource_manager.resource_base \
-    import Datacenter, HostGroup, Host, LogicalGroup
+        import Datacenter, HostGroup, Host, LogicalGroup
 from valet.engine.resource_manager.resource_base import Flavor, Switch, Link
 
 
@@ -64,6 +62,33 @@ class Resource(object):
         self.disk_avail = 0
         self.nw_bandwidth_avail = 0
 
+    def show_current_logical_groups(self):
+        for lgk, lg in self.logical_groups.iteritems():
+            if lg.status == "enabled":
+                self.logger.debug("Resource: lg name = " + lgk)
+                self.logger.debug("    type = " + lg.group_type)
+                if lg.group_type == "AGGR":
+                    for k in lg.metadata.keys():
+                        self.logger.debug("        key = " + k)
+                self.logger.debug("    vms")
+                for v in lg.vm_list:
+                    self.logger.debug("        orch_id = " + v[0] + " uuid = " + v[2])
+                self.logger.debug("    hosts")
+                for h, v in lg.vms_per_host.iteritems():
+                    self.logger.debug("        host = " + h)
+                    self.logger.debug("        vms = " + str(len(lg.vms_per_host[h])))
+                    host = None
+                    if h in self.hosts.keys():
+                        host = self.hosts[h]
+                    elif h in self.host_groups.keys():
+                        host = self.host_groups[h]
+                    else:
+                        self.logger.error("Resource: lg member not exist")
+                    if host is not None:
+                        self.logger.debug("        status = " + host.status)
+                        if lgk not in host.memberships.keys():
+                            self.logger.error("membership missing")
+
     def bootstrap_from_db(self, _resource_status):
         """Return True if bootsrap resource from database successful."""
         try:
@@ -80,12 +105,8 @@ class Resource(object):
 
                     self.logical_groups[lgk] = logical_group
 
-            if len(self.logical_groups) > 0:
-                self.logger.debug("Resource.bootstrap_from_db: logical_groups "
-                                  "loaded")
-            else:
-                self.logger.warn("Resource.bootstrap_from_db: no "
-                                 "logical_groups")
+            if len(self.logical_groups) == 0:
+                self.logger.warn("no logical_groups")
 
             flavors = _resource_status.get("flavors")
             if flavors:
@@ -100,11 +121,8 @@ class Resource(object):
 
                     self.flavors[fk] = flavor
 
-            if len(self.flavors) > 0:
-                self.logger.debug("Resource.bootstrap_from_db: flavors loaded")
-            else:
-                self.logger.error("Resource.bootstrap_from_db: fail loading "
-                                  "flavors")
+            if len(self.flavors) == 0:
+                self.logger.error("fail loading flavors")
 
             switches = _resource_status.get("switches")
             if switches:
@@ -116,7 +134,6 @@ class Resource(object):
                     self.switches[sk] = switch
 
             if len(self.switches) > 0:
-                self.logger.debug("Resource.bootstrap_from_db: switches loaded")
                 for sk, s in switches.iteritems():
                     switch = self.switches[sk]
 
@@ -143,14 +160,11 @@ class Resource(object):
                         peer_links[plk] = plink
 
                     switch.peer_links = peer_links
-
-                self.logger.debug("Resource.bootstrap_from_db: switch links "
-                                  "loaded")
             else:
-                self.logger.error("Resource.bootstrap_from_db: fail loading "
-                                  "switches")
+                self.logger.error("fail loading switches")
 
             # storage_hosts
+
             hosts = _resource_status.get("hosts")
             if hosts:
                 for hk, h in hosts.iteritems():
@@ -184,12 +198,8 @@ class Resource(object):
 
                     self.hosts[hk] = host
 
-                if len(self.hosts) > 0:
-                    self.logger.debug("Resource.bootstrap_from_db: hosts "
-                                      "loaded")
-                else:
-                    self.logger.error("Resource.bootstrap_from_db: fail "
-                                      "loading hosts")
+                if len(self.hosts) == 0:
+                    self.logger.error("fail loading hosts")
 
             host_groups = _resource_status.get("host_groups")
             if host_groups:
@@ -220,12 +230,8 @@ class Resource(object):
 
                     self.host_groups[hgk] = host_group
 
-                if len(self.host_groups) > 0:
-                    self.logger.debug("Resource.bootstrap_from_db: host_groups "
-                                      "loaded")
-                else:
-                    self.logger.error("Resource.bootstrap_from_db: fail "
-                                      "loading host_groups")
+                if len(self.host_groups) == 0:
+                    self.logger.error("fail loading host_groups")
 
             dc = _resource_status.get("datacenter")
             if dc:
@@ -259,12 +265,8 @@ class Resource(object):
                     elif ck in self.hosts.keys():
                         self.datacenter.resources[ck] = self.hosts[ck]
 
-                if len(self.datacenter.resources) > 0:
-                    self.logger.debug("Resource.bootstrap_from_db: datacenter "
-                                      "loaded")
-                else:
-                    self.logger.error("Resource.bootstrap_from_db: fail "
-                                      "loading datacenter")
+                if len(self.datacenter.resources) == 0:
+                    self.logger.error("fail loading datacenter")
 
             hgs = _resource_status.get("host_groups")
             if hgs:
@@ -283,9 +285,6 @@ class Resource(object):
                         elif ck in self.host_groups.keys():
                             host_group.child_resources[ck] = self.host_groups[ck]
 
-                self.logger.debug("Resource.bootstrap_from_db: "
-                                  "host_groups'layout loaded")
-
             hs = _resource_status.get("hosts")
             if hs:
                 for hk, h in hs.iteritems():
@@ -297,19 +296,12 @@ class Resource(object):
                     elif pk in self.host_groups.keys():
                         host.host_group = self.host_groups[pk]
 
-                self.logger.debug("Resource.bootstrap_from_db: "
-                                  "hosts'layout loaded")
-
             self._update_compute_avail()
             self._update_storage_avail()
             self._update_nw_bandwidth_avail()
 
-            self.logger.debug("Resource.bootstrap_from_db: "
-                              "resource availability updated")
-
         except Exception:
-            self.logger.error("Resource.bootstrap_from_db - "
-                              "FAILED:" + traceback.format_exc())
+            self.logger.error("Resource: bootstrap_from_db:" + traceback.format_exc())
 
         return True
 
@@ -320,6 +312,9 @@ class Resource(object):
         self._update_compute_avail()
         self._update_storage_avail()
         self._update_nw_bandwidth_avail()
+
+        # for test
+        # self.show_current_logical_groups()
 
         if store is False:
             return True
@@ -530,14 +525,6 @@ class Resource(object):
             if self.datacenter.last_link_update > self.current_timestamp:
                 last_update_time = self.datacenter.last_link_update
 
-        (resource_logfile, last_index, mode) = util.get_last_logfile(
-            self.config.resource_log_loc, self.config.max_log_size,
-            self.config.max_num_of_logs, self.datacenter.name,
-            self.last_log_index)
-        self.last_log_index = last_index
-
-        logging = open(self.config.resource_log_loc + resource_logfile, mode)
-
         json_logging = {}
         json_logging['timestamp'] = last_update_time
 
@@ -556,22 +543,9 @@ class Resource(object):
         if datacenter_update is not None:
             json_logging['datacenter'] = datacenter_update
 
-        logged_data = json.dumps(json_logging)
-
-        logging.write(logged_data)
-        logging.write("\n")
-
-        logging.close()
-
-        self.logger.info("Resource._store_topology_updates: log resource "
-                         "status in " + resource_logfile)
-
         if self.db is not None:
             if self.db.update_resource_status(self.datacenter.name,
                                               json_logging) is False:
-                return None
-            if self.db.update_resource_log_index(self.datacenter.name,
-                                                 self.last_log_index) is False:
                 return None
 
         return last_update_time
@@ -980,16 +954,8 @@ class Resource(object):
                 ram_allocation_ratio = self.config.default_ram_allocation_ratio
 
         static_ram_standby_ratio = 0
-        if self.config.static_mem_standby_ratio > 0:
-            static_ram_standby_ratio = \
-                float(self.config.static_mem_standby_ratio) / float(100)
 
         host.compute_avail_mem(ram_allocation_ratio, static_ram_standby_ratio)
-
-        self.logger.debug("Resource.compute_avail_resources: host (" +
-                          hk + ")'s total_mem = " +
-                          str(host.mem_cap) + ", avail_mem = " +
-                          str(host.avail_mem_cap))
 
         cpu_allocation_ratio = 1.0
         if len(cpu_allocation_ratio_list) > 0:
@@ -999,16 +965,8 @@ class Resource(object):
                 cpu_allocation_ratio = self.config.default_cpu_allocation_ratio
 
         static_cpu_standby_ratio = 0
-        if self.config.static_cpu_standby_ratio > 0:
-            static_cpu_standby_ratio = \
-                float(self.config.static_cpu_standby_ratio) / float(100)
 
         host.compute_avail_vCPUs(cpu_allocation_ratio, static_cpu_standby_ratio)
-
-        self.logger.debug("Resource.compute_avail_resources: host (" +
-                          hk + ")'s total_vCPUs = " +
-                          str(host.vCPUs) + ", avail_vCPUs = " +
-                          str(host.avail_vCPUs))
 
         disk_allocation_ratio = 1.0
         if len(disk_allocation_ratio_list) > 0:
@@ -1019,17 +977,9 @@ class Resource(object):
                     self.config.default_disk_allocation_ratio
 
         static_disk_standby_ratio = 0
-        if self.config.static_local_disk_standby_ratio > 0:
-            static_disk_standby_ratio = \
-                float(self.config.static_local_disk_standby_ratio) / float(100)
 
         host.compute_avail_disk(disk_allocation_ratio,
                                 static_disk_standby_ratio)
-
-        self.logger.debug("Resource.compute_avail_resources: host (" +
-                          hk + ")'s total_local_disk = " +
-                          str(host.local_disk_cap) + ", avail_local_disk = " +
-                          str(host.avail_local_disk_cap))
 
     def get_flavor(self, _id):
         """Return flavor according to name passed in."""

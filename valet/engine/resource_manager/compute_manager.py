@@ -92,7 +92,7 @@ class ComputeManager(threading.Thread):
                     last_trigger_mon = now.tm_mon
                     last_trigger_mday = now.tm_mday
 
-        self.logger.info("ComputeManager: exit " + self.thread_name)
+        self.logger.info("exit compute_manager " + self.thread_name)
 
     def _run(self):
         self.logger.info("ComputeManager: --- start compute_nodes "
@@ -132,7 +132,7 @@ class ComputeManager(threading.Thread):
 
         status = compute.set_hosts(hosts, logical_groups)
         if status != "success":
-            self.logger.error("ComputeManager: " + status)
+            # self.logger.error("ComputeManager: " + status)
             return False
 
         self._compute_avail_host_resources(hosts)

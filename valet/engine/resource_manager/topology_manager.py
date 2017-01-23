@@ -88,7 +88,7 @@ class TopologyManager(threading.Thread):
                     last_trigger_mon = now.tm_mon
                     last_trigger_mday = now.tm_mday
 
-        self.logger.info("TopologyManager: exit " + self.thread_name)
+        self.logger.info("exit topology_manager " + self.thread_name)
 
     def _run(self):
 
@@ -104,7 +104,7 @@ class TopologyManager(threading.Thread):
                 # TODO(GY): ignore?
                 pass
 
-        self.logger.info("TopologyManager: --- done topology status update ---")
+        self.logger.info("--- done topology status update ---")
 
     def set_topology(self):
         """Return True if datacenter topology successfully setup."""
@@ -125,7 +125,7 @@ class TopologyManager(threading.Thread):
         status = topology.set_topology(datacenter, host_groups, hosts,
                                        self.resource.hosts, switches)
         if status != "success":
-            self.logger.error("TopologyManager: " + status)
+            # self.logger.error("TopologyManager: " + status)
             return False
 
         self.data_lock.acquire()
@@ -420,9 +420,6 @@ class TopologyManager(threading.Thread):
             updated = True
             self.logger.warn("TopologyManager: host_group (" + _rhg.name +
                              ") updated (enabled)")
-
-        if _rhg.parent_resource is None or \
-            _hg.parent_resource.name != _rhg.parent_resource.name:
 
             if _hg.parent_resource.name in self.resource.host_groups.keys():
                 _rhg.parent_resource = \

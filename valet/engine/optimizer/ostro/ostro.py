@@ -89,21 +89,23 @@ class Ostro(object):
         self.thread_list.append(self.listener)
 
         while self.end_of_process is False:
-            time.sleep(1)
-
-            event_list = self.db.get_events()
-            if event_list is None:
-                break
-            if len(event_list) > 0:
-                if self.handle_events(event_list) is False:
-                    break
+            time.sleep(0.1)
 
             request_list = self.db.get_requests()
             if request_list is None:
                 break
+
             if len(request_list) > 0:
                 if self.place_app(request_list) is False:
                     break
+            else:
+                event_list = self.db.get_events()
+                if event_list is None:
+                    break
+
+                if len(event_list) > 0:
+                    if self.handle_events(event_list) is False:
+                        break
 
         self.topology.end_of_process = True
         self.compute.end_of_process = True
@@ -164,7 +166,7 @@ class Ostro(object):
 
     def _set_topology(self):
         if not self.topology.set_topology():
-            self.status = "datacenter configuration error"
+            # self.status = "datacenter configuration error"
             self.logger.error("failed to read datacenter topology")
             return False
 
@@ -173,7 +175,7 @@ class Ostro(object):
 
     def _set_hosts(self):
         if not self.compute.set_hosts():
-            self.status = "OpenStack (Nova) internal error"
+            # self.status = "OpenStack (Nova) internal error"
             self.logger.error("failed to read hosts from OpenStack (Nova)")
             return False
 
@@ -182,7 +184,7 @@ class Ostro(object):
 
     def _set_flavors(self):
         if not self.compute.set_flavors():
-            self.status = "OpenStack (Nova) internal error"
+            # self.status = "OpenStack (Nova) internal error"
             self.logger.error("failed to read flavors from OpenStack (Nova)")
             return False
 
@@ -319,8 +321,6 @@ class Ostro(object):
         placement_map = self.optimizer.place(app_topology)
         if placement_map is None:
             self.status = self.optimizer.status
-            self.logger.debug("Ostro._place_app: error while optimizing app "
-                              "placement: " + self.status)
             self.data_lock.release()
             return None
 
@@ -499,6 +499,7 @@ class Ostro(object):
                 elif e.object_name == 'ComputeNode':
                     # Host resource is updated
                     self.logger.debug("Ostro.handle_events: got compute event")
+
                     # NOTE: what if host is disabled?
                     if self.resource.update_host_resources(
                             e.host, e.status, e.vcpus, e.vcpus_used, e.mem,
