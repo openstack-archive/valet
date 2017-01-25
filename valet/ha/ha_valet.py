@@ -215,7 +215,7 @@ class HaValetThread (threading.Thread):
         user = self.data.get(USER, None)
         self.use(user)
         my_priority = int(self.data.get(PRIORITY, 1))
-        start_command = eval(self.data.get(START_COMMAND, None))
+        start_command = self.data.get(START_COMMAND, None)
         stop_command = self.data.get(STOP_COMMAND, None)
         test_command = self.data.get(TEST_COMMAND, None)
         standby_list = self.data.get(STAND_BY_LIST)
@@ -247,31 +247,50 @@ class HaValetThread (threading.Thread):
                         continue
 
                     self.log.info('checking status on - ' + host_in_list)
+<<<<<<< HEAD
                     host = host_in_list
                     host_active, host_priority = \
                         self._is_active(eval(test_command))
                     host = self.data.get(HOST, 'localhost')
                     self.log.info(host_in_list + ' - host_active = ' +
                                   str(host_active) + ', ' + str(host_priority))
+=======
+                    # host = host_in_list
+                    host_active, host_priority = self._is_active(test_command % {'host': host_in_list, 'user': user})
+                    # host = self.data.get(HOST, 'localhost')
+                    self.log.info(host_in_list + ' - host_active = ' + str(host_active) + ', ' + str(host_priority))
+>>>>>>> da5d947... Resolve affinity group with flavor id
                     # Check for split brain: 2 valets active
                     if i_am_active and host_active:
                         self.log.info('found two live instances, '
                                       'checking priorities')
                         should_be_active = self._should_be_active(host_priority, my_priority)
                         if should_be_active:
+<<<<<<< HEAD
                             self.log.info('deactivate myself, ' + host_in_list +
                                           ' already running')
                             # Deactivate myself
                             self._deactivate_process(eval(stop_command))
+=======
+                            self.log.info('deactivate myself, ' + host_in_list + ' already running')
+                            self._deactivate_process(stop_command % {'host': host, 'user': user})  # Deactivate myself
+>>>>>>> da5d947... Resolve affinity group with flavor id
                             i_am_active = False
                         else:
                             self.log.info('deactivate ' + self.data[NAME] +
                                           ' on ' + host_in_list +
                                           ', already running here')
+<<<<<<< HEAD
                             host = host_in_list
                             # Deactivate other valet
                             self._deactivate_process(eval(stop_command))
                             host = self.data.get(HOST, 'localhost')
+=======
+                            # host = host_in_list
+                            # Deactivate other valet
+                            self._deactivate_process(stop_command % {'host': host_in_list, 'user': user})
+                            # host = self.data.get(HOST, 'localhost')
+>>>>>>> da5d947... Resolve affinity group with flavor id
 
                     # Track that at-least one valet is active
                     any_active = any_active or host_active
@@ -301,6 +320,7 @@ class HaValetThread (threading.Thread):
 
                     last_start = now
                     priority_wait = False
+<<<<<<< HEAD
                     if (not i_am_active and my_priority == PRIMARY_SETUP) or \
                             (standby_list is not None):
                         self.log.info('no running instance found, '
@@ -313,6 +333,16 @@ class HaValetThread (threading.Thread):
                                       'on %s; last start %s' % (host, diff))
                         self._activate_process(start_command, my_priority)
                         host = self.data.get(HOST, 'localhost')
+=======
+                    if (not i_am_active and my_priority == PRIMARY_SETUP) or (standby_list is not None):
+                        self.log.info('no running instance found, starting here; last start %s' % diff)
+                        self._activate_process(start_command % {'host': host, 'user': user}, my_priority)
+                    else:
+                        # host = standby_list[0]  # LIMITATION - supporting only 1 stand by host
+                        self.log.info('no running instances found, starting on %s; last start %s' % (host, diff))
+                        self._activate_process(start_command % {'host': standby_list[0], 'user': user}, my_priority)
+                        # host = self.data.get(HOST, 'localhost')
+>>>>>>> da5d947... Resolve affinity group with flavor id
                 else:
                     priority_wait = True
             else:
@@ -405,6 +435,7 @@ class HAValet(object):
             os.makedirs(LOG_DIR)
         self.log = None
 
+<<<<<<< HEAD
     @DeprecationWarning
     def _parse_valet_conf_v010(self, conf_file_name=DEFAULT_CONF_FILE,
                                process=''):
@@ -455,6 +486,8 @@ class HAValet(object):
             print('unable to open %s file for some reason' % conf_file_name)
         return cdata
 
+=======
+>>>>>>> da5d947... Resolve affinity group with flavor id
     def _valid_process_conf_data(self, process_data):
         """Valid Process conf data.
 

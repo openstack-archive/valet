@@ -140,11 +140,11 @@ class Ostro(object):
                 return False
 
             if len(resource_status) > 0:
-                self.logger.info("bootstrap from db")
+                self.logger.info("bootstrap from DB")
                 if not self.resource.bootstrap_from_db(resource_status):
                     self.logger.error("failed to parse bootstrap data!")
 
-            self.logger.info("read bootstrap data from OpenStack")
+            self.logger.info("bootstrap from OpenStack")
             if not self._set_hosts():
                 return False
 
@@ -303,12 +303,12 @@ class Ostro(object):
         for _, vm in app_topology.vms.iteritems():
             if self._set_vm_flavor_information(vm) is False:
                 self.status = "fail to set flavor information"
-                self.logger.error("failed to set flavor information ")
+                self.logger.error(self.status)
                 return None
         for _, vg in app_topology.vgroups.iteritems():
             if self._set_vm_flavor_information(vg) is False:
                 self.status = "fail to set flavor information in a group"
-                self.logger.error("failed to set flavor information in a group")
+                self.logger.error(self.status)
                 return None
 
         self.data_lock.acquire()
@@ -341,12 +341,12 @@ class Ostro(object):
 
     def _set_vm_flavor_information(self, _v):
         if isinstance(_v, VM):
-            if self._set_vm_flavor_properties(_v) is False:
-                return False
+            return self._set_vm_flavor_properties(_v)
         else:  # affinity group
             for _, sg in _v.subvgroups.iteritems():
                 if self._set_vm_flavor_information(sg) is False:
                     return False
+            return True
 
     def _set_vm_flavor_properties(self, _vm):
         flavor = self.resource.get_flavor(_vm.flavor)

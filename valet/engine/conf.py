@@ -31,7 +31,8 @@ ostro_cli_opts = [
 engine_group = cfg.OptGroup(name='engine', title='Valet Engine conf')
 engine_opts = [
     cfg.StrOpt('pid', default='/var/run/valet/ostro-daemon.pid'),
-    cfg.StrOpt('mode', default='live', help='sim will let Ostro simulate datacenter, while live will let it handle a real datacenter'),
+    cfg.StrOpt('mode', default='live', help='sim will let Ostro simulate datacenter, '
+                                            'while live will let it handle a real datacenter'),
     cfg.StrOpt('sim_cfg_loc', default='/etc/valet/engine/ostro_sim.cfg'),
     cfg.BoolOpt('network_control', default=False, help='whether network controller (i.e., Tegu) has been deployed'),
     cfg.StrOpt('network_control_url', default='http://network_control:29444/tegu/api'),
@@ -56,18 +57,19 @@ engine_opts = [
                help='Set trigger time or frequency for checking datacenter topology (i.e., call AIC Formation)'),
     cfg.IntOpt('topology_trigger_frequency', default=3600,
                help='Set trigger time or frequency for checking datacenter topology (i.e., call AIC Formation)'),
-    cfg.IntOpt('default_cpu_allocation_ratio', default=16, help='Set default overbooking ratios. '
-                                                                'Note that each compute node can have its own ratios'),
-    cfg.IntOpt('default_ram_allocation_ratio', default=1.5, help='Set default overbooking ratios. '
-                                                                 'Note that each compute node can have its own ratios'),
-    cfg.IntOpt('default_disk_allocation_ratio', default=1, help='Set default overbooking ratios. '
-                                                                'Note that each compute node can have its own ratios'),
-    cfg.IntOpt('static_cpu_standby_ratio', default=20, help='unused percentages of resources (i.e. standby) '
-                                                            'that are set aside for applications workload spikes.'),
-    cfg.IntOpt('static_mem_standby_ratio', default=20, help='unused percentages of resources (i.e. standby) '
-                                                            'that are set aside for applications workload spikes.'),
-    cfg.IntOpt('static_local_disk_standby_ratio', default=20, help='unused percentages of resources (i.e. standby) '
-                                                                   'that are set aside for applications workload spikes.'),
+    cfg.FloatOpt('default_cpu_allocation_ratio', default=16, help='Set default overbooking ratios. Note that '
+                                                                  'each compute node can have its own ratios'),
+    cfg.FloatOpt('default_ram_allocation_ratio', default=1.5, help='Set default overbooking ratios. Note that '
+                                                                   'each compute node can have its own ratios'),
+    cfg.FloatOpt('default_disk_allocation_ratio', default=1, help='Set default overbooking ratios. Note that '
+                                                                  'each compute node can have its own ratios'),
+    cfg.FloatOpt('static_cpu_standby_ratio', default=20, help='unused percentages of resources (i.e. standby) '
+                                                              'that are set aside for applications workload spikes.'),
+    cfg.FloatOpt('static_mem_standby_ratio', default=20, help='unused percentages of resources (i.e. standby) '
+                                                              'that are set aside for applications workload spikes.'),
+    cfg.FloatOpt('static_local_disk_standby_ratio', default=20, help='unused percentages of resources (i.e. standby) '
+                                                                     'that are set aside for applications workload '
+                                                                     'spikes.'),
 ] + logger_conf("engine")
 
 listener_group = cfg.OptGroup(name='events_listener',

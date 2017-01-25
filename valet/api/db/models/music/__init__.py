@@ -211,18 +211,13 @@ class Query(object):
 
     def __rows_to_objects(self, rows):
         """Convert query response rows to objects"""
-        try:
-            results = []
-            pk_name = self.model.pk_name()  # pylint: disable=E1101
-            for __, row in rows.iteritems():  # pylint: disable=W0612
-                the_id = row.pop(pk_name)
-                result = self.model(_insert=False, **row)
-                setattr(result, pk_name, the_id)
-                results.append(result)
-        except Exception:
-            import traceback
-            print(traceback.format_exc())
-
+        results = []
+        pk_name = self.model.pk_name()  # pylint: disable=E1101
+        for __, row in rows.iteritems():  # pylint: disable=W0612
+            the_id = row.pop(pk_name)
+            result = self.model(_insert=False, **row)
+            setattr(result, pk_name, the_id)
+            results.append(result)
         return Results(results)
 
     def all(self):

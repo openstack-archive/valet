@@ -4,7 +4,7 @@ if [ -z $VALET_KEYSPACE ]; then
    echo "ERR: VALET_KEYSPACE is not defined."
    exit
 else
-   sed -ie "s/#VALET_KEYSPACE#/${VALET_KEYSPACE}/g" ./populate.cql
+   sed -i.bak "s/#VALET_KEYSPACE#/${VALET_KEYSPACE}/g" ./populate.cql
 fi
 
 if [ -z $CASSANDRA_BIN ]; then

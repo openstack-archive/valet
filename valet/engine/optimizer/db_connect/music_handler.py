@@ -564,6 +564,8 @@ class MusicHandler(object):
             self.logger.error("DB: " + str(e))
             return False
 
+        self.logger.info("DB: resource status updated")
+
         return True
 
     def update_resource_log_index(self, _k, _index):

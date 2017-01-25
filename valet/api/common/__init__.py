@@ -26,7 +26,7 @@ def terminate_thread(thread):
     if not thread.isAlive():
         return
 
-    print('valet watcher thread: notifier thread is alive... - kill it...')
+    # print('valet watcher thread: notifier thread is alive... - kill it...')
     exc = ctypes.py_object(SystemExit)
     res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(thread.ident), exc)
     if res == 0:
@@ -36,4 +36,4 @@ def terminate_thread(thread):
         # and you should call it again with exc=NULL to revert the effect
         ctypes.pythonapi.PyThreadState_SetAsyncExc(thread.ident, None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
-    print('valet watcher thread exits')
+    # print('valet watcher thread exits')

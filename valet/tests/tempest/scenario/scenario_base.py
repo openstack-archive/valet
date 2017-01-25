@@ -100,7 +100,7 @@ class ScenarioTestCase(test.BaseTestCase):
 
             for key in groups:
                 if groups[key].group_type == "exclusivity":
-                    self.log.log_info(" creating group ")
+                    self.log.log_info(" creating valet group ")
                     grp_name = data_utils.rand_name(name=groups[key].group_name)
                     template_resources.template_data = \
                         template_resources.template_data.replace(
@@ -119,7 +119,7 @@ class ScenarioTestCase(test.BaseTestCase):
             return res
 
         except Exception:
-            self.log.log_error("Failed to create stack", traceback.format_exc())
+            self.log.log_error("Failed to prepare stack for creation", traceback.format_exc())
             return False
         return True
 
@@ -142,6 +142,7 @@ class ScenarioTestCase(test.BaseTestCase):
     def get_env_file(self, template):
         try:
             env_url = template.replace(".yml", ".env")
+            self.log.log_debug("loading environment file (%s)" % env_url)
 
             if os.path.exists(env_url):
                 with open(env_url, "r") as f:

@@ -672,31 +672,31 @@ class Resource(object):
 
             hs.last_update = time.time()
 
+    # called from handle_events
     def update_host_resources(self, _hn, _st, _vcpus, _vcpus_used, _mem, _fmem,
                               _ldisk, _fldisk, _avail_least):
-        """Return True if status or compute resources avail on host changed."""
         updated = False
 
         host = self.hosts[_hn]
 
         if host.status != _st:
             host.status = _st
-            self.logger.debug("Resource.update_host_resources: host status "
-                              "changed")
+            self.logger.debug("Resource.update_host_resources: host(" + _hn +
+                              ") status changed")
             updated = True
 
         if host.original_vCPUs != _vcpus or \
            host.vCPUs_used != _vcpus_used:
-            self.logger.debug("Resource.update_host_resources: host cpu "
-                              "changed")
+            self.logger.debug("Resource.update_host_resources: host(" + _hn +
+                              ") cpu changed")
             host.original_vCPUs = _vcpus
             host.vCPUs_used = _vcpus_used
             updated = True
 
         if host.free_mem_mb != _fmem or \
            host.original_mem_cap != _mem:
-            self.logger.debug("Resource.update_host_resources: host mem "
-                              "changed")
+            self.logger.debug("Resource.update_host_resources: host(" + _hn +
+                              ") mem changed")
             host.free_mem_mb = _fmem
             host.original_mem_cap = _mem
             updated = True
@@ -704,8 +704,9 @@ class Resource(object):
         if host.free_disk_gb != _fldisk or \
            host.original_local_disk_cap != _ldisk or \
            host.disk_available_least != _avail_least:
-            self.logger.debug("Resource.update_host_resources: host disk "
-                              "changed")
+            self.logger.debug("Resource.update_host_resources: host(" + _hn +
+                              ") disk changed")
+
             host.free_disk_gb = _fldisk
             host.original_local_disk_cap = _ldisk
             host.disk_available_least = _avail_least

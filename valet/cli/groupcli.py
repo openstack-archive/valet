@@ -37,13 +37,7 @@ class ConnectionError(Exception):
 
 
 def print_verbose(verbose, url, headers, body, rest_cmd, timeout):
-    """Print verbose data."""
-    # TODO(Chris Martin): Replace prints with logs
-    if verbose:
-        print("Sending Request:\nurl: %s\nheaders: "
-              "%s\nbody: %s\ncmd: %s\ntimeout: %d\n"
-              % (url, headers, body,
-                 rest_cmd.__name__ if rest_cmd is not None else None, timeout))
+    pass
 
 
 def pretty_print_json(json_thing, sort=True, indents=4):

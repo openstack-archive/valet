@@ -14,7 +14,6 @@
 # limitations under the License.
 
 """App Topology Parser.
-
 - Restrictions of nested groups: EX in EX, EX in DIV, DIV in EX, DIV in DIV
 - VM/group cannot exist in multiple EX groups
 - Nested group's level cannot be higher than nesting group
@@ -26,6 +25,7 @@
     OS::Heat::ResourceGroup
 """
 
+import six
 from valet.engine.optimizer.app_manager.app_topology_base \
     import VGroup, VGroupLink, VM, VMLink, LEVELS
 
@@ -92,7 +92,11 @@ class Parser(object):
                 else:
                     vm.name = vm.uuid
 
-                vm.flavor = r["properties"]["flavor"]
+                flavor_id = r["properties"]["flavor"]
+                if isinstance(flavor_id, six.string_types):
+                    vm.flavor = flavor_id
+                else:
+                    vm.flavor = str(flavor_id)
 
                 if "availability_zone" in r["properties"].keys():
                     az = r["properties"]["availability_zone"]
