@@ -77,9 +77,6 @@ class ConstraintSolver(object):
                                   "node = " + _n.node.name
                     self.logger.error("ConstraintSolver: " + self.status)
                     return candidate_list
-                else:
-                    self.logger.debug("ConstraintSolver: done availability_"
-                                      "zone constraint " + str(len(candidate_list)))
 
         """Host aggregate constraint."""
         if isinstance(_n.node, VGroup) or isinstance(_n.node, VM):
@@ -90,9 +87,6 @@ class ConstraintSolver(object):
                                   "node = " + _n.node.name
                     self.logger.error("ConstraintSolver: " + self.status)
                     return candidate_list
-                else:
-                    self.logger.debug("ConstraintSolver: done host_aggregate "
-                                      "constraint " + str(len(candidate_list)))
 
         """CPU capacity constraint."""
         if isinstance(_n.node, VGroup) or isinstance(_n.node, VM):
@@ -102,9 +96,6 @@ class ConstraintSolver(object):
                               "node = " + _n.node.name
                 self.logger.error("ConstraintSolver: " + self.status)
                 return candidate_list
-            else:
-                self.logger.debug("ConstraintSolver: done cpu capacity "
-                                  "constraint " + str(len(candidate_list)))
 
         """Memory capacity constraint."""
         if isinstance(_n.node, VGroup) or isinstance(_n.node, VM):
@@ -114,9 +105,6 @@ class ConstraintSolver(object):
                               "node = " + _n.node.name
                 self.logger.error("ConstraintSolver: " + self.status)
                 return candidate_list
-            else:
-                self.logger.debug("ConstraintSolver: done memory capacity "
-                                  "constraint " + str(len(candidate_list)))
 
         """Local disk capacity constraint."""
         if isinstance(_n.node, VGroup) or isinstance(_n.node, VM):
@@ -126,12 +114,7 @@ class ConstraintSolver(object):
                               "node = " + _n.node.name
                 self.logger.error("ConstraintSolver: " + self.status)
                 return candidate_list
-            else:
-                self.logger.debug("ConstraintSolver: done local disk capacity "
-                                  "constraint " + str(len(candidate_list)))
 
-
-        """Diversity constraint."""
         if len(_n.node.diversity_groups) > 0:
             for _, diversity_id in _n.node.diversity_groups.iteritems():
                 if diversity_id.split(":")[0] == _level:
@@ -154,9 +137,6 @@ class ConstraintSolver(object):
                                   "node = " + _n.node.name
                     self.logger.error("ConstraintSolver: " + self.status)
                     return candidate_list
-                else:
-                    self.logger.debug("ConstraintSolver: done diversity_group "
-                                      "constraint " + str(len(candidate_list)))
 
         """Exclusivity constraint."""
         exclusivities = self.get_exclusivities(_n.node.exclusivity_groups,
@@ -177,9 +157,6 @@ class ConstraintSolver(object):
                                       "node = " + _n.node.name
                         self.logger.error("ConstraintSolver: " + self.status)
                         return candidate_list
-                    else:
-                        self.logger.debug("ConstraintSolver: done exclusivity "
-                                          "group constraint " + str(len(candidate_list)))
             else:
                 self._constrain_non_exclusivity(_level, candidate_list)
                 if len(candidate_list) == 0:
@@ -187,9 +164,6 @@ class ConstraintSolver(object):
                                   "node = " + _n.node.name
                     self.logger.error("ConstraintSolver: " + self.status)
                     return candidate_list
-                else:
-                    self.logger.debug("ConstraintSolver: done non-exclusivity_"
-                                      "group constraint " + str(len(candidate_list)))
 
         """Affinity constraint."""
         affinity_id = _n.get_affinity_id()  # level:name, except name == "any"
@@ -203,9 +177,6 @@ class ConstraintSolver(object):
                                       "node = " + _n.node.name
                         self.logger.error("ConstraintSolver: " + self.status)
                         return candidate_list
-                    else:
-                        self.logger.debug("ConstraintSolver: done affinity_"
-                                          "group constraintt " + str(len(candidate_list)))
 
         return candidate_list
 

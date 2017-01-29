@@ -53,7 +53,10 @@ class Resource(object):
         self.flavors = {}
 
         self.current_timestamp = 0
-        self.last_log_index = 0
+        self.curr_db_timestamp = 0
+        # self.last_log_index = 0
+
+        self.resource_updated = False
 
         """ resource status aggregation """
         self.CPU_avail = 0
@@ -61,33 +64,6 @@ class Resource(object):
         self.local_disk_avail = 0
         self.disk_avail = 0
         self.nw_bandwidth_avail = 0
-
-    def show_current_logical_groups(self):
-        for lgk, lg in self.logical_groups.iteritems():
-            if lg.status == "enabled":
-                self.logger.debug("Resource: lg name = " + lgk)
-                self.logger.debug("    type = " + lg.group_type)
-                if lg.group_type == "AGGR":
-                    for k in lg.metadata.keys():
-                        self.logger.debug("        key = " + k)
-                self.logger.debug("    vms")
-                for v in lg.vm_list:
-                    self.logger.debug("        orch_id = " + v[0] + " uuid = " + v[2])
-                self.logger.debug("    hosts")
-                for h, v in lg.vms_per_host.iteritems():
-                    self.logger.debug("        host = " + h)
-                    self.logger.debug("        vms = " + str(len(lg.vms_per_host[h])))
-                    host = None
-                    if h in self.hosts.keys():
-                        host = self.hosts[h]
-                    elif h in self.host_groups.keys():
-                        host = self.host_groups[h]
-                    else:
-                        self.logger.error("Resource: lg member not exist")
-                    if host is not None:
-                        self.logger.debug("        status = " + host.status)
-                        if lgk not in host.memberships.keys():
-                            self.logger.error("membership missing")
 
     def bootstrap_from_db(self, _resource_status):
         """Return True if bootsrap resource from database successful."""
@@ -313,29 +289,28 @@ class Resource(object):
         self._update_storage_avail()
         self._update_nw_bandwidth_avail()
 
-        # for test
-        # self.show_current_logical_groups()
-
         if store is False:
             return True
 
-        ct = self._store_topology_updates()
-        if ct is None:
-            return False
-        else:
-            self.current_timestamp = ct
-            return True
+        return self.store_topology_updates()
 
     def _update_topology(self):
+        updated = False
         for level in LEVELS:
             for _, host_group in self.host_groups.iteritems():
                 if host_group.host_type == level and \
                     host_group.check_availability() is True:
                     if host_group.last_update > self.current_timestamp:
                         self._update_host_group_topology(host_group)
+                        updated = True
 
-        if self.datacenter.last_update > self.current_timestamp:
+        if self.datacenter.last_update >= self.current_timestamp:
             self._update_datacenter_topology()
+            updated = True
+
+        if updated is True:
+            self.current_timestamp = time.time()
+            self.resource_updated = True
 
     def _update_host_group_topology(self, _host_group):
         _host_group.init_resources()
@@ -457,9 +432,8 @@ class Resource(object):
                             # NOTE: peer links?
                     self.nw_bandwidth_avail += min(avail_nw_bandwidth_list)
 
-    def _store_topology_updates(self):
-        last_update_time = self.current_timestamp
-
+    def store_topology_updates(self):
+        updated = False
         flavor_updates = {}
         logical_group_updates = {}
         storage_updates = {}
@@ -468,87 +442,139 @@ class Resource(object):
         host_group_updates = {}
         datacenter_update = None
 
-        for fk, flavor in self.flavors.iteritems():
-            if flavor.last_update > self.current_timestamp:
-                flavor_updates[fk] = flavor.get_json_info()
+        self.logger.info("check and store resource status")
 
-                last_update_time = flavor.last_update
+        for fk, flavor in self.flavors.iteritems():
+            if flavor.last_update >= self.curr_db_timestamp:
+                flavor_updates[fk] = flavor.get_json_info()
+                # self.logger.debug("resource flavor(" + fk + ") stored")
+                updated = True
 
         for lgk, lg in self.logical_groups.iteritems():
-            if lg.last_update > self.current_timestamp:
+            if lg.last_update >= self.curr_db_timestamp:
                 logical_group_updates[lgk] = lg.get_json_info()
-
-                last_update_time = lg.last_update
+                # self.logger.debug("resource lg(" + lgk + ") stored")
+                updated = True
 
         for shk, storage_host in self.storage_hosts.iteritems():
-            if storage_host.last_update > self.current_timestamp or \
-               storage_host.last_cap_update > self.current_timestamp:
+            if storage_host.last_update >= self.curr_db_timestamp or \
+               storage_host.last_cap_update >= self.curr_db_timestamp:
                 storage_updates[shk] = storage_host.get_json_info()
-
-                if storage_host.last_update > self.current_time_stamp:
-                    last_update_time = storage_host.last_update
-                if storage_host.last_cap_update > self.current_timestamp:
-                    last_update_time = storage_host.last_cap_update
+                # self.logger.debug("resource storage(" + shk + ") stored")
+                updated = True
 
         for sk, s in self.switches.iteritems():
-            if s.last_update > self.current_timestamp:
+            if s.last_update >= self.curr_db_timestamp:
                 switch_updates[sk] = s.get_json_info()
-
-                last_update_time = s.last_update
+                # self.logger.debug("resource switch(" + sk + ") stored")
+                updated = True
 
         for hk, host in self.hosts.iteritems():
             if host.last_update > self.current_timestamp or \
                 host.last_link_update > self.current_timestamp:
                 host_updates[hk] = host.get_json_info()
-
-                if host.last_update > self.current_timestamp:
-                    last_update_time = host.last_update
-                if host.last_link_update > self.current_timestamp:
-                    last_update_time = host.last_link_update
+                # self.logger.debug("resource host(" + hk + ") stored")
+                updated = True
 
         for hgk, host_group in self.host_groups.iteritems():
-            if host_group.last_update > self.current_timestamp or \
-               host_group.last_link_update > self.current_timestamp:
+            if host_group.last_update >= self.curr_db_timestamp or \
+               host_group.last_link_update >= self.curr_db_timestamp:
                 host_group_updates[hgk] = host_group.get_json_info()
+                # self.logger.debug("resource hgroup(" + hgk + ") stored")
+                updated = True
 
-                if host_group.last_update > self.current_timestamp:
-                    last_update_time = host_group.last_update
-                if host_group.last_link_update > self.current_timestamp:
-                    last_update_time = host_group.last_link_update
-
-        if self.datacenter.last_update > self.current_timestamp or \
-           self.datacenter.last_link_update > self.current_timestamp:
+        if self.datacenter.last_update >= self.curr_db_timestamp or \
+           self.datacenter.last_link_update >= self.curr_db_timestamp:
             datacenter_update = self.datacenter.get_json_info()
+            # self.logger.debug("resource datacenter stored")
+            updated = True
 
-            if self.datacenter.last_update > self.current_timestamp:
-                last_update_time = self.datacenter.last_update
-            if self.datacenter.last_link_update > self.current_timestamp:
-                last_update_time = self.datacenter.last_link_update
+        # (resource_logfile, last_index, mode) = util.get_last_logfile(self.config.resource_log_loc,
+        #                                                              self.config.max_log_size,
+        #                                                              self.config.max_num_of_logs,
+        #                                                              self.datacenter.name,
+        #                                                              self.last_log_index)
+        # self.last_log_index = last_index
 
-        json_logging = {}
-        json_logging['timestamp'] = last_update_time
+        # logging = open(self.config.resource_log_loc + resource_logfile, mode)
 
-        if len(flavor_updates) > 0:
-            json_logging['flavors'] = flavor_updates
-        if len(logical_group_updates) > 0:
-            json_logging['logical_groups'] = logical_group_updates
-        if len(storage_updates) > 0:
-            json_logging['storages'] = storage_updates
-        if len(switch_updates) > 0:
-            json_logging['switches'] = switch_updates
-        if len(host_updates) > 0:
-            json_logging['hosts'] = host_updates
-        if len(host_group_updates) > 0:
-            json_logging['host_groups'] = host_group_updates
-        if datacenter_update is not None:
-            json_logging['datacenter'] = datacenter_update
+        if updated is True:
+            json_logging = {}
+            json_logging['timestamp'] = self.curr_db_timestamp
 
-        if self.db is not None:
-            if self.db.update_resource_status(self.datacenter.name,
-                                              json_logging) is False:
+            if len(flavor_updates) > 0:
+                json_logging['flavors'] = flavor_updates
+            if len(logical_group_updates) > 0:
+                json_logging['logical_groups'] = logical_group_updates
+            if len(storage_updates) > 0:
+                json_logging['storages'] = storage_updates
+            if len(switch_updates) > 0:
+                json_logging['switches'] = switch_updates
+            if len(host_updates) > 0:
+                json_logging['hosts'] = host_updates
+            if len(host_group_updates) > 0:
+                json_logging['host_groups'] = host_group_updates
+            if datacenter_update is not None:
+                json_logging['datacenter'] = datacenter_update
+
+            # logged_data = json.dumps(json_logging)
+
+            # logging.write(logged_data)
+            # logging.write("\n")
+
+            # logging.close()
+
+            # self.logger.info("log resource status in " + resource_logfile)
+
+            # if self.db is not None:
+            if self.db.update_resource_status(self.datacenter.name, json_logging) is False:
                 return None
 
-        return last_update_time
+            self.curr_db_timestamp = time.time()
+
+            # for test
+            # self.show_current_logical_groups()
+            # self.show_current_host_status()
+
+        return True
+
+    def show_current_logical_groups(self):
+        for lgk, lg in self.logical_groups.iteritems():
+            if lg.status == "enabled":
+                self.logger.debug("TEST: lg name = " + lgk)
+                self.logger.debug("    type = " + lg.group_type)
+                if lg.group_type == "AGGR":
+                    for k in lg.metadata.keys():
+                        self.logger.debug("        metadata key = " + k)
+                self.logger.debug("    vms")
+                for v in lg.vm_list:
+                    self.logger.debug("        orch_id = " + v[0] + " uuid = " + v[2])
+                self.logger.debug("    hosts")
+                for h, v in lg.vms_per_host.iteritems():
+                    self.logger.debug("        host = " + h)
+                    self.logger.debug("        vms = " + str(len(lg.vms_per_host[h])))
+                    host = None
+                    if h in self.hosts.keys():
+                        host = self.hosts[h]
+                    elif h in self.host_groups.keys():
+                        host = self.host_groups[h]
+                    else:
+                        self.logger.error("TEST: lg member not exist")
+                    if host is not None:
+                        self.logger.debug("        status = " + host.status)
+                        if lgk not in host.memberships.keys():
+                            self.logger.error("TEST: membership missing")
+
+    def show_current_host_status(self):
+        for hk, host in self.hosts.iteritems():
+            self.logger.debug("TEST: host name = " + hk)
+            self.logger.debug("    status = " + host.status)
+            self.logger.debug("    vms = " + str(len(host.vm_list)))
+            self.logger.debug("    memberships")
+            for mk in host.memberships.keys():
+                self.logger.debug("        " + mk)
+                if mk not in self.logical_groups.keys():
+                    self.logger.error("TEST: lg missing")
 
     def update_rack_resource(self, _host):
         """Update resources for rack (host), then update cluster."""
@@ -780,13 +806,16 @@ class Resource(object):
         """Remove vm by orchestration id from lgs. Update host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
+                self.logger.warn("logical group (" + lgk + ") missing while removing " + _h_uuid)
                 continue
             lg = self.logical_groups[lgk]
 
             if isinstance(_host, Host):
+                # remove host from lg's membership if the host has no vms of lg
                 if lg.remove_vm_by_h_uuid(_h_uuid, _host.name) is True:
                     lg.last_update = time.time()
 
+                # remove lg from host's membership if lg does not have the host
                 if _host.remove_membership(lg) is True:
                     _host.last_update = time.time()
 
@@ -816,13 +845,16 @@ class Resource(object):
         """Remove vm by uuid from lgs and update proper host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
+                self.logger.warn("logical group (" + lgk + ") missing while removing " + _uuid)
                 continue
             lg = self.logical_groups[lgk]
 
             if isinstance(_host, Host):
+                # remove host from lg's membership if the host has no vms of lg
                 if lg.remove_vm_by_uuid(_uuid, _host.name) is True:
                     lg.last_update = time.time()
 
+                # remove lg from host's membership if lg does not have the host
                 if _host.remove_membership(lg) is True:
                     _host.last_update = time.time()
 

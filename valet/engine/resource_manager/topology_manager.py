@@ -97,7 +97,7 @@ class TopologyManager(threading.Thread):
 
         if self.set_topology() is True:
             self.data_lock.acquire()
-            update_status = self.resource.update_topology()
+            update_status = self.resource.update_topology(store=False)
             self.data_lock.release()
 
             if update_status is False:

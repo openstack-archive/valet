@@ -15,7 +15,7 @@ class HealthCheck(object):
 
     rest = None
 
-    def __init__(self, hosts=[], port='8080', keyspace='valet'):
+    def __init__(self, hosts=[]):
 
         self.tries = CONF.engine.health_timeout * 2  # default health_timeout=10
         self.uuid = str(uuid.uuid4())
@@ -28,15 +28,15 @@ class HealthCheck(object):
         }
         self.rest = REST(**kwargs)
 
-    def ping(self, my_id):
+    def ping(self):
 
-        engine_alive = False
+        engine_id = None
         try:
             if self._send():
-                engine_alive = self._read_response(my_id)
+                engine_id = self._read_response()
         finally:
             self._delete_result()
-        return engine_alive
+        return engine_id
 
     def _send(self):
 
@@ -55,9 +55,9 @@ class HealthCheck(object):
 
         return response.status_code == 204 if response else False
 
-    def _read_response(self, my_id):
+    def _read_response(self):
 
-        found = False
+        engine_id = None
         path = '/keyspaces/%(keyspace)s/tables/%(table)s/rows?stack_id=%(uid)s' % {
             'keyspace': CONF.music.keyspace,
             'table': CONF.music.response_table,
@@ -72,52 +72,58 @@ class HealthCheck(object):
                 if response.status_code == 200 and len(response.text) > 3:
 
                     j = json.loads(response.text)
-                    stack_id = j['row 0']['stack_id']
+                    if j['row 0']['stack_id'] != self.uuid:
+                        continue
+
                     placement = json.loads(j['row 0']['placement'])
                     engine_id = placement['resources']['id']
+                    break
+            except Exception as e:
+                logger.warn("HealthCheck exception in read response - " + str(e))
 
-                    if stack_id == self.uuid and engine_id == my_id:
-                        found = True
-                        break
-            except Exception:
-                pass
-
-        return found
+        return engine_id
 
     def _delete_result(self):
-        # leave the table clean - delete from requests and responses
+        # leave a clean table - delete from requests and responses
+        data = {
+            "consistencyInfo": {"type": "eventual"}
+        }
+
         try:
             path = '/keyspaces/%(keyspace)s/tables/%(table)s/rows?stack_id=%(uid)s' % {
                 'keyspace': CONF.music.keyspace,
                 'table': CONF.music.request_table,
                 'uid': self.uuid
             }
-            data = {
-                "consistencyInfo": {"type": "eventual"}
-            }
             self.rest.request(method='delete', path=path, data=data)
+        except Exception as e:
+            logger.warn("HealthCheck exception in delete request - " + str(e))
 
+        try:
             path = '/keyspaces/%(keyspace)s/tables/%(table)s/rows?stack_id=%(uid)s' % {
                 'keyspace': CONF.music.keyspace,
                 'table': CONF.music.response_table,
                 'uid': self.uuid
             }
             self.rest.request(method='delete', path=path, data=data)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warn("HealthCheck exception in delete response - " + str(e))
 
 
 if __name__ == "__main__":
 
-    alive = False
+    respondent_id = None
     code = 0
     init_engine(default_config_files=['/etc/valet/valet.conf'])
     logger = get_logger("ostro_daemon")
     if os.path.exists(CONF.engine.pid):
-        alive = HealthCheck().ping(CONF.engine.priority)
-    if alive:
-        code = CONF.engine.priority
-        logger.info("HealthCheck - Alive, priority = {}".format(CONF.engine.priority))
+        respondent_id = HealthCheck().ping()
+        if respondent_id == CONF.engine.priority:
+            code = CONF.engine.priority
+            logger.info("HealthCheck - Alive, respondent instance id: {}".format(respondent_id))
+        else:
+            logger.warn("HealthCheck - pid file exists, engine {} did not respond in a timely manner (respondent id {})"
+                        .format(CONF.engine.priority, respondent_id))
     else:
-        logger.warn("HealthCheck - Engine is DEAD!")
+        logger.info("HealthCheck - no pid file, engine is not running!")
     sys.exit(code)

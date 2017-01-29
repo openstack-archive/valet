@@ -323,19 +323,11 @@ class Search(object):
             avail_resources = _avail_hosts
 
         _node_list.sort(key=operator.attrgetter("sort_base"), reverse=True)
-        self.logger.debug("level = " + _level)
-        for on in _node_list:
-            self.logger.debug("node = {}, value = {}".format(on.node.name,
-                                                             on.sort_base))
         while len(_node_list) > 0:
             n = _node_list.pop(0)
             best_resource = self._get_best_resource_for_planned(n, _level,
                                                                 avail_resources)
             if best_resource is not None:
-                debug_best_resource = best_resource.get_resource_name(_level)
-                self.logger.debug("Search: best resource = " +
-                                  debug_best_resource + " for node = " +
-                                  n.node.name)
 
                 self._deduct_reservation(_level, best_resource, n)
                 self._close_planned_placement(_level, best_resource, n.node)
@@ -535,7 +527,7 @@ class Search(object):
         for lgk, lg in self.resource.logical_groups.iteritems():
 
             if lg.status != "enabled":
-                self.logger.debug("group (" + lg.name + ") disabled")
+                self.logger.warn("group (" + lg.name + ") disabled")
                 continue
 
             lgr = LogicalGroupResource()
@@ -793,12 +785,6 @@ class Search(object):
 
         _open_node_list.sort(key=operator.attrgetter("sort_base"), reverse=True)
 
-        self.logger.debug("Search: the order of open node list in level = " +
-                          _level)
-        for on in _open_node_list:
-            self.logger.debug("    node = {}, value = {}".format(on.node.name,
-                                                                 on.sort_base))
-
         while len(_open_node_list) > 0:
             n = _open_node_list.pop(0)
             self.logger.debug("Search: level = " + _level + ", node = " +
@@ -809,19 +795,12 @@ class Search(object):
                 success = False
                 break
 
-            debug_best_resource = best_resource.get_resource_name(_level)
-            self.logger.debug("Search: best resource = " + debug_best_resource +
-                              " for node = " + n.node.name)
-
             if n.node not in self.planned_placements.keys():
                 """for VM or Volume under host level only"""
                 self._deduct_reservation(_level, best_resource, n)
                 """close all types of nodes under any level, but VM or Volume
                 with above host level"""
                 self._close_node_placement(_level, best_resource, n.node)
-            else:
-                self.logger.debug("Search: node (" + n.node.name +
-                                  ") is already deducted")
 
         return success
 
@@ -1838,7 +1817,7 @@ class Search(object):
                 self._rollback_reservation(v)
 
         if _v in self.node_placements.keys():
-            self.logger.debug("node (" + _v.name + ") rollbacked")
+            # self.logger.debug("node (" + _v.name + ") rollbacked")
 
             chosen_host = self.avail_hosts[self.node_placements[_v].host_name]
             level = self.node_placements[_v].level
@@ -2139,8 +2118,6 @@ class Search(object):
     def _rollback_node_placement(self, _v):
         if _v in self.node_placements.keys():
             del self.node_placements[_v]
-            self.logger.debug("Search: node (" + _v.name +
-                              ") removed from placement")
 
         if isinstance(_v, VGroup):
             for _, sg in _v.subvgroups.iteritems():

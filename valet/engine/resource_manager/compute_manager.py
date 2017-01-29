@@ -103,7 +103,7 @@ class ComputeManager(threading.Thread):
 
         if triggered_host_updates is True and triggered_flavor_updates is True:
             self.data_lock.acquire()
-            update_status = self.resource.update_topology()
+            update_status = self.resource.update_topology(store=False)
             self.data_lock.release()
 
             if update_status is False:

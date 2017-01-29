@@ -16,9 +16,7 @@
 """General Logger."""
 
 from oslo_log import log as logging
-from tempest import config
 
-CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 COLORS = \

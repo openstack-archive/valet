@@ -21,7 +21,7 @@ class TestHealthCheck(Base):
         mock_send.return_value = True
         mock_read.return_value = True
 
-        self.validate_test(self.pingger.ping(1))
+        self.validate_test(self.pingger.ping() == 1)
 
     @mock.patch.object(HealthCheck, '_send')
     @mock.patch.object(HealthCheck, '_read_response')
@@ -29,7 +29,7 @@ class TestHealthCheck(Base):
         mock_send.return_value = False
         mock_read.return_value = True
 
-        self.validate_test(not self.pingger.ping(1))
+        self.validate_test(self.pingger.ping() is None)
 
     @mock.patch.object(HealthCheck, '_send')
     @mock.patch.object(HealthCheck, '_read_response')
@@ -37,7 +37,7 @@ class TestHealthCheck(Base):
         mock_send.return_value = True
         mock_read.return_value = False
 
-        self.validate_test(not self.pingger.ping(1))
+        self.validate_test(not self.pingger.ping())
 
     def test_send(self):
         self.pingger.rest.request.return_value.status_code = 204
@@ -48,29 +48,28 @@ class TestHealthCheck(Base):
         self.validate_test(not self.pingger._send())
 
     def test_read_response(self):
-        id = 1
+        mid = 1
         self.pingger.rest.request.return_value.status_code = 200
-        self.pingger.rest.request.return_value.text = json % (id, self.pingger.uuid)
-        self.validate_test(self.pingger._read_response(id))
+        self.pingger.rest.request.return_value.text = json % (mid, self.pingger.uuid)
+        self.validate_test(self.pingger._read_response())
 
     def test_read_response_from_other_engine(self):
         my_id = 1
-        id = 2
         self.pingger.rest.request.return_value.status_code = 200
-        self.pingger.rest.request.return_value.text = json % (id, self.pingger.uuid)
-        self.validate_test(not self.pingger._read_response(my_id))
+        self.pingger.rest.request.return_value.text = json % (my_id, self.pingger.uuid)
+        self.validate_test(not self.pingger._read_response() == 2)
 
     def test_read_response_unhappy_wrong_res_code(self):
         self.pingger.rest.request.return_value.status_code = 204
         self.pingger.rest.request.return_value.text = self.pingger.uuid
-        self.validate_test(not self.pingger._read_response(1))
+        self.validate_test(not self.pingger._read_response())
 
     def test_read_response_unhappy_wrong_body(self):
         self.pingger.rest.request.return_value.status_code = 200
         self.pingger.rest.request.return_value.text = ""
-        self.validate_test(not self.pingger._read_response(1))
+        self.validate_test(not self.pingger._read_response())
 
     def test_read_response_unhappy_wrong_both(self):
         self.pingger.rest.request.return_value.status_code = 204
         self.pingger.rest.request.return_value.text = ""
-        self.validate_test(not self.pingger._read_response(1))
+        self.validate_test(not self.pingger._read_response())
