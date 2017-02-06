@@ -27,6 +27,7 @@ from valet.api import LOG
 
 
 CREATE_SCHEMA = (
+    (decorators.optional('locations'), types.array),
     ('plan_name', types.string),
     ('resources', types.dictionary),
     ('stack_id', types.string),
@@ -237,7 +238,7 @@ class PlansController(object):
 
         kwargs = {
             'tenant_id': request.context['tenant_id'],
-            'args': args
+            'args': args,
         }
 
         # Prepare the request. If request prep fails,

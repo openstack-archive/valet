@@ -245,6 +245,11 @@ class Ostro(object):
             "stack_id": self.args['stack_id'],
         }
 
+        # Only add locations if we have it (no need for an empty object)
+        locations = self.args.get('locations')
+        if locations:
+            self.request['locations'] = locations
+
         if resources_update:
             # If we get any status in the response, it's an error. Bail.
             self.response = self._prepare_resources(resources_update)

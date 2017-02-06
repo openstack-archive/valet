@@ -504,6 +504,7 @@ This operation does not accept a request body.
 
 | Parameter   | Style | Type       | Description                                       |
 |-------------|-------|------------|---------------------------------------------------|
+| locations   | plain | xsd:list   | An optional list of placement location candidates. |
 | plan_name   | plain | xsd:string | The name of the plan.                             |
 | resources   | plain | xsd:dict   | A dictionary of resources to be planned. Each is keyed by an orchestration uuid. This is a UUID provided by an orchestration engine (e.g., heat-engine) prior to instantiation of a resource. The dictionary contains three keys: |
 |             |       |            | **name**: resource name                             |
