@@ -95,14 +95,8 @@ class TopologyManager(threading.Thread):
         self.logger.info("TopologyManager: --- start topology "
                          "status update ---")
 
-        if self.set_topology() is True:
-            self.data_lock.acquire()
-            update_status = self.resource.update_topology(store=False)
-            self.data_lock.release()
-
-            if update_status is False:
-                # TODO(GY): ignore?
-                pass
+        if self.set_topology() is not True:
+            self.logger.warn("fail to set topology")
 
         self.logger.info("--- done topology status update ---")
 
@@ -129,12 +123,15 @@ class TopologyManager(threading.Thread):
             return False
 
         self.data_lock.acquire()
-        self._check_update(datacenter, host_groups, hosts, switches)
+        if self._check_update(datacenter, host_groups, hosts, switches) is True:
+            self.resource.update_topology(store=False)
         self.data_lock.release()
 
         return True
 
     def _check_update(self, _datacenter, _host_groups, _hosts, _switches):
+        updated = False
+
         for sk in _switches.keys():
             if sk not in self.resource.switches.keys():
                 new_switch = self._create_new_switch(_switches[sk])
@@ -144,6 +141,7 @@ class TopologyManager(threading.Thread):
 
                 self.logger.warn("TopologyManager: new switch (" +
                                  new_switch.name + ") added")
+                updated = True
 
         for rsk in self.resource.switches.keys():
             if rsk not in _switches.keys():
@@ -154,6 +152,7 @@ class TopologyManager(threading.Thread):
 
                 self.logger.warn("TopologyManager: switch (" +
                                  switch.name + ") disabled")
+                updated = True
 
         for hk in _hosts.keys():
             if hk not in self.resource.hosts.keys():
@@ -164,6 +163,7 @@ class TopologyManager(threading.Thread):
 
                 self.logger.warn("TopologyManager: new host (" +
                                  new_host.name + ") added from configuration")
+                updated = True
 
         for rhk in self.resource.hosts.keys():
             if rhk not in _hosts.keys():
@@ -175,6 +175,7 @@ class TopologyManager(threading.Thread):
 
                 self.logger.warn("TopologyManager: host (" +
                                  host.name + ") removed from configuration")
+                updated = True
 
         for hgk in _host_groups.keys():
             if hgk not in self.resource.host_groups.keys():
@@ -185,6 +186,7 @@ class TopologyManager(threading.Thread):
 
                 self.logger.warn("TopologyManager: new host_group (" +
                                  new_host_group.name + ") added")
+                updated = True
 
         for rhgk in self.resource.host_groups.keys():
             if rhgk not in _host_groups.keys():
@@ -195,13 +197,14 @@ class TopologyManager(threading.Thread):
 
                 self.logger.warn("TopologyManager: host_group (" +
                                  host_group.name + ") disabled")
+                updated = True
 
         for sk in _switches.keys():
             switch = _switches[sk]
             rswitch = self.resource.switches[sk]
-            link_updated = self._check_switch_update(switch, rswitch)
-            if link_updated is True:
+            if self._check_switch_update(switch, rswitch) is True:
                 rswitch.last_update = time.time()
+                updated = True
 
         for hk in _hosts.keys():
             host = _hosts[hk]
@@ -210,8 +213,10 @@ class TopologyManager(threading.Thread):
                 self._check_host_update(host, rhost)
             if topology_updated is True:
                 rhost.last_update = time.time()
+                updated = True
             if link_updated is True:
                 rhost.last_link_update = time.time()
+                updated = True
 
         for hgk in _host_groups.keys():
             hg = _host_groups[hgk]
@@ -220,23 +225,29 @@ class TopologyManager(threading.Thread):
                 self._check_host_group_update(hg, rhg)
             if topology_updated is True:
                 rhg.last_update = time.time()
+                updated = True
             if link_updated is True:
                 rhg.last_link_update = time.time()
+                updated = True
 
         (topology_updated, link_updated) = \
             self._check_datacenter_update(_datacenter)
         if topology_updated is True:
             self.resource.datacenter.last_update = time.time()
+            updated = True
         if link_updated is True:
             self.resource.datacenter.last_link_update = time.time()
+            updated = True
 
         for hk, host in self.resource.hosts.iteritems():
-            if host.last_update > self.resource.current_timestamp:
+            if host.last_update >= self.resource.current_timestamp:
                 self.resource.update_rack_resource(host)
 
         for hgk, hg in self.resource.host_groups.iteritems():
-            if hg.last_update > self.resource.current_timestamp:
+            if hg.last_update >= self.resource.current_timestamp:
                 self.resource.update_cluster_resource(hg)
+
+        return updated
 
     def _create_new_switch(self, _switch):
         new_switch = Switch(_switch.name)

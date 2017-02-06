@@ -17,6 +17,7 @@
 
 import json
 import operator
+import time
 from valet.common.music import Music
 from valet.engine.optimizer.db_connect.event import Event
 
@@ -175,12 +176,14 @@ class MusicHandler(object):
         """
         event_list = []
 
+        ts = time.time()
         events = {}
         try:
             events = self.music.read_all_rows(self.config.db_keyspace,
                                               self.config.db_event_table)
         except Exception as e:
             self.logger.error("DB:event: " + str(e))
+            self.logger.debug("EVAL: the delay of getting events = " + str(time.time() - ts))
             return None
 
         if len(events) > 0:
@@ -330,6 +333,7 @@ class MusicHandler(object):
         if len(event_list) > 0:
             event_list.sort(key=operator.attrgetter('event_id'))
 
+            self.logger.debug("EVAL: the delay of getting events = " + str(time.time() - ts))
         return event_list
 
     def delete_event(self, _event_id):
@@ -409,12 +413,14 @@ class MusicHandler(object):
         """Return list of requests that consists of all rows in a db table."""
         request_list = []
 
+        ts = time.time()
         requests = {}
         try:
             requests = self.music.read_all_rows(self.config.db_keyspace,
                                                 self.config.db_request_table)
         except Exception as e:
             self.logger.error("DB: while reading requests: " + str(e))
+            self.logger.debug("EVAL: the delay of getting requests = " + str(time.time() - ts))
             return None
 
         if len(requests) > 0:
@@ -428,6 +434,7 @@ class MusicHandler(object):
                 for r in r_list:
                     request_list.append(r)
 
+            self.logger.debug("EVAL: the delay of getting requests = " + str(time.time() - ts))
         return request_list
 
     def put_result(self, _result):

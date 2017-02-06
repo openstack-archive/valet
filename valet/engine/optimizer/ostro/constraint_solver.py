@@ -49,8 +49,6 @@ class ConstraintSolver(object):
 
         """When replanning."""
         if _n.node.host is not None and len(_n.node.host) > 0:
-            self.logger.debug("ConstraintSolver: reconsider with given "
-                              "candidates")
             for hk in _n.node.host:
                 for ark, ar in _avail_resources.iteritems():
                     if hk == ark:
@@ -275,10 +273,6 @@ class ConstraintSolver(object):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-                    debug_resource_name = r.get_resource_name(_level)
-                    self.logger.debug("ConstraintSolver: exclusivity defined "
-                                      "in resource = " + debug_resource_name)
-
         _candidate_list[:] = [c for c in _candidate_list
                               if c not in conflict_list]
 
@@ -330,10 +324,6 @@ class ConstraintSolver(object):
             if self.exist_group(_level, _exclusivity_id, "EX", r) is True:
                 if r not in candidate_list:
                     candidate_list.append(r)
-            else:
-                debug_resource_name = r.get_resource_name(_level)
-                self.logger.debug("ConstraintSolver: exclusivity not exist in "
-                                  "resource = " + debug_resource_name)
 
         return candidate_list
 
@@ -344,10 +334,6 @@ class ConstraintSolver(object):
             if self.check_hibernated(_level, r) is True:
                 if r not in candidate_list:
                     candidate_list.append(r)
-            else:
-                debug_resource_name = r.get_resource_name(_level)
-                self.logger.debug("ConstraintSolver: exclusivity not allowed "
-                                  "in resource = " + debug_resource_name)
 
         return candidate_list
 

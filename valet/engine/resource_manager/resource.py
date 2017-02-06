@@ -207,7 +207,7 @@ class Resource(object):
                     self.host_groups[hgk] = host_group
 
                 if len(self.host_groups) == 0:
-                    self.logger.error("fail loading host_groups")
+                    self.logger.warn("fail loading host_groups")
 
             dc = _resource_status.get("datacenter")
             if dc:
@@ -433,6 +433,8 @@ class Resource(object):
                     self.nw_bandwidth_avail += min(avail_nw_bandwidth_list)
 
     def store_topology_updates(self):
+        store_start_time = time.time()
+
         updated = False
         flavor_updates = {}
         logical_group_updates = {}
@@ -536,6 +538,8 @@ class Resource(object):
             # self.show_current_logical_groups()
             # self.show_current_host_status()
 
+        self.logger.debug("EVAL: total delay for store resource status = " + str(time.time() - store_start_time))
+
         return True
 
     def show_current_logical_groups(self):
@@ -566,12 +570,28 @@ class Resource(object):
                             self.logger.error("TEST: membership missing")
 
     def show_current_host_status(self):
-        for hk, host in self.hosts.iteritems():
+        for hk, h in self.hosts.iteritems():
             self.logger.debug("TEST: host name = " + hk)
-            self.logger.debug("    status = " + host.status)
-            self.logger.debug("    vms = " + str(len(host.vm_list)))
+            self.logger.debug("    status = " + h.status + ", " + h.state)
+            self.logger.debug("    vms = " + str(len(h.vm_list)))
+            self.logger.debug("    resources (org, total, avail, used)")
+            cpu_org = str(h.original_vCPUs)
+            cpu_tot = str(h.vCPUs)
+            cpu_avail = str(h.avail_vCPUs)
+            cpu_used = str(h.vCPUs_used)
+            self.logger.debug("      cpu = " + cpu_org + ", " + cpu_tot + ", " + cpu_avail + ", " + cpu_used)
+            mem_org = str(h.original_mem_cap)
+            mem_tot = str(h.mem_cap)
+            mem_avail = str(h.avail_mem_cap)
+            mem_used = str(h.free_mem_mb)
+            self.logger.debug("      mem = " + mem_org + ", " + mem_tot + ", " + mem_avail + ", " + mem_used)
+            dsk_org = str(h.original_local_disk_cap)
+            dsk_tot = str(h.local_disk_cap)
+            dsk_avail = str(h.avail_local_disk_cap)
+            dsk_used = str(h.free_disk_gb)
+            self.logger.debug("      disk = " + dsk_org + ", " + dsk_tot + ", " + dsk_avail + ", " + dsk_used)
             self.logger.debug("    memberships")
-            for mk in host.memberships.keys():
+            for mk in h.memberships.keys():
                 self.logger.debug("        " + mk)
                 if mk not in self.logical_groups.keys():
                     self.logger.error("TEST: lg missing")

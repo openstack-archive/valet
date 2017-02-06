@@ -48,8 +48,6 @@ class AppHandler(object):
 
         app_topology = AppTopology(self.resource, self.logger)
 
-        self.logger.debug("AppHandler: parse app")
-
         stack_id = None
         if "stack_id" in _app.keys():
             stack_id = _app["stack_id"]
@@ -87,6 +85,11 @@ class AppHandler(object):
                 return None
         else:
             app_id = app_topology.set_app_topology(_app)
+
+            if len(app_topology.candidate_list_map) > 0:
+                self.logger.debug("got ad-hoc placement: " + stack_id)
+            else:
+                self.logger.debug("got placement: " + stack_id)
 
             if app_id is None:
                 self.logger.error(app_topology.status)
@@ -204,16 +207,8 @@ class AppHandler(object):
                         _app_topology.candidate_list_map[vmk] = \
                             _app["locations"]
 
-                        self.logger.debug("AppHandler: re-requested vm = " +
-                                          vm["name"] + " in")
-                        for hk in _app["locations"]:
-                            self.logger.debug("    " + hk)
-
                     elif vmk in _app["exclusions"]:
                         _app_topology.planned_vm_map[vmk] = vm["host"]
-
-                        self.logger.debug("AppHandler: exception from "
-                                          "replan = " + vm["name"])
 
                 elif _action == "migrate":
                     if vmk == _app["orchestration_id"]:

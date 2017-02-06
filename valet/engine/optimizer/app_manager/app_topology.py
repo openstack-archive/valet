@@ -67,6 +67,9 @@ class AppTopology(object):
         """
         (vgroups, vms, volumes) = self.parser.set_topology(_app_graph)
 
+        if len(self.parser.candidate_list_map) > 0:
+            self.candidate_list_map = self.parser.candidate_list_map
+
         if len(vgroups) == 0 and len(vms) == 0 and len(volumes) == 0:
             self.status = self.parser.status
             return None

@@ -44,12 +44,14 @@ class Optimizer(object):
 
         start_ts = time.time()
 
-        if len(_app_topology.candidate_list_map) > 0:
-            place_type = "replan"
-        elif len(_app_topology.exclusion_list_map) > 0:
+        if len(_app_topology.exclusion_list_map) > 0:
             place_type = "migration"
         else:
-            place_type = "create"
+            if (len(_app_topology.old_vm_map) > 0 or len(_app_topology.planned_vm_map) > 0) and \
+               len(_app_topology.candidate_list_map) > 0:
+                place_type = "replan"
+            else:
+                place_type = "create"
 
         if place_type == "migration":
             vm_id = _app_topology.exclusion_list_map.keys()[0]
@@ -65,9 +67,6 @@ class Optimizer(object):
                 if len(_app_topology.old_vm_map) > 0:
                     uuid_map = self._delete_old_vms(_app_topology.old_vm_map)
                     self.resource.update_topology(store=False)
-
-                    self.logger.debug("Optimizer: remove old placements for "
-                                      "replan")
         else:
             success = self.search.place_nodes(_app_topology, self.resource)
 
