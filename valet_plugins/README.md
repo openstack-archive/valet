@@ -14,9 +14,8 @@ Valet consists of the following components:
 * [valet-openstack](https://github.com/att-comdev/valet/blob/master/doc/valet_os.md): a set of OpenStack plugins used to interact with Valet
 * [valet-api](https://github.com/att-comdev/valet/blob/master/doc/valet_api.md): an API engine used to interact with Valet
 * [Ostro](https://github.com/att-comdev/valet/blob/master/doc/ostro.md): a placement optimization engine
-* Music: a data storage and persistence service
+* [Music](https://github.com/att/music): a data storage and persistence service
 * [ostro-listener](https://github.com/att-comdev/valet/blob/master/doc/ostro_listener.md): a message bus listener used in conjunction with Ostro and Music
-* [havalet](https://github.com/att-comdev/valet/blob/master/doc/ha.md): a service that assists in providing high availability for Valet
 
 Additional documents:
 
