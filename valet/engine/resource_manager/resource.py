@@ -929,6 +929,9 @@ class Resource(object):
         ram_allocation_ratio_list = []
         cpu_allocation_ratio_list = []
         disk_allocation_ratio_list = []
+        static_ram_standby_ratio = 0.0
+        static_cpu_standby_ratio = 0.0
+        static_disk_standby_ratio = 0.0
 
         for _, lg in host.memberships.iteritems():
             if lg.group_type == "AGGR":
