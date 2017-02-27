@@ -74,9 +74,7 @@ class Ostro(object):
         self.end_of_process = False
 
         self.batch_store_trigger = 10  # sec
-        # self.batch_events_count = 1
 
-    '''
     def run_ostro(self):
         self.logger.info("start Ostro ......")
 
@@ -106,7 +104,7 @@ class Ostro(object):
                         break
                 else:
                     if self.resource.resource_updated is True and \
-                       (time.time()-self.resource.curr_db_timestamp) >= self.batch_store_trigger:
+                       (time.time() - self.resource.curr_db_timestamp) >= self.batch_store_trigger:
                         self.data_lock.acquire()
                         if self.resource.store_topology_updates() is False:
                             self.data_lock.release()
@@ -115,58 +113,6 @@ class Ostro(object):
                         self.data_lock.release()
                     else:
                         time.sleep(0.1)
-
-        self.topology.end_of_process = True
-        self.compute.end_of_process = True
-
-        for t in self.thread_list:
-            t.join()
-
-        self.logger.info("exit Ostro")
-    '''
-
-    def run_ostro(self):
-        """Start main engine process."""
-        """Start topology, compute, and listener processes. Start process of
-        retrieving and handling events and requests from the db every 1 second.
-        """
-        self.logger.info("Ostro.run_ostro: start Ostro ......")
-
-        self.topology.start()
-        self.compute.start()
-        self.listener.start()
-
-        self.thread_list.append(self.topology)
-        self.thread_list.append(self.compute)
-        self.thread_list.append(self.listener)
-
-        while self.end_of_process is False:
-            time.sleep(0.1)
-
-            request_list = self.db.get_requests()
-            if request_list is None:
-                break
-
-            if len(request_list) > 0:
-                if self.place_app(request_list) is False:
-                    break
-            else:
-                event_list = self.db.get_events()
-                if event_list is None:
-                    break
-
-                if len(event_list) > 0:
-                    if self.handle_events(event_list) is False:
-                        break
-                else:
-                    if self.resource.resource_updated is True and \
-                       (time.time() - self.resource.curr_db_timestamp) >= self.batch_store_trigger:
-                        self.data_lock.acquire()
-                        if self.resource.store_topology_updates() is False:
-                            self.data_lock.release()
-                            break
-                        self.resource.resource_updated = False
-                        self.data_lock.release()
 
         self.topology.end_of_process = True
         self.compute.end_of_process = True
@@ -227,7 +173,6 @@ class Ostro(object):
 
     def _set_topology(self):
         if not self.topology.set_topology():
-            # self.status = "datacenter configuration error"
             self.logger.error("failed to read datacenter topology")
             return False
 
@@ -236,7 +181,6 @@ class Ostro(object):
 
     def _set_hosts(self):
         if not self.compute.set_hosts():
-            # self.status = "OpenStack (Nova) internal error"
             self.logger.error("failed to read hosts from OpenStack (Nova)")
             return False
 
@@ -245,17 +189,14 @@ class Ostro(object):
 
     def _set_flavors(self):
         if not self.compute.set_flavors():
-            # self.status = "OpenStack (Nova) internal error"
             self.logger.error("failed to read flavors from OpenStack (Nova)")
             return False
 
         self.logger.info("done flavors bootstrap")
         return True
 
+    # TODO(GJ): evaluate delay
     def place_app(self, _app_data):
-        """Place results of query and placement requests in the db."""
-        start_time = time.time()
-
         for req in _app_data:
             if req["action"] == "query":
                 self.logger.info("start query")
@@ -272,22 +213,23 @@ class Ostro(object):
                 self.logger.info("start app placement")
 
                 result = None
-                placement_map = self._place_app(req)
-
-                if placement_map is None:
-                    result = self._get_json_results("placement", "error",
-                                                    self.status, placement_map)
+                (decision_key, old_decision) = self.app_handler.check_history(req)
+                if old_decision is None:
+                    placement_map = self._place_app(req)
+                    if placement_map is None:
+                        result = self._get_json_results("placement", "error", self.status, placement_map)
+                    else:
+                        result = self._get_json_results("placement", "ok", "success", placement_map)
+                    if decision_key is not None:
+                        self.app_handler.put_history(decision_key, result)
                 else:
-                    result = self._get_json_results("placement", "ok",
-                                                    "success", placement_map)
+                    self.logger.warn("decision(" + decision_key + ") already made")
+                    result = old_decision
 
                 if self.db.put_result(result) is False:
                     return False
 
                 self.logger.info("done app placement")
-
-        end_time = time.time()
-        self.logger.debug("EVAL: total decision delay of request = " + str(end_time - start_time))
 
         return True
 
@@ -394,14 +336,12 @@ class Ostro(object):
             self.data_lock.release()
             return None
 
-        """Update resource and app information."""
+        # Update resource and app information
         if len(placement_map) > 0:
             self.resource.update_topology(store=False)
+            self.app_handler.add_placement(placement_map, app_topology, self.resource.current_timestamp)
 
-            self.app_handler.add_placement(placement_map,
-                                           self.resource.current_timestamp)
-            if len(app_topology.exclusion_list_map) > 0 and \
-                    len(app_topology.planned_vm_map) > 0:
+            if len(app_topology.exclusion_list_map) > 0 and len(app_topology.planned_vm_map) > 0:
                 for vk in app_topology.planned_vm_map.keys():
                     if vk in placement_map.keys():
                         del placement_map[vk]
@@ -426,7 +366,7 @@ class Ostro(object):
             self.logger.warn("Ostro._set_vm_flavor_properties: does not exist "
                              "flavor (" + _vm.flavor + ") and try to refetch")
 
-            """Reset flavor resource and try again."""
+            # Reset flavor resource and try again
             if self._set_flavors() is False:
                 return False
 
@@ -446,6 +386,7 @@ class Ostro(object):
 
         return True
 
+    # TODO(GJ): evaluate the delay
     def handle_events(self, _event_list):
         """Handle events in the event list."""
         """Update the engine's resource topology based on the properties of
@@ -453,12 +394,8 @@ class Ostro(object):
         """
         self.data_lock.acquire()
 
-        event_handler_start_time = time.time()
-
         resource_updated = False
 
-        # events_count = 0
-        # handled_event_list = []
         for e in _event_list:
             if e.host is not None and e.host != "none":
                 if self._check_host(e.host) is False:
@@ -493,45 +430,27 @@ class Ostro(object):
                             return False
 
                         if len(vm_info) == 0:
-                            """
-                            h_uuid is None or "none" because vm is not created
-                            by stack or, stack not found because vm is created
-                            by the other stack
-                            """
-                            self.logger.warn("Ostro.handle_events: no vm_info "
-                                             "found in app placement record")
-                            self._add_vm_to_host(e.uuid, orch_id[0], e.host,
-                                                 e.vcpus, e.mem, e.local_disk)
+                            # Stack not found because vm is created by the other stack
+                            self.logger.warn("EVENT: no vm_info found in app placement record")
+                            self._add_vm_to_host(e.uuid, orch_id[0], e.host, e.vcpus, e.mem, e.local_disk)
                         else:
-                            if "planned_host" in vm_info.keys() and \
-                                    vm_info["planned_host"] != e.host:
-                                """
-                                vm is activated in the different host
-                                """
-                                self.logger.warn("Ostro.handle_events: vm "
-                                                 "activated in the different "
-                                                 "host")
-                                self._add_vm_to_host(
-                                    e.uuid, orch_id[0], e.host, e.vcpus, e.mem,
-                                    e.local_disk)
+                            if "planned_host" in vm_info.keys() and vm_info["planned_host"] != e.host:
+                                # VM is activated in the different host
+                                self.logger.warn("EVENT: vm activated in the different host")
+                                self._add_vm_to_host(e.uuid, orch_id[0], e.host, e.vcpus, e.mem, e.local_disk)
 
-                                self._remove_vm_from_host(
-                                    e.uuid, orch_id[0], vm_info["planned_host"],
-                                    float(vm_info["cpus"]),
-                                    float(vm_info["mem"]),
-                                    float(vm_info["local_volume"]))
+                                self._remove_vm_from_host(e.uuid, orch_id[0],
+                                                          vm_info["planned_host"],
+                                                          float(vm_info["cpus"]),
+                                                          float(vm_info["mem"]),
+                                                          float(vm_info["local_volume"]))
 
-                                self._remove_vm_from_logical_groups(
-                                    e.uuid, orch_id[0], vm_info["planned_host"])
+                                self._remove_vm_from_logical_groups(e.uuid, orch_id[0], vm_info["planned_host"])
                             else:
-                                """
-                                found vm in the planned host,
-                                possibly the vm deleted in the host while batch cleanup
-                                """
-                                if self._check_h_uuid(orch_id[0], e.host) \
-                                        is False:
-                                    self.logger.debug("Ostro.handle_events: "
-                                                      "planned vm was deleted")
+                                # Found vm in the planned host,
+                                # Possibly the vm deleted in the host while batch cleanup
+                                if self._check_h_uuid(orch_id[0], e.host) is False:
+                                    self.logger.warn("EVENT: planned vm was deleted")
                                     if self._check_uuid(e.uuid, e.host) is True:
                                         self._update_h_uuid_in_host(orch_id[0],
                                                                     e.uuid,
@@ -593,11 +512,6 @@ class Ostro(object):
                 self.logger.warn("Ostro.handle_events: unknown event "
                                  "method = " + e.method)
 
-            # events_count += 1
-            # handled_event_list.append(e)
-            # if events_count >= self.batch_events_count:
-            #     break
-
         if resource_updated is True:
             self.resource.update_topology(store=False)
 
@@ -611,8 +525,6 @@ class Ostro(object):
                         if self.db.delete_uuid(e.uuid) is False:
                             self.data_lock.release()
                             return False
-
-        self.logger.debug("EVAL: total delay for event handling = " + str(time.time() - event_handler_start_time))
 
         self.data_lock.release()
 

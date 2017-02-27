@@ -49,6 +49,8 @@ class ComputeManager(threading.Thread):
         self.admin_token = None
         self.project_token = None
 
+        self.update_batch_wait = self.config.update_batch_wait
+
     def run(self):
         """Start Compute Manager thread to run setup."""
         self.logger.info("ComputeManager: start " + self.thread_name +
@@ -59,39 +61,15 @@ class ComputeManager(threading.Thread):
 
             while self.end_of_process is False:
                 time.sleep(60)
+                curr_ts = time.time()
+                if curr_ts > period_end:
+                    # Give some time (batch_wait) to update resource status via message bus
+                    # Otherwise, late update will be cleaned up
+                    if (curr_ts - self.resource.current_timestamp) > self.update_batch_wait:
+                        self._run()
+                        period_end = curr_ts + self.config.compute_trigger_freq
 
-                if time.time() > period_end:
-                    self._run()
-                    period_end = time.time() + self.config.compute_trigger_freq
-
-        else:
-            (alarm_HH, alarm_MM) = self.config.compute_trigger_time.split(':')
-
-            now = time.localtime()
-            timeout = True
-            last_trigger_year = now.tm_year
-            last_trigger_mon = now.tm_mon
-            last_trigger_mday = now.tm_mday
-
-            while self.end_of_process is False:
-                time.sleep(60)
-
-                now = time.localtime()
-                if now.tm_year > last_trigger_year or \
-                    now.tm_mon > last_trigger_mon or \
-                    now.tm_mday > last_trigger_mday:
-
-                    timeout = False
-
-                if timeout is False and \
-                   now.tm_hour >= int(alarm_HH) and now.tm_min >= int(alarm_MM):
-                    self._run()
-
-                    timeout = True
-                    last_trigger_year = now.tm_year
-                    last_trigger_mon = now.tm_mon
-                    last_trigger_mday = now.tm_mday
-
+        # NOTE(GJ): do not timer based batch
         self.logger.info("exit compute_manager " + self.thread_name)
 
     def _run(self):
@@ -124,7 +102,6 @@ class ComputeManager(threading.Thread):
 
         status = compute.set_hosts(hosts, logical_groups)
         if status != "success":
-            # self.logger.error("ComputeManager: " + status)
             return False
 
         self._compute_avail_host_resources(hosts)
@@ -256,10 +233,14 @@ class ComputeManager(threading.Thread):
     def _check_host_config_update(self, _host, _rhost):
         topology_updated = False
 
-        topology_updated = self._check_host_status(_host, _rhost)
-        topology_updated = self._check_host_resources(_host, _rhost)
-        topology_updated = self._check_host_memberships(_host, _rhost)
-        topology_updated = self._check_host_vms(_host, _rhost)
+        if self._check_host_status(_host, _rhost) is True:
+            topology_updated = True
+        if self._check_host_resources(_host, _rhost) is True:
+            topology_updated = True
+        if self._check_host_memberships(_host, _rhost) is True:
+            topology_updated = True
+        if self._check_host_vms(_host, _rhost) is True:
+            topology_updated = True
 
         return topology_updated
 
@@ -358,35 +339,36 @@ class ComputeManager(threading.Thread):
     def _check_host_vms(self, _host, _rhost):
         topology_updated = False
 
-        ''' clean up VMs '''
-        for rvm_id in _rhost.vm_list:
-            if rvm_id[2] == "none":
-                _rhost.vm_list.remove(rvm_id)
-
-                topology_updated = True
-                self.logger.warn("ComputeManager: host (" + _rhost.name +
-                                 ") updated (none vm removed)")
+        # Clean up VMs
+        blen = len(_rhost.vm_list)
+        _rhost.vm_list = [v for v in _rhost.vm_list if v[2] != "none"]
+        alen = len(_rhost.vm_list)
+        if alen != blen:
+            topology_updated = True
+            self.logger.warn("host (" + _rhost.name + ") " + str(blen - alen) + " none vms removed")
 
         self.resource.clean_none_vms_from_logical_groups(_rhost)
 
         for vm_id in _host.vm_list:
             if _rhost.exist_vm_by_uuid(vm_id[2]) is False:
                 _rhost.vm_list.append(vm_id)
-
                 topology_updated = True
                 self.logger.warn("ComputeManager: host (" + _rhost.name +
                                  ") updated (new vm placed)")
 
         for rvm_id in _rhost.vm_list:
             if _host.exist_vm_by_uuid(rvm_id[2]) is False:
-                _rhost.vm_list.remove(rvm_id)
-
-                self.resource.remove_vm_by_uuid_from_logical_groups(_rhost,
-                                                                    rvm_id[2])
-
+                self.resource.remove_vm_by_uuid_from_logical_groups(_rhost, rvm_id[2])
                 topology_updated = True
                 self.logger.warn("ComputeManager: host (" + _rhost.name +
                                  ") updated (vm removed)")
+
+        blen = len(_rhost.vm_list)
+        _rhost.vm_list = [v for v in _rhost.vm_list if _host.exist_vm_by_uuid(v[2]) is True]
+        alen = len(_rhost.vm_list)
+        if alen != blen:
+            topology_updated = True
+            self.logger.warn("host (" + _rhost.name + ") " + str(blen - alen) + " vms removed")
 
         return topology_updated
 

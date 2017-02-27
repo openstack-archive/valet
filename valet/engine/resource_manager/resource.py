@@ -54,7 +54,6 @@ class Resource(object):
 
         self.current_timestamp = 0
         self.curr_db_timestamp = 0
-        # self.last_log_index = 0
 
         self.resource_updated = False
 
@@ -65,6 +64,7 @@ class Resource(object):
         self.disk_avail = 0
         self.nw_bandwidth_avail = 0
 
+    # FIXME(GJ): should check invalid return here?
     def bootstrap_from_db(self, _resource_status):
         """Return True if bootsrap resource from database successful."""
         try:
@@ -433,8 +433,6 @@ class Resource(object):
                     self.nw_bandwidth_avail += min(avail_nw_bandwidth_list)
 
     def store_topology_updates(self):
-        store_start_time = time.time()
-
         updated = False
         flavor_updates = {}
         logical_group_updates = {}
@@ -449,56 +447,42 @@ class Resource(object):
         for fk, flavor in self.flavors.iteritems():
             if flavor.last_update >= self.curr_db_timestamp:
                 flavor_updates[fk] = flavor.get_json_info()
-                # self.logger.debug("resource flavor(" + fk + ") stored")
                 updated = True
 
         for lgk, lg in self.logical_groups.iteritems():
             if lg.last_update >= self.curr_db_timestamp:
                 logical_group_updates[lgk] = lg.get_json_info()
-                # self.logger.debug("resource lg(" + lgk + ") stored")
                 updated = True
 
         for shk, storage_host in self.storage_hosts.iteritems():
             if storage_host.last_update >= self.curr_db_timestamp or \
                storage_host.last_cap_update >= self.curr_db_timestamp:
                 storage_updates[shk] = storage_host.get_json_info()
-                # self.logger.debug("resource storage(" + shk + ") stored")
                 updated = True
 
         for sk, s in self.switches.iteritems():
             if s.last_update >= self.curr_db_timestamp:
                 switch_updates[sk] = s.get_json_info()
-                # self.logger.debug("resource switch(" + sk + ") stored")
                 updated = True
 
         for hk, host in self.hosts.iteritems():
             if host.last_update > self.current_timestamp or \
                 host.last_link_update > self.current_timestamp:
                 host_updates[hk] = host.get_json_info()
-                # self.logger.debug("resource host(" + hk + ") stored")
                 updated = True
 
         for hgk, host_group in self.host_groups.iteritems():
             if host_group.last_update >= self.curr_db_timestamp or \
                host_group.last_link_update >= self.curr_db_timestamp:
                 host_group_updates[hgk] = host_group.get_json_info()
-                # self.logger.debug("resource hgroup(" + hgk + ") stored")
                 updated = True
 
         if self.datacenter.last_update >= self.curr_db_timestamp or \
            self.datacenter.last_link_update >= self.curr_db_timestamp:
             datacenter_update = self.datacenter.get_json_info()
-            # self.logger.debug("resource datacenter stored")
             updated = True
 
-        # (resource_logfile, last_index, mode) = util.get_last_logfile(self.config.resource_log_loc,
-        #                                                              self.config.max_log_size,
-        #                                                              self.config.max_num_of_logs,
-        #                                                              self.datacenter.name,
-        #                                                              self.last_log_index)
-        # self.last_log_index = last_index
-
-        # logging = open(self.config.resource_log_loc + resource_logfile, mode)
+        # NOTE(GJ): do not track resource change histroy in this version
 
         if updated is True:
             json_logging = {}
@@ -519,26 +503,10 @@ class Resource(object):
             if datacenter_update is not None:
                 json_logging['datacenter'] = datacenter_update
 
-            # logged_data = json.dumps(json_logging)
-
-            # logging.write(logged_data)
-            # logging.write("\n")
-
-            # logging.close()
-
-            # self.logger.info("log resource status in " + resource_logfile)
-
-            # if self.db is not None:
             if self.db.update_resource_status(self.datacenter.name, json_logging) is False:
                 return None
 
             self.curr_db_timestamp = time.time()
-
-            # for test
-            # self.show_current_logical_groups()
-            # self.show_current_host_status()
-
-        self.logger.debug("EVAL: total delay for store resource status = " + str(time.time() - store_start_time))
 
         return True
 
@@ -731,32 +699,7 @@ class Resource(object):
                               ") status changed")
             updated = True
 
-        if host.original_vCPUs != _vcpus or \
-           host.vCPUs_used != _vcpus_used:
-            self.logger.debug("Resource.update_host_resources: host(" + _hn +
-                              ") cpu changed")
-            host.original_vCPUs = _vcpus
-            host.vCPUs_used = _vcpus_used
-            updated = True
-
-        if host.free_mem_mb != _fmem or \
-           host.original_mem_cap != _mem:
-            self.logger.debug("Resource.update_host_resources: host(" + _hn +
-                              ") mem changed")
-            host.free_mem_mb = _fmem
-            host.original_mem_cap = _mem
-            updated = True
-
-        if host.free_disk_gb != _fldisk or \
-           host.original_local_disk_cap != _ldisk or \
-           host.disk_available_least != _avail_least:
-            self.logger.debug("Resource.update_host_resources: host(" + _hn +
-                              ") disk changed")
-
-            host.free_disk_gb = _fldisk
-            host.original_local_disk_cap = _ldisk
-            host.disk_available_least = _avail_least
-            updated = True
+        # FIXME(GJ): should check cpu, memm and disk here?
 
         if updated is True:
             self.compute_avail_resources(_hn, host)
@@ -831,11 +774,11 @@ class Resource(object):
             lg = self.logical_groups[lgk]
 
             if isinstance(_host, Host):
-                # remove host from lg's membership if the host has no vms of lg
+                # Remove host from lg's membership if the host has no vms of lg
                 if lg.remove_vm_by_h_uuid(_h_uuid, _host.name) is True:
                     lg.last_update = time.time()
 
-                # remove lg from host's membership if lg does not have the host
+                # Remove lg from host's membership if lg does not have the host
                 if _host.remove_membership(lg) is True:
                     _host.last_update = time.time()
 
@@ -870,11 +813,11 @@ class Resource(object):
             lg = self.logical_groups[lgk]
 
             if isinstance(_host, Host):
-                # remove host from lg's membership if the host has no vms of lg
+                # Remove host from lg's membership if the host has no vms of lg
                 if lg.remove_vm_by_uuid(_uuid, _host.name) is True:
                     lg.last_update = time.time()
 
-                # remove lg from host's membership if lg does not have the host
+                # Remove lg from host's membership if lg does not have the host
                 if _host.remove_membership(lg) is True:
                     _host.last_update = time.time()
 
@@ -1006,7 +949,8 @@ class Resource(object):
             if self.config.default_ram_allocation_ratio > 0:
                 ram_allocation_ratio = self.config.default_ram_allocation_ratio
 
-        static_ram_standby_ratio = 0
+        if self.config.static_mem_standby_ratio > 0:
+            static_ram_standby_ratio = float(self.config.static_mem_standby_ratio) / float(100)
 
         host.compute_avail_mem(ram_allocation_ratio, static_ram_standby_ratio)
 
@@ -1017,7 +961,8 @@ class Resource(object):
             if self.config.default_cpu_allocation_ratio > 0:
                 cpu_allocation_ratio = self.config.default_cpu_allocation_ratio
 
-        static_cpu_standby_ratio = 0
+        if self.config.static_cpu_standby_ratio > 0:
+            static_cpu_standby_ratio = float(self.config.static_cpu_standby_ratio) / float(100)
 
         host.compute_avail_vCPUs(cpu_allocation_ratio, static_cpu_standby_ratio)
 
@@ -1029,10 +974,10 @@ class Resource(object):
                 disk_allocation_ratio = \
                     self.config.default_disk_allocation_ratio
 
-        static_disk_standby_ratio = 0
+        if self.config.static_local_disk_standby_ratio > 0:
+            static_disk_standby_ratio = float(self.config.static_local_disk_standby_ratio) / float(100)
 
-        host.compute_avail_disk(disk_allocation_ratio,
-                                static_disk_standby_ratio)
+        host.compute_avail_disk(disk_allocation_ratio, static_disk_standby_ratio)
 
     def get_flavor(self, _id):
         """Return flavor according to name passed in."""

@@ -18,7 +18,6 @@
 from datetime import datetime
 import json
 import pika
-import pprint
 import threading
 import traceback
 from valet.common.conf import get_logger
@@ -133,18 +132,8 @@ class ListenerManager(threading.Thread):
             else:
                 return
 
-            self.listener_logger.debug("\nMessage No: %s\n",
-                                       method_frame.delivery_tag)
-            message_obj = yaml.load(body)
-            if 'oslo.message' in message_obj.keys():
-                message_obj = yaml.load(message_obj['oslo.message'])
-            if self.config.events_listener.output_format == 'json':
-                self.listener_logger.debug(json.dumps(message_obj,
-                                                      sort_keys=True, indent=2))
-            elif self.config.events_listener.output_format == 'yaml':
-                self.listener_logger.debug(yaml.dump(message_obj))
-            else:
-                self.listener_logger.debug(pprint.pformat(message_obj))
+            self.listener_logger.debug("\nMessage No: %s\n", method_frame.delivery_tag)
+            self.listener_logger.debug(json.dumps(message, sort_keys=True, indent=2))
             channel.basic_ack(delivery_tag=method_frame.delivery_tag)
         except Exception:
             self.listener_logger.error(traceback.format_exc())
@@ -195,7 +184,13 @@ class ListenerManager(threading.Thread):
 
     def is_nova_name(self, args):
         """Return True if object name is Instance."""
-        return args['objinst']['nova_object.name'] == 'Instance'
+        if args['objinst']['nova_object.data']['vm_state'] in ['deleted', 'active']:
+            return True
+        else:
+            if args['objinst']['nova_object.data']['vm_state'] == 'building':
+                return False
+            else:
+                return True
 
     def is_nova_state(self, args):
         """Return True if object vm_state is deleted or active."""

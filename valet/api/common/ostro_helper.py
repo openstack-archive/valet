@@ -94,7 +94,7 @@ class Ostro(object):
 
     def __init__(self):
         """Initializer."""
-        self.tries = conf.music.get('tries', 100)
+        self.tries = conf.music.get('tries', 1000)
         self.interval = conf.music.get('interval', 0.1)
 
     def _map_names_to_uuids(self, mapping, data):
@@ -127,34 +127,27 @@ class Ostro(object):
 
     # TODO(JD): This really belongs in valet-engine once it exists.
     def _send(self, stack_id, request):
-
         """Send request."""
-        request_query = Query(PlacementRequest)
+        # Creating the placement request effectively enqueues it.
+        PlacementRequest(stack_id=stack_id, request=request)  # pylint: disable=W0612
         result_query = Query(PlacementResult)
-        requested = False
 
         for __ in range(self.tries, 0, -1):  # pylint: disable=W0612
             # Take a breather in between checks.
             # TODO(JD): This is a blocking operation at the moment.
             time.sleep(self.interval)
 
-            # First, check to see if there's already a response.
             result = result_query.filter_by(stack_id=stack_id).first()
             if result:
                 placement = result.placement
                 result.delete()
                 return placement
-            elif not requested:
-                # Next, check to see if there's already a request.
-                prior_request = request_query.filter_by(
-                    stack_id=stack_id).first()
-                if not prior_request:
-                    # No request? Make one! Creating it enqueues it.
-                    PlacementRequest(stack_id=stack_id, request=request)  # pylint: disable=W0612
-                requested = True
 
         self.error_uri = '/errors/server_error'
         message = "Timed out waiting for a response."
+
+        LOG.error(message + " for stack_id = " + stack_id)
+
         response = self._build_error(message)
         return json.dumps(response)
 

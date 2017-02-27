@@ -28,7 +28,7 @@ class App(object):
         self.app_id = _app_id
         self.app_name = _app_name
 
-        self.request_type = _action   # create, update, or ping
+        self.request_type = _action   # create, replan, migrate, or ping
 
         self.timestamp_scheduled = 0
 
@@ -38,10 +38,10 @@ class App(object):
 
         self.status = 'requested'  # Moved to "scheduled" (and then "placed")
 
-    def add_vm(self, _vm, _host_name):
+    def add_vm(self, _vm, _host_name, _status):
         """Add vm to app, set status to scheduled."""
         self.vms[_vm.uuid] = _vm
-        self.vms[_vm.uuid].status = "scheduled"
+        self.vms[_vm.uuid].status = _status
         self.vms[_vm.uuid].host = _host_name
 
     def add_volume(self, _vol, _host_name):

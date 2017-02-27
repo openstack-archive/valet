@@ -44,9 +44,6 @@ class Config(object):
 
         self.api_protocol = 'http://'
 
-        self.network_control = False
-        self.network_control_api = None
-
         self.db_keyspace = None
         self.db_request_table = None
         self.db_response_table = None
@@ -62,9 +59,6 @@ class Config(object):
         self.ip = None
 
         self.priority = 0
-
-        self.rpc_server_ip = None
-        self.rpc_server_port = 0
 
         # Logging parameters
         self.logger_name = None
@@ -84,10 +78,9 @@ class Config(object):
         self.rack_code_list = []
         self.node_code_list = []
 
-        self.topology_trigger_time = None
         self.topology_trigger_freq = 0
-        self.compute_trigger_time = None
         self.compute_trigger_freq = 0
+        self.update_batch_wait = 0
 
         self.default_cpu_allocation_ratio = 1
         self.default_ram_allocation_ratio = 1
@@ -169,15 +162,7 @@ class Config(object):
 
         self.process = CONF.engine.pid
 
-        self.rpc_server_ip = CONF.engine.rpc_server_ip
-
-        self.rpc_server_port = CONF.engine.rpc_server_port
-
         self.datacenter_name = CONF.engine.datacenter_name
-
-        self.network_control = CONF.engine.network_control
-
-        self.network_control_url = CONF.engine.network_control_url
 
         self.default_cpu_allocation_ratio = \
             CONF.engine.default_cpu_allocation_ratio
@@ -195,13 +180,11 @@ class Config(object):
         self.static_local_disk_standby_ratio = \
             CONF.engine.static_local_disk_standby_ratio
 
-        self.topology_trigger_time = CONF.engine.topology_trigger_time
-
         self.topology_trigger_freq = CONF.engine.topology_trigger_frequency
 
-        self.compute_trigger_time = CONF.engine.compute_trigger_time
-
         self.compute_trigger_freq = CONF.engine.compute_trigger_frequency
+
+        self.update_batch_wait = CONF.engine.update_batch_wait
 
         self.db_keyspace = CONF.music.keyspace
 

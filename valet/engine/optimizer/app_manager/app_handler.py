@@ -15,9 +15,21 @@
 
 """App Handler."""
 
+import operator
+import time
+
 from valet.engine.optimizer.app_manager.app_topology import AppTopology
 from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.app_manager.application import App
+
+
+class AppHistory(object):
+
+    def __init__(self, _key):
+        self.decision_key = _key
+        self.host = None
+        self.result = None
+        self.timestamp = None
 
 
 class AppHandler(object):
@@ -38,9 +50,58 @@ class AppHandler(object):
         """ current app requested, a temporary copy """
         self.apps = {}
 
+        self.decision_history = {}
+        self.max_decision_history = 5000
+        self.min_decision_history = 1000
+
         self.last_log_index = 0
 
         self.status = "success"
+
+    # NOTE(GJ): do not cache migration decision
+    def check_history(self, _app):
+        stack_id = _app["stack_id"]
+        action = _app["action"]
+
+        if action == "create":
+            decision_key = stack_id + ":" + action + ":none"
+            if decision_key in self.decision_history.keys():
+                return (decision_key, self.decision_history[decision_key].result)
+            else:
+                return (decision_key, None)
+        elif action == "replan":
+            decision_key = stack_id + ":" + action + ":" + _app["orchestration_id"]
+            if decision_key in self.decision_history.keys():
+                return (decision_key, self.decision_history[decision_key].result)
+            else:
+                return (decision_key, None)
+        else:
+            return (None, None)
+
+    def put_history(self, _decision_key, _result):
+        decision_key_list = _decision_key.split(":")
+        action = decision_key_list[1]
+        if action == "create" or action == "replan":
+            app_history = AppHistory(_decision_key)
+            app_history.result = _result
+            app_history.timestamp = time.time()
+            self.decision_history[_decision_key] = app_history
+
+            if len(self.decision_history) > self.max_decision_history:
+                self._clean_decision_history()
+
+    def _clean_decision_history(self):
+        count = 0
+        num_of_removes = len(self.decision_history) - self.min_decision_history
+        remove_item_list = []
+        for decision in (sorted(self.decision_history.values(), key=operator.attrgetter('timestamp'))):
+            remove_item_list.append(decision.decision_key)
+            count += 1
+            if count == num_of_removes:
+                break
+        for dk in remove_item_list:
+            if dk in self.decision_history.keys():
+                del self.decision_history[dk]
 
     def add_app(self, _app):
         """Add app and set or regenerate topology, return updated topology."""
@@ -102,7 +163,7 @@ class AppHandler(object):
 
         return app_topology
 
-    def add_placement(self, _placement_map, _timestamp):
+    def add_placement(self, _placement_map, _app_topology, _timestamp):
         """Change requested apps to scheduled and place them."""
         for v in _placement_map.keys():
             if self.apps[v.app_uuid].status == "requested":
@@ -110,7 +171,16 @@ class AppHandler(object):
                 self.apps[v.app_uuid].timestamp_scheduled = _timestamp
 
             if isinstance(v, VM):
-                self.apps[v.app_uuid].add_vm(v, _placement_map[v])
+                if self.apps[v.app_uuid].request_type == "replan":
+                    if v.uuid in _app_topology.planned_vm_map.keys():
+                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "replanned")
+                    else:
+                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "scheduled")
+                    if v.uuid == _app_topology.candidate_list_map.keys()[0]:
+                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "replanned")
+                else:
+                    self.apps[v.app_uuid].add_vm(v, _placement_map[v], "scheduled")
+            # NOTE(GJ): do not handle Volume in this version
             else:
                 if _placement_map[v] in self.resource.hosts.keys():
                     host = self.resource.hosts[_placement_map[v]]
@@ -125,12 +195,13 @@ class AppHandler(object):
             pass
 
     def _store_app_placements(self):
+        # NOTE(GJ): do not track application history in this version
 
-        if self.db is not None:
-            for appk, app in self.apps.iteritems():
-                json_info = app.get_json_info()
-                if self.db.add_app(appk, json_info) is False:
-                    return False
+        for appk, app in self.apps.iteritems():
+            json_info = app.get_json_info()
+            if self.db.add_app(appk, json_info) is False:
+                return False
+
         return True
 
     def remove_placement(self):
@@ -204,12 +275,11 @@ class AppHandler(object):
 
                 if _action == "replan":
                     if vmk == _app["orchestration_id"]:
-                        _app_topology.candidate_list_map[vmk] = \
-                            _app["locations"]
-
+                        _app_topology.candidate_list_map[vmk] = _app["locations"]
                     elif vmk in _app["exclusions"]:
                         _app_topology.planned_vm_map[vmk] = vm["host"]
-
+                    if vm["status"] == "replanned":
+                        _app_topology.planned_vm_map[vmk] = vm["host"]
                 elif _action == "migrate":
                     if vmk == _app["orchestration_id"]:
                         _app_topology.exclusion_list_map[vmk] = _app[

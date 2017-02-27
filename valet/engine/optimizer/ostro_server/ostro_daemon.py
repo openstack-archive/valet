@@ -39,7 +39,7 @@ class OstroDaemon(Daemon):
             self.logger.error("ostro bootstrap failed")
             sys.exit(2)
 
-        # write pidfile
+        # Write pidfile
         pid = str(os.getpid())
         file(self.pidfile, 'w+').write("%s\n" % pid)
 
@@ -58,18 +58,16 @@ def verify_dirs(list_of_dirs):
 
 
 if __name__ == "__main__":
-    """ configuration """
     # Configuration
     try:
         config = Config()
-        ''' logger '''
         logger = get_logger("ostro_daemon")
         config_status = config.configure()
         if config_status != "success":
             print(config_status)
             sys.exit(2)
 
-        """ verify directories """
+        # Verify directories
         dirs_list = [config.logging_loc, config.resource_log_loc,
                      config.app_log_loc, os.path.dirname(config.process)]
         verify_dirs(dirs_list)
@@ -77,8 +75,6 @@ if __name__ == "__main__":
         # Start daemon process
         daemon = OstroDaemon(config.priority, config.process, logger)
 
-        logger.info("%s ostro ..." % config.command)
-        # switch case
         exit_code = {
             'start': daemon.start,
             'stop': daemon.stop,

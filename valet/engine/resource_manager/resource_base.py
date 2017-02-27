@@ -117,7 +117,6 @@ class Datacenter(object):
                 'last_link_update': self.last_link_update}
 
 
-# data container for rack or cluster
 class HostGroup(object):
     """Class for Host Group Object.
 
@@ -668,16 +667,18 @@ class LogicalGroup(object):
         """Return True if vm's or host vm's removed with physical id none."""
         success = False
 
-        for vm_id in self.vm_list:
-            if vm_id[2] == "none":
-                self.vm_list.remove(vm_id)
-                success = True
+        blen = len(self.vm_list)
+        self.vm_list = [v for v in self.vm_list if v[2] != "none"]
+        alen = len(self.vm_list)
+        if alen != blen:
+            success = True
 
         if _host_id in self.vms_per_host.keys():
-            for vm_id in self.vms_per_host[_host_id]:
-                if vm_id[2] == "none":
-                    self.vms_per_host[_host_id].remove(vm_id)
-                    success = True
+            blen = len(self.vms_per_host[_host_id])
+            self.vms_per_host[_host_id] = [v for v in self.vms_per_host[_host_id] if v[2] != "none"]
+            alen = len(self.vm_list)
+            if alen != blen:
+                success = True
 
         if self.group_type == "EX" or self.group_type == "AFF" or \
             self.group_type == "DIV":

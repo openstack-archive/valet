@@ -17,7 +17,6 @@
 
 import json
 import operator
-import time
 from valet.common.music import Music
 from valet.engine.optimizer.db_connect.event import Event
 
@@ -167,6 +166,7 @@ class MusicHandler(object):
 
         return True
 
+    # TODO(GJ): evaluate the delay
     def get_events(self):
         """Get Events.
 
@@ -176,15 +176,14 @@ class MusicHandler(object):
         """
         event_list = []
 
-        ts = time.time()
         events = {}
         try:
             events = self.music.read_all_rows(self.config.db_keyspace,
                                               self.config.db_event_table)
         except Exception as e:
             self.logger.error("DB:event: " + str(e))
-            self.logger.debug("EVAL: the delay of getting events = " + str(time.time() - ts))
-            return None
+            # FIXME(GJ): return None?
+            return {}
 
         if len(events) > 0:
             for _, row in events.iteritems():
@@ -249,8 +248,10 @@ class MusicHandler(object):
                                             e.args = args
                                             event_list.append(e)
                                         else:
-                                            if self.delete_event(event_id) \
-                                                    is False:
+                                            self.logger.warn("unknown vm_state = " + change_data["vm_state"])
+                                            if 'uuid' in change_data.keys():
+                                                self.logger.warn("    uuid = " + change_data['uuid'])
+                                            if self.delete_event(event_id) is False:
                                                 return None
                                     else:
                                         if self.delete_event(event_id) is False:
@@ -285,6 +286,7 @@ class MusicHandler(object):
                             return None
                         continue
 
+                    # NOTE(GJ): do not check the existance of scheduler_hints
                     if 'instance' not in args.keys():
                         if self.delete_event(event_id) is False:
                             return None
@@ -333,7 +335,6 @@ class MusicHandler(object):
         if len(event_list) > 0:
             event_list.sort(key=operator.attrgetter('event_id'))
 
-            self.logger.debug("EVAL: the delay of getting events = " + str(time.time() - ts))
         return event_list
 
     def delete_event(self, _event_id):
@@ -413,15 +414,14 @@ class MusicHandler(object):
         """Return list of requests that consists of all rows in a db table."""
         request_list = []
 
-        ts = time.time()
         requests = {}
         try:
             requests = self.music.read_all_rows(self.config.db_keyspace,
                                                 self.config.db_request_table)
         except Exception as e:
             self.logger.error("DB: while reading requests: " + str(e))
-            self.logger.debug("EVAL: the delay of getting requests = " + str(time.time() - ts))
-            return None
+            # FIXME(GJ): return None?
+            return {}
 
         if len(requests) > 0:
             self.logger.info("MusicHandler.get_requests: placement request "
@@ -434,7 +434,6 @@ class MusicHandler(object):
                 for r in r_list:
                     request_list.append(r)
 
-            self.logger.debug("EVAL: the delay of getting requests = " + str(time.time() - ts))
         return request_list
 
     def put_result(self, _result):
@@ -625,8 +624,6 @@ class MusicHandler(object):
             self.logger.error("DB: while deleting app: " + str(e))
             return False
 
-        # self.logger.info("DB: app deleted")
-
         if _app_data is not None:
             data = {
                 'stack_id': _k,
@@ -639,8 +636,6 @@ class MusicHandler(object):
             except Exception as e:
                 self.logger.error("DB: while inserting app: " + str(e))
                 return False
-
-            # self.logger.info("DB: app added")
 
         return True
 
