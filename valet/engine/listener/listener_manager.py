@@ -183,19 +183,13 @@ class ListenerManager(threading.Thread):
         OsloMessage(**kwargs)  # pylint: disable=W0612
 
     def is_nova_name(self, args):
-        """Return True if object name is Instance."""
-        if args['objinst']['nova_object.data']['vm_state'] in ['deleted', 'active']:
-            return True
-        else:
-            if args['objinst']['nova_object.data']['vm_state'] == 'building':
-                return False
-            else:
-                return True
+        return args['objinst']['nova_object.name'] == 'Instance'
 
     def is_nova_state(self, args):
-        """Return True if object vm_state is deleted or active."""
-        return args['objinst']['nova_object.data']['vm_state'] \
-            in ['deleted', 'active']
+        if args['objinst']['nova_object.data']['vm_state'] == 'building':
+            return False
+        else:
+            return True
 
     def is_compute_name(self, args):
         """Return True if object name is ComputeNode."""
