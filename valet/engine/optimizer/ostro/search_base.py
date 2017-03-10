@@ -28,40 +28,16 @@ class Resource(object):
         self.level = None
 
         self.host_name = None
+        self.host_memberships = {}          # all mapped logical groups to host
+        self.host_vCPUs = 0                 # original total vCPUs before overcommit
+        self.host_avail_vCPUs = 0           # remaining vCPUs after overcommit
+        self.host_mem = 0                   # original total mem cap before overcommit
+        self.host_avail_mem = 0             # remaining mem cap after
+        self.host_local_disk = 0            # original total local disk cap before overcommit
+        self.host_avail_local_disk = 0      # remaining local disk cap after overcommit
+        self.host_num_of_placed_vms = 0     # the number of vms currently placed in this host
 
-        # all mapped logical groups to host
-        self.host_memberships = {}
-
-        # original total vCPUs before overcommit
-        self.host_vCPUs = 0
-
-        # remaining vCPUs after overcommit
-        self.host_avail_vCPUs = 0
-
-        # original total mem cap before overcommit
-        self.host_mem = 0
-
-        # remaining mem cap after
-        self.host_avail_mem = 0
-
-        # original total local disk cap before overcommit
-        self.host_local_disk = 0
-
-        # remaining local disk cap after overcommit
-        self.host_avail_local_disk = 0
-
-        # all mapped switches to host
-        self.host_avail_switches = {}
-
-        # all mapped storage_resources to host
-        self.host_avail_storages = {}
-
-        # the number of vms currently placed in this host
-        self.host_num_of_placed_vms = 0
-
-        # where this host is located
-        self.rack_name = None
-
+        self.rack_name = None               # where this host is located
         self.rack_memberships = {}
         self.rack_vCPUs = 0
         self.rack_avail_vCPUs = 0
@@ -69,13 +45,6 @@ class Resource(object):
         self.rack_avail_mem = 0
         self.rack_local_disk = 0
         self.rack_avail_local_disk = 0
-
-        # all mapped switches to rack
-        self.rack_avail_switches = {}
-
-        # all mapped storage_resources to rack
-        self.rack_avail_storages = {}
-
         self.rack_num_of_placed_vms = 0
 
         # where this host and rack are located
@@ -88,19 +57,9 @@ class Resource(object):
         self.cluster_avail_mem = 0
         self.cluster_local_disk = 0
         self.cluster_avail_local_disk = 0
-
-        # all mapped switches to cluster
-        self.cluster_avail_switches = {}
-
-        # all mapped storage_resources to cluster
-        self.cluster_avail_storages = {}
         self.cluster_num_of_placed_vms = 0
 
-        # selected best storage for volume among host_avail_storages
-        self.storage = None
-
-        # order to place
-        self.sort_base = 0
+        self.sort_base = 0                  # order to place
 
     def get_common_placement(self, _resource):
         """Get common placement level."""
@@ -232,32 +191,6 @@ class Resource(object):
 
         return (mem, avail_mem)
 
-    def get_avail_storages(self, _level):
-        """Get the available storages of this resource at the specified level."""
-        avail_storages = None
-
-        if _level == "cluster":
-            avail_storages = self.cluster_avail_storages
-        elif _level == "rack":
-            avail_storages = self.rack_avail_storages
-        elif _level == "host":
-            avail_storages = self.host_avail_storages
-
-        return avail_storages
-
-    def get_avail_switches(self, _level):
-        """Get the available switches of this resource at the specified level."""
-        avail_switches = None
-
-        if _level == "cluster":
-            avail_switches = self.cluster_avail_switches
-        elif _level == "rack":
-            avail_switches = self.rack_avail_switches
-        elif _level == "host":
-            avail_switches = self.host_avail_switches
-
-        return avail_switches
-
 
 class LogicalGroupResource(object):
     """LogicalGroupResource."""
@@ -275,70 +208,12 @@ class LogicalGroupResource(object):
         self.num_of_placed_vms_per_host = {}
 
 
-class StorageResource(object):
-    """StorageResource."""
-
-    def __init__(self):
-        """Initialization."""
-        self.storage_name = None
-        self.storage_class = None
-        self.storage_avail_disk = 0
-
-        self.sort_base = 0
-
-
-class SwitchResource(object):
-    """SwitchResource."""
-
-    def __init__(self):
-        """Initialization."""
-        self.switch_name = None
-        self.switch_type = None
-        self.avail_bandwidths = []          # out-bound bandwidths
-
-        self.sort_base = 0
-
-
 class Node(object):
     """Node."""
 
     def __init__(self):
-        """Initialization."""
-        self.node = None                    # VM, Volume, or VGroup
-
+        self.node = None                    # VM or VGroup
         self.sort_base = -1
-
-    def get_all_links(self):
-        """Return a list of links for vms, volumes, and/or vgroups."""
-        link_list = []
-
-        if isinstance(self.node, VM):
-            for vml in self.node.vm_list:
-                link_list.append(vml)
-            for voll in self.node.volume_list:
-                link_list.append(voll)
-        elif isinstance(self.node, Volume):
-            for vml in self.node.vm_list:   # vml is VolumeLink
-                link_list.append(vml)
-        elif isinstance(self.node, VGroup):
-            for vgl in self.node.vgroup_list:
-                link_list.append(vgl)
-
-        return link_list
-
-    def get_bandwidth_of_link(self, _link):
-        """Return bandwidth of link."""
-        bandwidth = 0
-
-        if isinstance(self.node, VGroup) or isinstance(self.node, VM):
-            if isinstance(_link.node, VM):
-                bandwidth = _link.nw_bandwidth
-            elif isinstance(_link.node, Volume):
-                bandwidth = _link.io_bandwidth
-        else:
-            bandwidth = _link.io_bandwidth
-
-        return bandwidth
 
     def get_common_diversity(self, _diversity_groups):
         """Return the common level of the given diversity groups."""
@@ -365,15 +240,3 @@ class Node(object):
             aff_id = self.node.level + ":" + self.node.name
 
         return aff_id
-
-
-def compute_reservation(_level, _placement_level, _bandwidth):
-    """Compute and return the reservation."""
-    reservation = 0
-
-    if _placement_level != "ANY":
-        diff = LEVELS.index(_placement_level) - LEVELS.index(_level) + 1
-        if diff > 0:
-            reservation = _bandwidth * diff * 2
-
-    return reservation

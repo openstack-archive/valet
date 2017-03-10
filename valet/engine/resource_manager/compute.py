@@ -137,7 +137,6 @@ class Compute(object):
 
         return "success"
 
-    # NOTE: do not set any info in _logical_groups
     def _set_placed_vms(self, _hosts, _logical_groups):
         error_status = None
 
@@ -154,7 +153,7 @@ class Compute(object):
                     if result_status_detail == "success":
                         vm_id = ("none", vm_detail[0], vm_uuid)
                         _hosts[hk].vm_list.append(vm_id)
-
+                        # FIXME(GJ): should track logical groups (e.g., AZ)?
                     else:
                         error_status = result_status_detail
                         break
@@ -206,7 +205,8 @@ class Compute(object):
         return "success"
 
     def _set_resources(self, _hosts):
-        # Returns Hypervisor list
+        ''' returns Hypervisor list '''
+
         host_list = self.nova.hypervisors.list()
 
         try:
@@ -252,7 +252,8 @@ class Compute(object):
             return error_status
 
     def _set_flavors(self, _flavors):
-        # Get a list of all flavors
+        ''' get a list of all flavors '''
+
         flavor_list = self.nova.flavors.list()
 
         try:
@@ -280,9 +281,6 @@ class Compute(object):
                         swap_mb = float(sw)
 
                 flavor.disk_cap = root_gb + ephemeral_gb + swap_mb / float(1024)
-
-                # self.logger.info("adding flavor " + str(flavor.__dict__))
-
                 _flavors[flavor.name] = flavor
 
         except (ValueError, KeyError, TypeError):

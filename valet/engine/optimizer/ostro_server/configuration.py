@@ -50,8 +50,6 @@ class Config(object):
         self.db_event_table = None
         self.db_resource_table = None
         self.db_app_table = None
-        self.db_resource_index_table = None
-        self.db_app_index_table = None
         self.db_uuid_table = None
         self.replication_factor = 3
         self.db_hosts = []
@@ -197,10 +195,6 @@ class Config(object):
         self.db_resource_table = CONF.music.resource_table
 
         self.db_app_table = CONF.music.app_table
-
-        self.db_resource_index_table = CONF.music.resource_index_table
-
-        self.db_app_index_table = CONF.music.app_index_table
 
         self.db_uuid_table = CONF.music.uuid_table
 

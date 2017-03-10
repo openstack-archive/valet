@@ -54,8 +54,6 @@ class AppHandler(object):
         self.max_decision_history = 5000
         self.min_decision_history = 1000
 
-        self.last_log_index = 0
-
         self.status = "success"
 
     # NOTE(GJ): do not cache migration decision
@@ -123,7 +121,7 @@ class AppHandler(object):
 
         action = _app["action"]
         if action == "ping":
-            self.logger.debug("got ping")
+            self.logger.info("got ping")
         elif action == "replan" or action == "migrate":
             re_app = self._regenerate_app_topology(stack_id, _app,
                                                    app_topology, action)
@@ -133,9 +131,9 @@ class AppHandler(object):
                 return None
 
             if action == "replan":
-                self.logger.debug("got replan: " + stack_id)
+                self.logger.info("got replan: " + stack_id)
             elif action == "migrate":
-                self.logger.debug("got migration: " + stack_id)
+                self.logger.info("got migration: " + stack_id)
 
             app_id = app_topology.set_app_topology(re_app)
 
@@ -148,9 +146,9 @@ class AppHandler(object):
             app_id = app_topology.set_app_topology(_app)
 
             if len(app_topology.candidate_list_map) > 0:
-                self.logger.debug("got ad-hoc placement: " + stack_id)
+                self.logger.info("got ad-hoc placement: " + stack_id)
             else:
-                self.logger.debug("got placement: " + stack_id)
+                self.logger.info("got placement: " + stack_id)
 
             if app_id is None:
                 self.logger.error(app_topology.status)
@@ -321,8 +319,6 @@ class AppHandler(object):
                         if ex_id not in exclusivity_groups.keys():
                             exclusivity_groups[ex_id] = []
                         exclusivity_groups[ex_id].append(gk)
-
-        # NOTE: skip pipes in this version
 
         for div_id, resource_list in diversity_groups.iteritems():
             divk_level_name = div_id.split(":")

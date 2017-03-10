@@ -15,7 +15,6 @@
 
 """Resource - Handles data, metadata, status of resources."""
 
-import sys
 import time
 import traceback
 
@@ -45,8 +44,6 @@ class Resource(object):
         self.datacenter = Datacenter(self.config.datacenter_name)
         self.host_groups = {}
         self.hosts = {}
-        self.switches = {}
-        self.storage_hosts = {}
 
         """ metadata """
         self.logical_groups = {}
@@ -76,7 +73,6 @@ class Resource(object):
                     logical_group.status = lg.get("status")
                     logical_group.metadata = lg.get("metadata")
                     logical_group.vm_list = lg.get("vm_list")
-                    logical_group.volume_list = lg.get("volume_list", [])
                     logical_group.vms_per_host = lg.get("vms_per_host")
 
                     self.logical_groups[lgk] = logical_group
@@ -100,47 +96,6 @@ class Resource(object):
             if len(self.flavors) == 0:
                 self.logger.error("fail loading flavors")
 
-            switches = _resource_status.get("switches")
-            if switches:
-                for sk, s in switches.iteritems():
-                    switch = Switch(sk)
-                    switch.switch_type = s.get("switch_type")
-                    switch.status = s.get("status")
-
-                    self.switches[sk] = switch
-
-            if len(self.switches) > 0:
-                for sk, s in switches.iteritems():
-                    switch = self.switches[sk]
-
-                    up_links = {}
-                    uls = s.get("up_links")
-                    for ulk, ul in uls.iteritems():
-                        ulink = Link(ulk)
-                        ulink.resource = self.switches[ul.get("resource")]
-                        ulink.nw_bandwidth = ul.get("bandwidth")
-                        ulink.avail_nw_bandwidth = ul.get("avail_bandwidth")
-
-                        up_links[ulk] = ulink
-
-                    switch.up_links = up_links
-
-                    peer_links = {}
-                    pls = s.get("peer_links")
-                    for plk, pl in pls.iteritems():
-                        plink = Link(plk)
-                        plink.resource = self.switches[pl.get("resource")]
-                        plink.nw_bandwidth = pl.get("bandwidth")
-                        plink.avail_nw_bandwidth = pl.get("avail_bandwidth")
-
-                        peer_links[plk] = plink
-
-                    switch.peer_links = peer_links
-            else:
-                self.logger.error("fail loading switches")
-
-            # storage_hosts
-
             hosts = _resource_status.get("hosts")
             if hosts:
                 for hk, h in hosts.iteritems():
@@ -162,15 +117,9 @@ class Resource(object):
                     host.free_disk_gb = h.get("free_disk_gb")
                     host.disk_available_least = h.get("disk_available_least")
                     host.vm_list = h.get("vm_list")
-                    host.volume_list = h.get("volume_list", [])
 
                     for lgk in h["membership_list"]:
                         host.memberships[lgk] = self.logical_groups[lgk]
-
-                    for sk in h.get("switch_list", []):
-                        host.switches[sk] = self.switches[sk]
-
-                    # host.storages
 
                     self.hosts[hk] = host
 
@@ -194,15 +143,9 @@ class Resource(object):
                         hg.get("original_local_disk")
                     host_group.avail_local_disk_cap = hg.get("avail_local_disk")
                     host_group.vm_list = hg.get("vm_list")
-                    host_group.volume_list = hg.get("volume_list", [])
 
                     for lgk in hg.get("membership_list"):
                         host_group.memberships[lgk] = self.logical_groups[lgk]
-
-                    for sk in hg.get("switch_list", []):
-                        host_group.switches[sk] = self.switches[sk]
-
-                    # host.storages
 
                     self.host_groups[hgk] = host_group
 
@@ -225,15 +168,9 @@ class Resource(object):
                     dc.get("original_local_disk")
                 self.datacenter.avail_local_disk_cap = dc.get("avail_local_disk")
                 self.datacenter.vm_list = dc.get("vm_list")
-                self.datacenter.volume_list = dc.get("volume_list", [])
 
                 for lgk in dc.get("membership_list"):
                     self.datacenter.memberships[lgk] = self.logical_groups[lgk]
-
-                for sk in dc.get("switch_list", []):
-                    self.datacenter.root_switches[sk] = self.switches[sk]
-
-                # host.storages
 
                 for ck in dc.get("children"):
                     if ck in self.host_groups.keys():
@@ -273,11 +210,9 @@ class Resource(object):
                         host.host_group = self.host_groups[pk]
 
             self._update_compute_avail()
-            self._update_storage_avail()
-            self._update_nw_bandwidth_avail()
 
         except Exception:
-            self.logger.error("Resource: bootstrap_from_db:" + traceback.format_exc())
+            self.logger.error("while bootstrap_from_db:" + traceback.format_exc())
 
         return True
 
@@ -286,8 +221,6 @@ class Resource(object):
         self._update_topology()
 
         self._update_compute_avail()
-        self._update_storage_avail()
-        self._update_nw_bandwidth_avail()
 
         if store is False:
             return True
@@ -315,8 +248,6 @@ class Resource(object):
     def _update_host_group_topology(self, _host_group):
         _host_group.init_resources()
         del _host_group.vm_list[:]
-        del _host_group.volume_list[:]
-        _host_group.storages.clear()
 
         for _, host in _host_group.child_resources.iteritems():
             if host.check_availability() is True:
@@ -331,15 +262,8 @@ class Resource(object):
                     host.original_local_disk_cap
                 _host_group.avail_local_disk_cap += host.avail_local_disk_cap
 
-                for shk, storage_host in host.storages.iteritems():
-                    if storage_host.status == "enabled":
-                        _host_group.storages[shk] = storage_host
-
                 for vm_id in host.vm_list:
                     _host_group.vm_list.append(vm_id)
-
-                for vol_name in host.volume_list:
-                    _host_group.volume_list.append(vol_name)
 
         _host_group.init_memberships()
 
@@ -351,8 +275,6 @@ class Resource(object):
     def _update_datacenter_topology(self):
         self.datacenter.init_resources()
         del self.datacenter.vm_list[:]
-        del self.datacenter.volume_list[:]
-        self.datacenter.storages.clear()
         self.datacenter.memberships.clear()
 
         for _, resource in self.datacenter.resources.iteritems():
@@ -369,15 +291,8 @@ class Resource(object):
                 self.datacenter.avail_local_disk_cap += \
                     resource.avail_local_disk_cap
 
-                for shk, storage_host in resource.storages.iteritems():
-                    if storage_host.status == "enabled":
-                        self.datacenter.storages[shk] = storage_host
-
                 for vm_name in resource.vm_list:
                     self.datacenter.vm_list.append(vm_name)
-
-                for vol_name in resource.volume_list:
-                    self.datacenter.volume_list.append(vol_name)
 
                 for mk in resource.memberships.keys():
                     self.datacenter.memberships[mk] = resource.memberships[mk]
@@ -387,57 +302,10 @@ class Resource(object):
         self.mem_avail = self.datacenter.avail_mem_cap
         self.local_disk_avail = self.datacenter.avail_local_disk_cap
 
-    def _update_storage_avail(self):
-        self.disk_avail = 0
-
-        for _, storage_host in self.storage_hosts.iteritems():
-            if storage_host.status == "enabled":
-                self.disk_avail += storage_host.avail_disk_cap
-
-    def _update_nw_bandwidth_avail(self):
-        self.nw_bandwidth_avail = 0
-
-        level = "leaf"
-        for _, s in self.switches.iteritems():
-            if s.status == "enabled":
-                if level == "leaf":
-                    if s.switch_type == "ToR" or s.switch_type == "spine":
-                        level = s.switch_type
-                elif level == "ToR":
-                    if s.switch_type == "spine":
-                        level = s.switch_type
-
-        if level == "leaf":
-            self.nw_bandwidth_avail = sys.maxint
-        elif level == "ToR":
-            for _, h in self.hosts.iteritems():
-                if h.status == "enabled" and h.state == "up" and \
-                   ("nova" in h.tag) and ("infra" in h.tag):
-                    avail_nw_bandwidth_list = [sys.maxint]
-                    for sk, s in h.switches.iteritems():
-                        if s.status == "enabled":
-                            for ulk, ul in s.up_links.iteritems():
-                                avail_nw_bandwidth_list.append(
-                                    ul.avail_nw_bandwidth)
-                    self.nw_bandwidth_avail += min(avail_nw_bandwidth_list)
-        elif level == "spine":
-            for _, hg in self.host_groups.iteritems():
-                if hg.host_type == "rack" and hg.status == "enabled":
-                    avail_nw_bandwidth_list = [sys.maxint]
-                    for _, s in hg.switches.iteritems():
-                        if s.status == "enabled":
-                            for _, ul in s.up_links.iteritems():
-                                avail_nw_bandwidth_list.append(
-                                    ul.avail_nw_bandwidth)
-                            # NOTE: peer links?
-                    self.nw_bandwidth_avail += min(avail_nw_bandwidth_list)
-
     def store_topology_updates(self):
         updated = False
         flavor_updates = {}
         logical_group_updates = {}
-        storage_updates = {}
-        switch_updates = {}
         host_updates = {}
         host_group_updates = {}
         datacenter_update = None
@@ -454,31 +322,17 @@ class Resource(object):
                 logical_group_updates[lgk] = lg.get_json_info()
                 updated = True
 
-        for shk, storage_host in self.storage_hosts.iteritems():
-            if storage_host.last_update >= self.curr_db_timestamp or \
-               storage_host.last_cap_update >= self.curr_db_timestamp:
-                storage_updates[shk] = storage_host.get_json_info()
-                updated = True
-
-        for sk, s in self.switches.iteritems():
-            if s.last_update >= self.curr_db_timestamp:
-                switch_updates[sk] = s.get_json_info()
-                updated = True
-
         for hk, host in self.hosts.iteritems():
-            if host.last_update > self.current_timestamp or \
-                host.last_link_update > self.current_timestamp:
+            if host.last_update >= self.curr_db_timestamp:
                 host_updates[hk] = host.get_json_info()
                 updated = True
 
         for hgk, host_group in self.host_groups.iteritems():
-            if host_group.last_update >= self.curr_db_timestamp or \
-               host_group.last_link_update >= self.curr_db_timestamp:
+            if host_group.last_update >= self.curr_db_timestamp:
                 host_group_updates[hgk] = host_group.get_json_info()
                 updated = True
 
-        if self.datacenter.last_update >= self.curr_db_timestamp or \
-           self.datacenter.last_link_update >= self.curr_db_timestamp:
+        if self.datacenter.last_update >= self.curr_db_timestamp:
             datacenter_update = self.datacenter.get_json_info()
             updated = True
 
@@ -492,10 +346,6 @@ class Resource(object):
                 json_logging['flavors'] = flavor_updates
             if len(logical_group_updates) > 0:
                 json_logging['logical_groups'] = logical_group_updates
-            if len(storage_updates) > 0:
-                json_logging['storages'] = storage_updates
-            if len(switch_updates) > 0:
-                json_logging['switches'] = switch_updates
             if len(host_updates) > 0:
                 json_logging['hosts'] = host_updates
             if len(host_group_updates) > 0:
@@ -511,9 +361,10 @@ class Resource(object):
         return True
 
     def show_current_logical_groups(self):
+        self.logger.debug("--- track logical groups info ---")
         for lgk, lg in self.logical_groups.iteritems():
             if lg.status == "enabled":
-                self.logger.debug("TEST: lg name = " + lgk)
+                self.logger.debug("lg name = " + lgk)
                 self.logger.debug("    type = " + lg.group_type)
                 if lg.group_type == "AGGR":
                     for k in lg.metadata.keys():
@@ -538,8 +389,9 @@ class Resource(object):
                             self.logger.error("TEST: membership missing")
 
     def show_current_host_status(self):
+        self.logger.debug("--- track host info ---")
         for hk, h in self.hosts.iteritems():
-            self.logger.debug("TEST: host name = " + hk)
+            self.logger.debug("host name = " + hk)
             self.logger.debug("    status = " + h.status + ", " + h.state)
             self.logger.debug("    vms = " + str(len(h.vm_list)))
             self.logger.debug("    resources (org, total, avail, used)")
@@ -637,55 +489,6 @@ class Resource(object):
         host.free_disk_gb += _ldisk
         host.disk_available_least += _ldisk
 
-    def add_vol_to_host(self, _host_name, _storage_name, _v_id, _disk):
-        """Add volume to host and adjust available disk on host."""
-        host = self.hosts[_host_name]
-
-        host.volume_list.append(_v_id)
-
-        storage_host = self.storage_hosts[_storage_name]
-        storage_host.volume_list.append(_v_id)
-
-        storage_host.avail_disk_cap -= _disk
-
-    # NOTE: Assume the up-link of spine switch is not used except out-going
-    # from datacenter
-    # NOTE: What about peer-switches?
-    def deduct_bandwidth(self, _host_name, _placement_level, _bandwidth):
-        """Deduct bandwidth at appropriate placement level."""
-        host = self.hosts[_host_name]
-
-        if _placement_level == "host":
-            self._deduct_host_bandwidth(host, _bandwidth)
-
-        elif _placement_level == "rack":
-            self._deduct_host_bandwidth(host, _bandwidth)
-
-            rack = host.host_group
-            if not isinstance(rack, Datacenter):
-                self._deduct_host_bandwidth(rack, _bandwidth)
-
-        elif _placement_level == "cluster":
-            self._deduct_host_bandwidth(host, _bandwidth)
-
-            rack = host.host_group
-            self._deduct_host_bandwidth(rack, _bandwidth)
-
-            cluster = rack.parent_resource
-            for _, s in cluster.switches.iteritems():
-                if s.switch_type == "spine":
-                    for _, ul in s.up_links.iteritems():
-                        ul.avail_nw_bandwidth -= _bandwidth
-
-                    s.last_update = time.time()
-
-    def _deduct_host_bandwidth(self, _host, _bandwidth):
-        for _, hs in _host.switches.iteritems():
-            for _, ul in hs.up_links.iteritems():
-                ul.avail_nw_bandwidth -= _bandwidth
-
-            hs.last_update = time.time()
-
     # called from handle_events
     def update_host_resources(self, _hn, _st, _vcpus, _vcpus_used, _mem, _fmem,
                               _ldisk, _fldisk, _avail_least):
@@ -695,7 +498,7 @@ class Resource(object):
 
         if host.status != _st:
             host.status = _st
-            self.logger.debug("Resource.update_host_resources: host(" + _hn +
+            self.logger.warn("Resource.update_host_resources: host(" + _hn +
                               ") status changed")
             updated = True
 
@@ -712,12 +515,6 @@ class Resource(object):
 
         host.last_update = time.time()
         self.update_rack_resource(host)
-
-    def update_storage_time(self, _storage_name):
-        """Update last storage update time."""
-        storage_host = self.storage_hosts[_storage_name]
-
-        storage_host.last_cap_update = time.time()
 
     def add_logical_group(self, _host_name, _lg_name, _lg_type):
         """Add logical group to host memberships and update host resource."""

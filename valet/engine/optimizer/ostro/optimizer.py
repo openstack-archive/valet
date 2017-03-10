@@ -18,10 +18,12 @@
 import time
 
 from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VM, Volume
+    import VGroup, VM
 from valet.engine.optimizer.ostro.search import Search
 
 
+# FIXME(GJ): make search algorithm pluggable
+# NOTE(GJ): do not deal with Volume placements at this version
 class Optimizer(object):
     """Optimizer."""
 
@@ -41,8 +43,6 @@ class Optimizer(object):
 
         uuid_map = None
         place_type = None
-
-        start_ts = time.time()
 
         if len(_app_topology.exclusion_list_map) > 0:
             place_type = "migration"
@@ -70,24 +70,11 @@ class Optimizer(object):
         else:
             success = self.search.place_nodes(_app_topology, self.resource)
 
-        end_ts = time.time()
-
         if success is True:
-
-            self.logger.debug("Optimizer: search running time = " +
-                              str(end_ts - start_ts) + " sec")
-            self.logger.debug("Optimizer: total number of hosts = " +
-                              str(self.search.num_of_hosts))
-
             placement_map = {}
             for v in self.search.node_placements.keys():
                 if isinstance(v, VM):
                     placement_map[v] = self.search.node_placements[v].host_name
-                elif isinstance(v, Volume):
-                    placement_map[v] = \
-                        self.search.node_placements[v].host_name + "@"
-                    placement_map[v] += \
-                        self.search.node_placements[v].storage.storage_name
                 elif isinstance(v, VGroup):
                     if v.level == "host":
                         placement_map[v] = \
@@ -129,50 +116,18 @@ class Optimizer(object):
 
     def _update_resource_status(self, _uuid_map):
         for v, np in self.search.node_placements.iteritems():
+            uuid = "none"
+            if _uuid_map is not None:
+                if v.uuid in _uuid_map.keys():
+                    uuid = _uuid_map[v.uuid]
 
-            if isinstance(v, VM):
-                uuid = "none"
-                if _uuid_map is not None:
-                    if v.uuid in _uuid_map.keys():
-                        uuid = _uuid_map[v.uuid]
+            self.resource.add_vm_to_host(np.host_name,
+                                         (v.uuid, v.name, uuid),
+                                         v.vCPUs, v.mem, v.local_volume_size)
 
-                self.resource.add_vm_to_host(np.host_name,
-                                             (v.uuid, v.name, uuid),
-                                             v.vCPUs, v.mem,
-                                             v.local_volume_size)
+            self._update_logical_grouping(v, self.search.avail_hosts[np.host_name], uuid)
 
-                for vl in v.vm_list:
-                    tnp = self.search.node_placements[vl.node]
-                    placement_level = np.get_common_placement(tnp)
-                    self.resource.deduct_bandwidth(np.host_name,
-                                                   placement_level,
-                                                   vl.nw_bandwidth)
-
-                for voll in v.volume_list:
-                    tnp = self.search.node_placements[voll.node]
-                    placement_level = np.get_common_placement(tnp)
-                    self.resource.deduct_bandwidth(np.host_name,
-                                                   placement_level,
-                                                   voll.io_bandwidth)
-
-                self._update_logical_grouping(
-                    v, self.search.avail_hosts[np.host_name], uuid)
-
-                self.resource.update_host_time(np.host_name)
-
-            elif isinstance(v, Volume):
-                self.resource.add_vol_to_host(np.host_name,
-                                              np.storage.storage_name, v.name,
-                                              v.volume_size)
-
-                for vl in v.vm_list:
-                    tnp = self.search.node_placements[vl.node]
-                    placement_level = np.get_common_placement(tnp)
-                    self.resource.deduct_bandwidth(np.host_name,
-                                                   placement_level,
-                                                   vl.io_bandwidth)
-
-                self.resource.update_storage_time(np.storage.storage_name)
+            self.resource.update_host_time(np.host_name)
 
     def _update_logical_grouping(self, _v, _avail_host, _uuid):
         for lgk, lg in _avail_host.host_memberships.iteritems():

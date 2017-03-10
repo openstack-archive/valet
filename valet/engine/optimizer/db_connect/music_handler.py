@@ -25,6 +25,7 @@ def ensurekey(d, k):
     return d.setdefault(k, {})
 
 
+# FIXME(GJ): make MUSIC as pluggable
 class MusicHandler(object):
     """Music Handler Class.
 
@@ -37,19 +38,14 @@ class MusicHandler(object):
         self.config = _config
         self.logger = _logger
 
-        self.music = None
+        self.music = Music(hosts=self.config.db_hosts, replication_factor=self.config.replication_factor)
+        if self.config.db_hosts is not None and len(self.config.db_hosts) > 0:
+            for dbh in self.config.db_hosts:
+                self.logger.info("DB: music host = " + dbh)
+        if self.config.replication_factor is not None:
+            self.logger.info("DB: music replication factor = " + str(self.config.replication_factor))
 
-        if self.config.mode.startswith("sim"):
-            self.music = Music()
-        elif self.config.mode.startswith("live"):
-            self.music = Music(hosts=self.config.db_hosts,
-                               replication_factor=self.config.replication_factor)
-            if self.config.db_hosts is not None and len(self.config.db_hosts) > 0:
-                for dbh in self.config.db_hosts:
-                    self.logger.debug("DB: music host = " + dbh)
-            if self.config.replication_factor is not None:
-                self.logger.debug("DB: music replication factor = " + str(self.config.replication_factor))
-
+    # FIXME(GJ): this may not need
     def init_db(self):
         """Init Database.
 
@@ -123,30 +119,6 @@ class MusicHandler(object):
         try:
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_app_table, schema)
-        except Exception as e:
-            self.logger.error("DB: " + str(e))
-            return False
-
-        schema = {
-            'site_name': 'text',
-            'app_log_index': 'text',
-            'PRIMARY KEY': '(site_name)'
-        }
-        try:
-            self.music.create_table(self.config.db_keyspace,
-                                    self.config.db_app_index_table, schema)
-        except Exception as e:
-            self.logger.error("DB: " + str(e))
-            return False
-
-        schema = {
-            'site_name': 'text',
-            'resource_log_index': 'text',
-            'PRIMARY KEY': '(site_name)'
-        }
-        try:
-            self.music.create_table(self.config.db_keyspace,
-                                    self.config.db_resource_index_table, schema)
         except Exception as e:
             self.logger.error("DB: " + str(e))
             return False
@@ -515,20 +487,6 @@ class MusicHandler(object):
                         del json_resource['logical_groups'][lgk]
                     json_resource['logical_groups'][lgk] = lg
 
-            if 'storages' in _status.keys():
-                storages = _status['storages']
-                for stk, st in storages.iteritems():
-                    if stk in ensurekey(json_resource, 'storages').keys():
-                        del json_resource['storages'][stk]
-                    json_resource['storages'][stk] = st
-
-            if 'switches' in _status.keys():
-                switches = _status['switches']
-                for sk, s in switches.iteritems():
-                    if sk in ensurekey(json_resource, 'switches').keys():
-                        del json_resource['switches'][sk]
-                    json_resource['switches'][sk] = s
-
             if 'hosts' in _status.keys():
                 hosts = _status['hosts']
                 for hk, h in hosts.iteritems():
@@ -575,42 +533,6 @@ class MusicHandler(object):
             return False
 
         self.logger.info("DB: resource status updated")
-
-        return True
-
-    def update_resource_log_index(self, _k, _index):
-        """Update resource log index in database and return True."""
-        data = {
-            'site_name': _k,
-            'resource_log_index': str(_index)
-        }
-
-        try:
-            self.music.update_row_eventually(
-                self.config.db_keyspace, self.config.db_resource_index_table,
-                'site_name', _k, data)
-        except Exception as e:
-            self.logger.error("MUSIC error while updating resource log "
-                              "index: " + str(e))
-            return False
-
-        return True
-
-    def update_app_log_index(self, _k, _index):
-        """Update app log index in database and return True."""
-        data = {
-            'site_name': _k,
-            'app_log_index': str(_index)
-        }
-
-        try:
-            self.music.update_row_eventually(self.config.db_keyspace,
-                                             self.config.db_app_index_table,
-                                             'site_name', _k, data)
-        except Exception as e:
-            self.logger.error("MUSIC error while updating app log index: " +
-                              str(e))
-            return False
 
         return True
 
@@ -734,7 +656,7 @@ class MusicHandler(object):
                 if vmk == _h_uuid:
                     if vm["status"] != "deleted":
                         vm["status"] = "deleted"
-                        self.logger.debug("DB: deleted marked")
+                        self.logger.warn("DB: deleted marked")
                         updated = True
                     else:
                         self.logger.warn("DB: vm was already deleted")

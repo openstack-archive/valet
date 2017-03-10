@@ -16,14 +16,16 @@
 """Topology class - performs actual setting up of Topology object."""
 
 import copy
-import sys
 
 from sre_parse import isdigit
-from valet.engine.resource_manager.resource_base import HostGroup, Switch, Link
+from valet.engine.resource_manager.resource_base import HostGroup
 
 
 class Topology(object):
-    """Topology class."""
+    """
+    Topology class.
+    currently, using cannonical naming convention to find the topology
+    """ 
 
     def __init__(self, _config, _logger):
         """Init config and logger."""
@@ -31,22 +33,16 @@ class Topology(object):
         self.logger = _logger
 
     # Triggered by rhosts change
-    def set_topology(self, _datacenter, _host_groups, _hosts, _rhosts,
-                     _switches):
+    def set_topology(self, _datacenter, _host_groups, _hosts, _rhosts):
         """Return result status if setting host or network topology fails."""
         result_status = self._set_host_topology(_datacenter, _host_groups,
                                                 _hosts, _rhosts)
         if result_status != "success":
             return result_status
 
-        result_status = self._set_network_topology(_datacenter, _host_groups,
-                                                   _hosts, _switches)
-        if result_status != "success":
-            return result_status
-
+        # TODO(GJ): set network bandwidth links
         return "success"
 
-    # NOTE: currently, the hosts are copied from Nova
     def _set_host_topology(self, _datacenter, _host_groups, _hosts, _rhosts):
         for rhk, rh in _rhosts.iteritems():
             h = copy.deepcopy(rh)
@@ -84,43 +80,6 @@ class Topology(object):
 
         if "none" in _host_groups.keys():
             self.logger.warn("some hosts are into unknown rack")
-
-        return "success"
-
-    # NOTE: this is just muck-ups
-    def _set_network_topology(self, _datacenter, _host_groups, _hosts,
-                              _switches):
-        root_switch = Switch(_datacenter.name)
-        root_switch.switch_type = "root"
-
-        _datacenter.root_switches[root_switch.name] = root_switch
-        _switches[root_switch.name] = root_switch
-
-        for hgk, hg in _host_groups.iteritems():
-            switch = Switch(hgk)
-            switch.switch_type = "ToR"
-
-            up_link = Link(hgk + "-" + _datacenter.name)
-            up_link.resource = root_switch
-            up_link.nw_bandwidth = sys.maxint
-            up_link.avail_nw_bandwidth = up_link.nw_bandwidth
-            switch.up_links[up_link.name] = up_link
-
-            hg.switches[switch.name] = switch
-            _switches[switch.name] = switch
-
-            for hk, h in hg.child_resources.iteritems():
-                leaf_switch = Switch(hk)
-                leaf_switch.switch_type = "leaf"
-
-                l_up_link = Link(hk + "-" + hgk)
-                l_up_link.resource = switch
-                l_up_link.nw_bandwidth = sys.maxint
-                l_up_link.avail_nw_bandwidth = l_up_link.nw_bandwidth
-                leaf_switch.up_links[l_up_link.name] = l_up_link
-
-                h.switches[leaf_switch.name] = leaf_switch
-                _switches[leaf_switch.name] = leaf_switch
 
         return "success"
 

@@ -15,6 +15,8 @@
 
 """AggregateInstanceExtraSpecsFilter."""
 
+
+import openstack_utils
 import six
 
 from valet.engine.optimizer.app_manager.app_topology_base import VM
@@ -23,6 +25,7 @@ from valet.engine.optimizer.ostro import openstack_utils
 _SCOPE = 'aggregate_instance_extra_specs'
 
 
+# FIXME(GJ): make extensible
 class AggregateInstanceExtraSpecsFilter(object):
     """AggregateInstanceExtraSpecsFilter works with InstanceType records."""
 
@@ -192,7 +195,7 @@ class DiskFilter(object):
         self.logger = _logger
 
     def host_passes(self, _level, _host, _v):
-        """Return True if the requested disk is less than the available disk."""
+        """Filter based on disk usage."""
         requested_disk = _v.local_volume_size
         (_, usable_disk) = _host.get_local_disk(_level)
 

@@ -21,7 +21,7 @@ import time
 import traceback
 from valet.engine.listener.listener_manager import ListenerManager
 from valet.engine.optimizer.app_manager.app_handler import AppHandler
-from valet.engine.optimizer.app_manager.app_topology_base import VM, Volume
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.db_connect.music_handler import MusicHandler
 from valet.engine.optimizer.ostro.optimizer import Optimizer
 from valet.engine.resource_manager.compute_manager import ComputeManager
@@ -42,33 +42,24 @@ class Ostro(object):
         self.db = MusicHandler(self.config, self.logger)
         if self.db.init_db() is False:
             self.logger.error("error while initializing MUSIC database")
-        else:
-            self.logger.debug("done init music")
 
         self.resource = Resource(self.db, self.config, self.logger)
-        self.logger.debug("done init resource")
 
         self.app_handler = AppHandler(self.resource, self.db, self.config,
                                       self.logger)
-        self.logger.debug("done init apphandler")
 
         self.optimizer = Optimizer(self.resource, self.logger)
-        self.logger.debug("done init optimizer")
 
         self.data_lock = threading.Lock()
         self.thread_list = []
 
         self.topology = TopologyManager(1, "Topology", self.resource,
-                                        self.data_lock, self.config,
-                                        self.logger)
-        self.logger.debug("done init topology")
+                                      self.data_lock, self.config, self.logger)
 
         self.compute = ComputeManager(2, "Compute", self.resource,
                                       self.data_lock, self.config, self.logger)
-        self.logger.debug("done init compute")
 
         self.listener = ListenerManager(3, "Listener", CONF)
-        self.logger.debug("done init listener")
 
         self.status = "success"
         self.end_of_process = False
@@ -269,8 +260,6 @@ class Ostro(object):
         return query_result
 
     def _get_vms_from_logical_group(self, _group_name):
-        self.logger.debug("query to see vms of " + _group_name)
-
         vm_list = []
 
         vm_id_list = []
@@ -279,12 +268,8 @@ class Ostro(object):
                     lg.group_type == "DIV":
                 lg_id = lgk.split(":")
                 if lg_id[1] == _group_name:
-                    self.logger.debug("found group in Ostro")
                     vm_id_list = lg.vm_list
                     break
-
-        if len(vm_id_list) == 0:
-            self.logger.debug("group does not exist in Ostro")
 
         for vm_id in vm_id_list:
             if vm_id[2] != "none":   # if physical_uuid != 'none'
@@ -405,7 +390,7 @@ class Ostro(object):
 
             if e.method == "build_and_run_instance":
                 # VM is created (from stack)
-                self.logger.debug("Ostro.handle_events: got build_and_run event for " + e.uuid)
+                self.logger.info("Ostro.handle_events: got build_and_run event for " + e.uuid)
                 if self.db.put_uuid(e) is False:
                     self.data_lock.release()
                     return False
@@ -420,7 +405,7 @@ class Ostro(object):
                         return False
 
                     if e.vm_state == "active":
-                        self.logger.debug("Ostro.handle_events: got instance_"
+                        self.logger.info("Ostro.handle_events: got instance_"
                                           "active event for " + e.uuid)
                         vm_info = self.app_handler.get_vm_info(orch_id[1], orch_id[0], e.host)
                         if vm_info is None:
@@ -458,28 +443,20 @@ class Ostro(object):
                                         self._update_h_uuid_in_logical_groups(
                                             orch_id[0], e.uuid, e.host)
                                 else:
-                                    self.logger.debug("Ostro.handle_events: vm "
-                                                      "activated as planned")
-                                    self._update_uuid_in_host(orch_id[0],
-                                                              e.uuid, e.host)
-                                    self._update_uuid_in_logical_groups(
-                                        orch_id[0], e.uuid, e.host)
+                                    self.logger.info("EVENT: vm activated as planned")
+                                    self._update_uuid_in_host(orch_id[0], e.uuid, e.host)
+                                    self._update_uuid_in_logical_groups(orch_id[0], e.uuid, e.host)
 
                         resource_updated = True
 
                     elif e.vm_state == "deleted":
-                        self.logger.debug("Ostro.handle_events: got instance_"
-                                          "delete event for " + e.uuid)
+                        self.logger.info("EVENT: got instance_delete for " + e.uuid)
 
-                        self._remove_vm_from_host(e.uuid, orch_id[0], e.host,
-                                                  e.vcpus, e.mem, e.local_disk)
-                        self._remove_vm_from_logical_groups(e.uuid, orch_id[0],
-                                                            e.host)
+                        self._remove_vm_from_host(e.uuid, orch_id[0], e.host, e.vcpus, e.mem, e.local_disk)
+                        self._remove_vm_from_logical_groups(e.uuid, orch_id[0], e.host)
 
-                        if self.app_handler.update_vm_info(orch_id[1],
-                                                           orch_id[0]) is False:
-                            self.logger.error("Ostro.handle_events: error "
-                                              "while updating app in MUSIC")
+                        if self.app_handler.update_vm_info(orch_id[1], orch_id[0]) is False:
+                            self.logger.error("EVENT: error while updating app in MUSIC")
                             self.data_lock.release()
                             return False
 
@@ -495,7 +472,7 @@ class Ostro(object):
 
                 elif e.object_name == 'ComputeNode':
                     # Host resource is updated
-                    self.logger.debug("EVENT: got compute for " + e.host)
+                    self.logger.info("EVENT: got compute for " + e.host)
                     # NOTE: what if host is disabled?
                     if self.resource.update_host_resources(
                             e.host, e.status, e.vcpus, e.vcpus_used, e.mem,
@@ -648,7 +625,7 @@ class Ostro(object):
             if _status_type != "error":
                 applications = {}
                 for v in _map.keys():
-                    if isinstance(v, VM) or isinstance(v, Volume):
+                    if isinstance(v, VM):
                         resources = None
                         if v.app_uuid in applications.keys():
                             resources = applications[v.app_uuid]

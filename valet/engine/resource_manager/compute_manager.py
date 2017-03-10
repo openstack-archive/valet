@@ -20,7 +20,6 @@ import time
 
 from copy import deepcopy
 from valet.engine.resource_manager.compute import Compute
-from valet.engine.resource_manager.compute_simulator import SimCompute
 from valet.engine.resource_manager.resource_base import Host
 
 
@@ -93,12 +92,7 @@ class ComputeManager(threading.Thread):
         hosts = {}
         logical_groups = {}
 
-        compute = None
-        if self.config.mode.startswith("sim") is True or \
-                self.config.mode.startswith("test") is True:
-            compute = SimCompute(self.config)
-        else:
-            compute = Compute(self.logger)
+        compute = Compute(self.logger)
 
         status = compute.set_hosts(hosts, logical_groups)
         if status != "success":
@@ -376,12 +370,7 @@ class ComputeManager(threading.Thread):
         """Return True if compute set flavors returns success."""
         flavors = {}
 
-        compute = None
-        if self.config.mode.startswith("sim") is True or \
-                self.config.mode.startswith("test") is True:
-            compute = SimCompute(self.config)
-        else:
-            compute = Compute(self.logger)
+        compute = Compute(self.logger)
 
         status = compute.set_flavors(flavors)
         if status != "success":

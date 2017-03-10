@@ -159,7 +159,6 @@ class Event(object):
                     str_numa_topology = self.change_data['numa_topology']
                     try:
                         numa_topology = json.loads(str_numa_topology)
-                        # print json.dumps(numa_topology, indent=4)
 
                         if 'nova_object.data' in numa_topology.keys():
                             if 'cells' in numa_topology['nova_object.data']:
@@ -171,7 +170,6 @@ class Event(object):
 
                     except (ValueError, KeyError, TypeError):
                         pass
-                        # print "error while parsing numa_topology"
 
         elif self.method == 'build_and_run_instance':
             if 'scheduler_hints' in self.args['filter_properties'].keys():
