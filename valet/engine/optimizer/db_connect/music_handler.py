@@ -38,10 +38,10 @@ class MusicHandler(object):
         self.config = _config
         self.logger = _logger
 
-        self.music = Music(hosts=self.config.db_hosts, replication_factor=self.config.replication_factor)
-        if self.config.db_hosts is not None and len(self.config.db_hosts) > 0:
-            for dbh in self.config.db_hosts:
-                self.logger.info("DB: music host = " + dbh)
+        self.music = Music(host=self.config.db_host, port=self.config.db_port,
+                           replication_factor=self.config.replication_factor)
+        if self.config.db_host is not None:
+            self.logger.info("DB: music host = " + self.config.db_host)
         if self.config.replication_factor is not None:
             self.logger.info("DB: music replication factor = " + str(self.config.replication_factor))
 
