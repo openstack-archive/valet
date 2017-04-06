@@ -63,9 +63,9 @@ class ListenerManager(threading.Thread):
                 engine.create_keyspace(self.config.music.keyspace)
                 self.MUSIC = {'engine': engine,
                               'keyspace': self.config.music.keyspace}
-                self.listener_logger.debug('Storing in music on %s, keyspace %s'
-                                           % (self.config.music.host,
-                                              self.config.music.keyspace))
+                self.listener_logger.debug('Storing in music on %s, keyspace %s' %
+                                           (self.config.music.hosts,
+                                            self.config.music.keyspace))
 
             self.listener_logger.debug('Connecting to %s, with %s' %
                                        (self.config.messaging.host,
@@ -73,8 +73,7 @@ class ListenerManager(threading.Thread):
             credentials = pika.PlainCredentials(self.config.messaging.username,
                                                 self.config.messaging.password)
             parameters = pika.ConnectionParameters(self.config.messaging.host,
-                                                   self.config.messaging.port,
-                                                   '/', credentials)
+                                                   self.config.messaging.port, '/', credentials)
 
             connection = pika.BlockingConnection(parameters)
             channel = connection.channel()
