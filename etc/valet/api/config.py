@@ -72,8 +72,9 @@ identity = {
 }
 
 music = {
-    'host': CONF.music.host,
+    'hosts': CONF.music.hosts,
     'port': CONF.music.port,
     'keyspace': CONF.music.keyspace,
     'replication_factor': CONF.music.replication_factor,
+    'music_server_retries': CONF.music.music_server_retries,
 }

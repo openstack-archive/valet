@@ -53,9 +53,11 @@ class ListenerManager(threading.Thread):
             if self.config.events_listener.store:
 
                 kwargs = {
-                    'host': self.config.music.host,
+                    'hosts': self.config.music.hosts,
                     'port': self.config.music.port,
                     'replication_factor': self.config.music.replication_factor,
+                    'music_server_retries': self.config.music.music_server_retries,
+                    'logger': self.listener_logger,
                 }
                 engine = Music(**kwargs)
                 engine.create_keyspace(self.config.music.keyspace)

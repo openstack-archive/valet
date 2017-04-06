@@ -19,9 +19,6 @@ import json
 import requests
 import time
 from valet.api.common.i18n import _
-from valet.common.conf import get_logger
-
-LOG = get_logger("music")
 
 
 class REST(object):
@@ -34,19 +31,22 @@ class REST(object):
 
     _urls = None
 
-    def __init__(self, hosts, port, path='/', timeout='10'):
+    def __init__(self, hosts, port, path='/', timeout='10', music_server_retries=3, logger=None):
         """Initializer. Accepts target host list, port, and path."""
+
         self.hosts = hosts  # List of IP or FQDNs
         self.port = port  # Port Number
         self.path = path  # Path starting with /
         self.timeout = float(timeout)  # REST request timeout in seconds
+        # Retires before failiing over to next Music server.
+        self.music_server_retries = music_server_retries
+        self.logger = logger  # For logging
 
     @property
     def urls(self):
         """Return list of URLs using each host, plus the port/path."""
         if not self._urls:
-            # make localhost as first option
-            urls = ['http://localhost:%s%s' % (self.port, self.path)]
+            urls = []
             for host in self.hosts:
                 # Must end without a slash
                 urls.append('http://%(host)s:%(port)s%(path)s' % {
@@ -78,28 +78,31 @@ class REST(object):
         for url in self.urls:
             # Try each url in turn. First one to succeed wins.
             full_url = url + path
-            try:
-                data_json = json.dumps(data) if data else None
-                LOG.debug("Music Request: %s %s%s", method.upper(), full_url, data_json if data else '')
-                response = method_fn(full_url, data=data_json, headers=self.__headers(content_type), timeout=self.timeout)
-                response.raise_for_status()
+            data_json = json.dumps(data) if data else None
+            for attempt in range(self.music_server_retries):
+                # Ignore the previous exception.
+                try:
+                    response = method_fn(full_url, data=data_json, headers=self.__headers(content_type), timeout=self.timeout)
+                    response.raise_for_status()
 
-                return response
-            except requests.exceptions.Timeout as err:
-                response = requests.Response()
-                response.status_code = 408
-                response.url = full_url
-                LOG.debug("Music: %s", err.message)
-            except requests.exceptions.RequestException as err:
-                response = requests.Response()
-                response.status_code = 400
-                response.url = full_url
-                LOG.debug("Music: %s", err.message)
+                    return response
+                except requests.exceptions.Timeout as err:
+                    response = requests.Response()
+                    response.status_code = 408
+                    response.url = full_url
+                    if self.logger:
+                        self.logger.debug("Music: %s  Method: %s  Full Url: %s", err.message, method.upper(), full_url)
+                except requests.exceptions.RequestException as err:
+                    response = requests.Response()
+                    response.status_code = 400
+                    response.url = full_url
+                    if self.logger:
+                        self.logger.debug("Music: %s  Method: %s  Full Url: %s", err.message, method.upper(), full_url)
 
         # If we get here, an exception was raised for every url,
         # but we passed so we could try each endpoint. Raise status
         # for the last attempt (for now) so that we report something.
-        if response:
+        if response is not None:
             response.raise_for_status()
 
 
@@ -112,19 +115,22 @@ class Music(object):
     rest = None  # API Endpoint
     replication_factor = None  # Number of Music nodes to replicate across
 
-    def __init__(self, host=None, hosts=None,  # pylint: disable=R0913
-                 port='8080', lock_timeout=10, replication_factor=3):
+    def __init__(self, hosts=None,  # pylint: disable=R0913
+                 port='8080', lock_timeout=10, replication_factor=3,
+                 music_server_retries=3, logger=None):
         """Initializer. Accept a lock_timeout for atomic operations."""
+
         # If one host is provided, that overrides the list
         if not hosts:
-            hosts = ['localhost']
-        if host:
-            hosts = [host]
+            if logger:
+                logger.error("No Music Hosts provided.")
 
         kwargs = {
             'hosts': hosts,
             'port': port,
             'path': '/MUSIC/rest',
+            'music_server_retries': music_server_retries,
+            'logger': logger,
         }
         self.rest = REST(**kwargs)
 
@@ -132,6 +138,8 @@ class Music(object):
         self.lock_timeout = lock_timeout
 
         self.replication_factor = replication_factor
+        self.logger = logger
+        self.music_server_retries = music_server_retries
 
     def create_keyspace(self, keyspace):
         """Create a keyspace."""

@@ -56,7 +56,7 @@ identity_opts = [
 
 music_group = cfg.OptGroup(name='music', title='Valet Persistence conf')
 music_opts = [
-    cfg.StrOpt('host', default='0.0.0.0'),
+    cfg.ListOpt('hosts', default=['0.0.0.0']),
     cfg.IntOpt('port', default=8080),
     cfg.StrOpt('keyspace', default='valet'),
     cfg.IntOpt('replication_factor', default=3),
@@ -70,8 +70,7 @@ music_opts = [
     cfg.StrOpt('resource_index_table', default='resource_log_index'),
     cfg.StrOpt('app_index_table', default='app_log_index'),
     cfg.StrOpt('uuid_table', default='uuid_map'),
-    cfg.StrOpt('db_host', default='localhost'),
-    # cfg.ListOpt('db_hosts', default='valet1,valet2,valet3')
+    cfg.IntOpt('music_server_retries', default=3),
 ]
 
 def load_conf(args=None, project=DOMAIN, default_files=None):

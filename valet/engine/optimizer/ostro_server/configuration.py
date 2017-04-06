@@ -52,8 +52,8 @@ class Config(object):
         self.db_app_table = None
         self.db_uuid_table = None
         self.replication_factor = 3
-        self.db_host = 'localhost'
-        self.db_port = 8080
+        self.hosts = ['localhost']
+        self.port = 8080
 
         self.ip = None
 
@@ -114,6 +114,9 @@ class Config(object):
         self.base_flavor_cpus = 0
         self.base_flavor_mem = 0
         self.base_flavor_disk = 0
+
+        # Music HA paramater
+        self.music_server_retries = 3
 
     def configure(self):
         """Store config info extracted from oslo."""
@@ -201,9 +204,11 @@ class Config(object):
 
         self.replication_factor = CONF.music.replication_factor
 
-        self.db_host = CONF.music.host
+        self.hosts = CONF.music.hosts
 
-        self.db_port = CONF.music.port
+        self.port = CONF.music.port
+
+        self.music_server_retries = CONF.music.music_server_retries
 
         self.ip = CONF.engine.ip
 

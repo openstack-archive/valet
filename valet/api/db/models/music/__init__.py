@@ -20,6 +20,7 @@ import inspect
 from pecan import conf
 import six
 import uuid
+from valet import api
 from valet.api.common.i18n import _
 from valet.common.music import Music
 
@@ -287,9 +288,11 @@ def _engine_from_config(configuration):
     """Create database engine object based on configuration"""
     configuration = dict(configuration)
     kwargs = {
-        'host': configuration.get('host'),
+        'hosts': configuration.get('hosts'),
         'port': configuration.get('port'),
         'replication_factor': configuration.get('replication_factor'),
+        'music_server_retries': configuration.get('music_server_retries'),
+        'logger': api.LOG,
     }
     return Music(**kwargs)
 
