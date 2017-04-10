@@ -30,7 +30,7 @@ ostro_cli_opts = [
 
 engine_group = cfg.OptGroup(name='engine', title='Valet Engine conf')
 engine_opts = [
-    cfg.StrOpt('pid', default='/var/run/valet/ostro-daemon.pid'),
+    cfg.StrOpt('pid', default='/var/run/valet/valet-engine.pid'),
     cfg.StrOpt('mode', default='live', help='run as actual or simulation for test'),
     cfg.StrOpt('sim_cfg_loc', default='/etc/valet/engine/ostro_sim.cfg'),
     cfg.StrOpt('ip', default='localhost'),
