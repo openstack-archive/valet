@@ -53,7 +53,7 @@ class V1Controller(SecureController):
         if token:
             api.LOG.debug("Checking token permissions")
             msg = "Unauthorized - Permission was not granted"
-            if V1Controller._permission_granted(request, token):
+            if conf.identity.engine.is_token_admin(token):
                 tenant_id = conf.identity.engine.tenant_from_token(token)
                 api.LOG.info("tenant_id - " + str(tenant_id))
                 if tenant_id:
@@ -71,12 +71,6 @@ class V1Controller(SecureController):
                and hasattr(request, "json") \
                and "action" in request.json \
                and request.json["action"] == "migrate"
-
-    @classmethod
-    def _permission_granted(cls, request, token):
-        return not ("group" in request.path or
-                    V1Controller._action_is_migrate(request)) or\
-            (conf.identity.engine.is_token_admin(token))
 
     @classmethod
     def allow(cls):
