@@ -1,0 +1,79 @@
+heat_template_version: 2015-04-30
+
+description: Create stack - host level diversity - 2 instances
+
+parameters:
+
+  avail-zone1:
+    type: string
+    description: 'availability zone 1'
+
+  name1:
+    type: string
+    description: 'name of the instance 1'
+
+  name2:
+    type: string
+    description: 'name of the instance 2'
+
+  image1:
+    type: string
+    description: 'name of the image 1'
+
+  network1:
+    type: string
+    description: 'name of the network 1'
+
+  flavor1:
+    type: string
+    description: 'name of the flavor 1'
+
+  internal_port1:
+    type: string
+    description: 'internal port 1'
+
+  oam_port1:
+    type: string
+    description: 'oam port 1'
+
+  internal_port2:
+    type: string
+    description: 'internal port 2'
+
+  oam_port2:
+    type: string
+    description: 'oam port 2'
+
+  group1:
+    type: string
+    description: 'name of the group 1'
+
+  group2:
+    type: string
+    description: 'name of the group 2'
+
+resources:
+
+  oam_server_0:
+    type: inner_server_2_groups.yaml
+    properties:
+      avail-zone1: { get_param: avail-zone1 }
+      name1: { get_param: name1 }
+      image1: { get_param: image1 }
+      flavor1: { get_param: flavor1 }
+      group1: { get_param: group1 }
+      group2: { get_param: group2 }
+      internal_port1: { get_param: internal_port1 }
+      oam_port1: { get_param: oam_port1 }
+
+  oam_server_1:
+    type: inner_server_2_groups.yaml
+    properties:
+      avail-zone1: { get_param: avail-zone1 }
+      name1: { get_param: name2 }
+      image1: { get_param: image1 }
+      flavor1: { get_param: flavor1 }
+      group1: { get_param: group1 }
+      group2: { get_param: group2 }
+      internal_port1: { get_param: internal_port2 }
+      oam_port1: { get_param: oam_port2 }

@@ -1,0 +1,43 @@
+heat_template_version: 2015-04-30
+
+description: Create stack - rack level affinity and diversity - 2 groups
+
+parameters:
+
+  avail-zone1:
+    type: string
+    description: 'availability zone 1'
+
+  image1:
+    type: string
+    description: 'name of the image 1'
+
+  network1:
+    type: string
+    description: 'name of the network 1'
+
+  flavor1:
+    type: string
+    description: 'name of the flavor 1'
+
+resources:
+
+  test-affinity-group1:
+    type: nested_inner_1_instance_with_group.yaml
+    properties:
+      avail-zone1: { get_param: avail-zone1 }
+      name1: test-ins-1
+      image1: { get_param: image1 }
+      network1: { get_param: network1 }
+      flavor1: { get_param: flavor1 }
+      group1: test_affinity_group38
+
+  test-diversity-group2:
+    type: nested_inner_1_instance_with_group.yaml
+    properties:
+      avail-zone1: { get_param: avail-zone1 }
+      name1: test-ins-2
+      image1: { get_param: image1 }
+      network1: { get_param: network1 }
+      flavor1: { get_param: flavor1 }
+      group1: test_diversity_group38
