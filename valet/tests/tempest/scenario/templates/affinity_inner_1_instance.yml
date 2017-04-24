@@ -1,0 +1,45 @@
+heat_template_version: 2015-04-30
+
+description: Create stack -  host level affinity - 1 Instance
+
+parameters:
+
+  avail-zone1:
+    type: string
+    description: 'availability zone 1'
+
+  image1:
+    type: string
+    description: 'name of the image 1'
+
+  image2:
+    type: string
+    description: 'name of the image 2'
+
+  network1:
+    type: string
+    description: 'name of the network 1'
+
+  flavor1:
+    type: string
+    description: 'name of the flavor 1'
+
+  flavor2:
+    type: string
+    description: 'name of the flavor 2'
+
+resources:
+
+  test-affinity-group1:
+    type: ATT::Valet::GroupAssignment
+    properties:
+      group_type: affinity
+      level: host
+      resources:
+        resource_def:
+          type: nested_inner_1_instance.yml
+          properties:
+            avail-zone1: { get_param: avail-zone1 }
+            image1: { get_param: image1 }
+            flavor1: { get_param: flavor1 }
+            network1: { get_param: network1 }
