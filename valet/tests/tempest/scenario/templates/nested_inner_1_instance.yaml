@@ -1,0 +1,37 @@
+heat_template_version: 2015-04-30
+
+description: Create a single nova server
+
+parameters:
+
+  avail-zone1:
+    type: string
+    description: 'availability zone 1'
+
+  image1:
+    type: string
+    description: 'name of the image 1'
+
+  network1:
+    type: string
+    description: 'name of the network 1'
+
+  flavor1:
+    type: string
+    description: 'name of the flavor 1'
+
+  flavor2:
+    type: string
+    description: 'name of the flavor 2'
+
+resources:
+
+  my-instance-1:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: { get_param: avail-zone1 }
+      name: inner-1
+      image: { get_param: image1 }
+      flavor: { get_param: flavor1 }
+      networks:
+        - network: { get_param: network1 }

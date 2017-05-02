@@ -15,11 +15,13 @@
 
 """Analyzer."""
 
-from collections import defaultdict
+import json
 import os
-from tempest import config
 import time
 import traceback
+
+from collections import defaultdict
+from tempest import config
 
 CONF = config.CONF
 
@@ -41,20 +43,23 @@ class Analyzer(object):
         self.instances_on_host = defaultdict(list)
         self.tries = CONF.valet.TRIES_TO_SHOW_SERVER
 
-    def check(self, resources):
+    def check(self, resources, levels, group_types):
         """Checking if all instances are on the Appropriate hosts and racks."""
         self.log.log_info("Starting to check instances location")
         result = True
 
         self.init_servers_list()
         self.init_resources(resources)
-        ins_group = self.init_instances_for_group(resources)
+        ins_group = self.init_instances_for_group(resources, levels,
+                                                  group_types)
 
         try:
             for group_type in ins_group:
                 for group_resource in ins_group[group_type]:
-                    instances = group_resource[:2]
-                    level = group_resource[2]
+                    num_groups = len(group_resource) - 2
+                    instances = group_resource[:num_groups]
+                    level = group_resource[num_groups]
+                    group_name = group_resource[-1]
 
                     fn = \
                         {
@@ -63,7 +68,7 @@ class Analyzer(object):
                             "exclusivity": self.are_we_alone
                         }[group_type]
 
-                    result = result and fn(instances, level)
+                    result = result and fn(instances, group_name, level)
 
         except Exception as ex:
             self.log.log_error("Exception at method check: %s" % ex,
@@ -72,21 +77,20 @@ class Analyzer(object):
 
         return result
 
-    def init_instances_for_group(self, resources):
+    def init_instances_for_group(self, resources, levels, group_types):
         """Init instances for a group with the given resources."""
         self.log.log_info("initializing instances for group")
         ins_group = defaultdict(list)
+        index = 0
 
         for grp in resources.groups.keys():
             self.group_instance_name[grp] = \
                 resources.groups[grp].group_resources
-            resources.groups[grp].group_resources.append(
-                resources.groups[grp].level)
-            ins_group[resources.groups[grp].group_type].append(
+            resources.groups[grp].group_resources.append(levels[index])
+            resources.groups[grp].group_resources.append(grp)
+            ins_group[group_types[index]].append(
                 resources.groups[grp].group_resources)
-
-        # replacing group for it's instances
-        ins_group = self.organize(ins_group)
+            ++index
 
         return ins_group
 
@@ -138,8 +142,7 @@ class Analyzer(object):
 
         return hosts
 
-    def are_the_same(self, res_name, level):
-        """Return true if host aren't the same otherwise return False."""
+    def are_the_same(self, res_name, group_name, level):
         self.log.log_info("verifying instances are on the same host/racks")
         hosts_list = self.get_instance_host(res_name)
         self.log.log_debug("hosts to compare: %s" % hosts_list)
@@ -158,8 +161,8 @@ class Analyzer(object):
             return False
         return True
 
-    def are_different(self, res_name, level):
-        """Check if all hosts (and racks) are different for all instances."""
+    def are_different(self, res_name, group_name, level):
+        """Checking if all hosts (and racks) are different for all instances"""
         self.log.log_info("verifying instances are on different hosts/racks")
         diction = {}
         hosts_list = self.get_instance_host(res_name)
@@ -178,12 +181,14 @@ class Analyzer(object):
             return False
         return True
 
-    def are_we_alone(self, ins_for_group, level):
-        """Return True if no other instances in group on server."""
-        self.log.log_info("verifying instances are on the "
-                          "same group hosts/racks")
+    def are_we_alone(self, ins_for_group, group_name, level):
+        self.log.log_info(
+            "verifying instances are on the same group hosts/racks")
 
-        exclusivity_group_hosts = self.get_exclusivity_group_hosts()
+        # Get the hosts which are involved in the exclusivity group.  There
+        # could be potentially many if group is at the rack level, or only one
+        # if at the host level.
+        exclusivity_group_hosts = self.get_exclusivity_group_hosts(group_name)
 
         self.log.log_debug(
             "exclusivity group hosts are: %s " % exclusivity_group_hosts)
@@ -194,13 +199,13 @@ class Analyzer(object):
         for host in exclusivity_group_hosts:
             instances = self.instances_on_host[host]
 
-        self.log.log_debug("exclusivity group instances are: %s " % instances)
-
         if level == "rack":
             instances = self.get_rack_instances(
                 set(self.host_instance_dict.values()))
 
-        # host_instance_dict should be all the instances on the rack
+        self.log.log_debug("exclusivity group instances are: %s " % instances)
+
+        # host_instance_dict should be all the instances on the host/rack
         if len(instances) < 1:
             return False
 
@@ -210,28 +215,23 @@ class Analyzer(object):
 
         return not instances
 
-    def organize(self, ins_group):
-        """Organize internal groups, return ins_group."""
-        internal_ins = []
-        for x in ins_group:
-            for y in ins_group[x]:
-                if y[0] in self.group_instance_name.keys():
-                    internal_ins.append(self.group_instance_name[y[0]][0])
-                    internal_ins.append(self.group_instance_name[y[1]][0])
-                    internal_ins.append(y[2])
-                    ins_group.pop(x)
-                    ins_group[x].append(internal_ins)
-        return ins_group
+    def get_exclusivity_group_hosts(self, group_name):
+        """Get all hosts with the exclusivity group instances on them.
 
-    def get_exclusivity_group_hosts(self):
-        '''Get all hosts that exclusivity group instances are located on '''
+        The group could be rack level or host level.
+        """
         servers_list = self.nova_client.list_servers()
         exclusivity_hosts = []
         for serv in servers_list["servers"]:
-            if "exclusivity" in serv["name"]:
-                server = self.nova_client.show_server(serv["id"])
-                exclusivity_hosts.append(
-                    server["server"]["OS-EXT-SRV-ATTR:host"])
+            server = self.nova_client.show_server(serv["id"])
+            if server:
+                valet_meta = server["server"]["metadata"]["valet"]
+                if valet_meta:
+                    groups = json.loads(valet_meta)["groups"]
+                    for grp in groups:
+                        if group_name == grp:
+                            exclusivity_hosts.append(server["server"]
+                                                     ["OS-EXT-SRV-ATTR:host"])
         return set(exclusivity_hosts)
 
     def get_group_instances(self, resources, group_ins):
