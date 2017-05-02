@@ -24,9 +24,13 @@ parameters:
     type: string
     description: 'name of the flavor 2'
 
+  nova_server_group:
+    type: string
+    description: 'nova server group to put the inner server into'
+
 resources:
 
-  my-instance-1:
+  my-inner-vm-resource:
     type: OS::Nova::Server
     properties:
       availability_zone: { get_param: avail-zone1 }
@@ -35,8 +39,10 @@ resources:
       flavor: { get_param: flavor1 }
       networks:
         - network: { get_param: network1 }
+      scheduler_hints:
+        group: {get_param: nova_server_group}
 
-  my-instance-2:
+  my-inner-vm-resource2:
     type: OS::Nova::Server
     properties:
       availability_zone: { get_param: avail-zone1 }
@@ -45,3 +51,6 @@ resources:
       flavor: { get_param: flavor1 }
       networks:
         - network: { get_param: network1 }
+      scheduler_hints:
+        group: {get_param: nova_server_group}
+

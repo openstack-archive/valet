@@ -1,6 +1,6 @@
 heat_template_version: 2015-04-30
 
-description: Create a single nova server
+description: UPDATED Create stack host level affinity 2 Instances
 
 parameters:
 
@@ -30,7 +30,7 @@ resources:
     type: OS::Nova::Server
     properties:
       availability_zone: { get_param: avail-zone1 }
-      name: inner-1
+      name: test-1
       image: { get_param: image1 }
       flavor: { get_param: flavor1 }
       networks:
@@ -40,7 +40,7 @@ resources:
     type: OS::Nova::Server
     properties:
       availability_zone: { get_param: avail-zone1 }
-      name: inner-2
+      name: test-2
       image: { get_param: image1 }
       flavor: { get_param: flavor1 }
       networks:
