@@ -16,13 +16,15 @@
 """Scenario Base."""
 
 import os
+import traceback
+
+from heatclient.common import template_utils
 from tempest import config
-from tempest import exceptions
 from tempest import test
 from tempest_lib.common.utils import data_utils
-import time
-import traceback
+
 from valet.tests.tempest.scenario.analyzer import Analyzer
+from valet.tests.tempest.scenario.general_logger import GeneralLogger
 from valet.tests.tempest.scenario.resources import TemplateResources
 from valet.tests.tempest.services.client import ValetClient
 
@@ -47,6 +49,7 @@ class ScenarioTestCase(test.BaseTestCase):
         """Setup resource, set catalog_type."""
         super(ScenarioTestCase, cls).resource_setup()
         cls.catalog_type = CONF.placement.catalog_type
+        cls.logger = GeneralLogger("scenario")
 
     @classmethod
     def resource_cleanup(cls):
@@ -64,10 +67,8 @@ class ScenarioTestCase(test.BaseTestCase):
             cls.os.auth_provider, CONF.placement.catalog_type,
             CONF.identity.region, **cls.os.default_params_with_timeout_values)
 
-        cls.possible_topdir = os.path.normpath(
-            os.path.join(os.path.abspath(__file__), os.pardir))
+        cls.topdir = os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir))
         cls.stack_identifier = None
-        cls.tries = CONF.valet.TRIES_TO_CREATE
 
     def run_test(self, logger, stack_name, template_path):
         """Scenario.
@@ -77,14 +78,14 @@ class ScenarioTestCase(test.BaseTestCase):
         """
         self.log = logger
         self.log.log_info(" ******** Running Test ******** ")
-        tmplt_url = self.possible_topdir + template_path
+        tmplt_url = self.topdir + template_path
         template = TemplateResources(tmplt_url)
 
         env_data = self.get_env_file(tmplt_url)
 
         self.log.log_info(" ******** Creating Stack ******** ")
         name = data_utils.rand_name(name=stack_name)
-        self.assertEqual(True, self.create_stack(name, env_data, template))
+        self.assertEqual(True, self.create_valet_stack(name, env_data, template, levels, group_types))
 
         self.log.log_info(" ******** Analyzing Stack ******** ")
         analyzer = Analyzer(self.log, self.stack_identifier, self.heat_client,
@@ -93,8 +94,8 @@ class ScenarioTestCase(test.BaseTestCase):
 
         self.log.log_info(" ********** THE END ****************")
 
-    def create_stack(self, stack_name, env_data, template_resources):
-        """Create stack with name/env/resource. Create all groups/instances."""
+    def create_valet_stack(self, stack_name, env_data, template_resources, levels, group_types):
+        """ Create Valet Specific Stack """
         try:
             groups = template_resources.groups
 
@@ -116,7 +117,7 @@ class ScenarioTestCase(test.BaseTestCase):
                 instance.name = generated_name
 
             res = self.wait_for_stack(stack_name, env_data, template_resources)
-            self.addCleanup(self.delete_stack)
+            self.addCleanup(self.delete_valet_stack)
             return res
 
         except Exception:
@@ -133,7 +134,7 @@ class ScenarioTestCase(test.BaseTestCase):
                                                      description="description")
             group_id = v_group['id']
             tenant_id = self.tenants_client.tenant_id
-            self.addCleanup(self._delete_group, group_id)
+            self.addCleanup(self.delete_group, group_id)
 
             self.valet_client.add_members(group_id, [tenant_id])
 
@@ -167,7 +168,7 @@ class ScenarioTestCase(test.BaseTestCase):
             self.log.log_error("Failed to load environment file",
                                traceback.format_exc())
 
-    def _delete_group(self, group_id):
+    def delete_group(self, group_id):
         try:
             self.valet_client.delete_all_members(group_id)
             self.valet_client.delete_group(group_id)
@@ -176,8 +177,7 @@ class ScenarioTestCase(test.BaseTestCase):
                                traceback.format_exc())
             raise
 
-    def delete_stack(self):
-        """Use heat client to delete stack."""
+    def delete_valet_stack(self):
         try:
             self.heat_client.delete_stack(self.stack_identifier)
             self.heat_client.wait_for_stack_status(
@@ -208,18 +208,58 @@ class ScenarioTestCase(test.BaseTestCase):
                 self.stack_identifier, "CREATE_COMPLETE",
                 failure_pattern='^.*CREATE_FAILED$')
 
-        except exceptions.StackBuildErrorException as ex:
-            if "Ostro error" in str(ex) and self.tries > 0:
-                msg = "Ostro error - try number %d"
-                self.log.log_error(
-                    msg % (CONF.valet.TRIES_TO_CREATE - self.tries + 2))
-                self.tries -= 1
-                self.delete_stack()
-                time.sleep(CONF.valet.PAUSE)
-                self.wait_for_stack(stack_name, env_data, template_resources)
-            else:
-                self.log.log_error("Failed to create stack",
-                                   traceback.format_exc())
-                return False
+        except Exception:
+            self.log.log_error("Failed to create stack", traceback.format_exc())
+            return False
 
         return True
+
+    def get_env(self, env_path):
+        if os.path.exists(env_path):
+            with open(env_path, "r") as f:
+                filedata = f.read()
+            return filedata
+        else:
+            return None
+
+    def create_stack(self, stack_name, template_path, env_path=None):
+        """ Create more generic stack (valet or not) """
+        if env_path is None:
+            env_path = "/templates/std_env.env"
+        full_env_path = self.topdir + env_path
+
+        full_template_path = self.topdir + template_path
+        tpl_files, template = template_utils.get_template_contents(full_template_path)
+        env = self.get_env(full_env_path)
+
+        name = data_utils.rand_name(name=stack_name)
+        new_stack = self.heat_client.create_stack(name, template=template, environment=env, files=tpl_files)
+        stack_id = new_stack["stack"]["id"]
+        full_stack_id = name + "/" + stack_id
+
+        self.heat_client.wait_for_stack_status(stack_id, "CREATE_COMPLETE")
+        self.addCleanup(self.delete_stack, full_stack_id)
+
+        return full_stack_id, name
+
+    def check_stack(self, stack_id, template, levels, group_types):
+        analyzer = Analyzer(self.logger, stack_id, self.heat_client, self.nova_client)
+        template_res = TemplateResources(self.topdir + template)
+        self.assertEqual(True, analyzer.check(template_res, levels, group_types))
+
+    def update_stack(self, stack_id, stack_name, template_path, env_path=None):
+        if env_path is None:
+            env_path = "/templates/std_env.env"
+        full_env_path = self.topdir + env_path
+
+        full_template_path = self.topdir + template_path
+        tpl_files, template = template_utils.get_template_contents(full_template_path)
+        env = self.get_env(full_env_path)
+
+        self.heat_client.update_stack(stack_identifier=stack_id,
+                                      name=stack_name, template=template, environment=env, files=tpl_files)
+        self.heat_client.wait_for_stack_status(stack_id, "UPDATE_COMPLETE")
+
+    def delete_stack(self, stack_id):
+        self.heat_client.delete_stack(stack_id)
+        self.heat_client.wait_for_stack_status(stack_id, "DELETE_COMPLETE")
