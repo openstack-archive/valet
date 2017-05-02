@@ -1,6 +1,6 @@
 heat_template_version: 2015-04-30
 
-description: Create a single nova server
+description: Outer portion of the nested heat template. Creates a server and calls the inner template.
 
 parameters:
 
@@ -26,22 +26,26 @@ parameters:
 
 resources:
 
-  my-instance-1:
+  my-outer-vm-resource:
     type: OS::Nova::Server
     properties:
       availability_zone: { get_param: avail-zone1 }
-      name: inner-1
+      name: outer-1
       image: { get_param: image1 }
       flavor: { get_param: flavor1 }
       networks:
         - network: { get_param: network1 }
 
-  my-instance-2:
-    type: OS::Nova::Server
+  vm-group:
+    type: OS::Heat::ResourceGroup
     properties:
-      availability_zone: { get_param: avail-zone1 }
-      name: inner-2
-      image: { get_param: image1 }
-      flavor: { get_param: flavor1 }
-      networks:
-        - network: { get_param: network1 }
+      count: 1
+      resource_def:
+        type: nested_inner_2_instances.yaml
+        properties:
+          avail-zone1: { get_param: avail-zone1 }
+          image1: { get_param: image1 }
+          flavor1: { get_param: flavor1 }
+          flavor2: { get_param: flavor2 }
+          network1: { get_param: network1 }
+
