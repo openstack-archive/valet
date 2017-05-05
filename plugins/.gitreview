@@ -1,0 +1,4 @@
+[gerrit]
+host=gerrit.mtn5.cci.att.com
+port=29418
+project=aic-valet-openstack-plugins.git
