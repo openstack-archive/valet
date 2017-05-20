@@ -98,9 +98,9 @@ def _set_logger():
     logging.setup(CONF, DOMAIN)
 
 def _register_conf(grp2opt, cli_opts):
-    for grp in grp2opt or {}:
+    for grp in grp2opt:
         CONF.register_group(grp)
         CONF.register_opts(grp2opt[grp], grp)
 
-   for opt in cli_opts or []:
+    for opt in cli_opts or []:
         CONF.register_cli_opts(opt)

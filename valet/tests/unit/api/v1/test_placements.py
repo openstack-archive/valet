@@ -18,8 +18,10 @@
 import mock
 import valet.api.v1.controllers.placements as placements
 from valet.api.v1.controllers.placements import PlacementsController, PlacementsItemController
-from valet.api.db.models.music import Query, Results
-from valet.api.db.models import Placement, Plan
+from valet.api.db.models.music import Query
+from valet.api.db.models.music import Results
+from valet.api.db.models.music.placements import Placement
+from valet.api.db.models.music.plans import Plan
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
