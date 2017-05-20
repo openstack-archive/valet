@@ -27,3 +27,7 @@ python-heatclient<=1.2.0
 oslo.messaging==1.8.3
 #tempest<=12.1.0 ---------- needs to be installed on Jenkins, no output when using tox
 #tempest-lib>=0.8.0
+
+# For documentation
+oslosphinx>=4.7.0 # Apache-2.0
+reno>=1.8.0 # Apache-2.0
