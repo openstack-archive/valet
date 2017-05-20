@@ -15,7 +15,7 @@
 
 """Test Plans."""
 
-from valet.api.db.models import Plan
+from valet.api.db.models.music.plans import Plan
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 

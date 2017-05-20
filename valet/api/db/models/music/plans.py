@@ -15,7 +15,8 @@
 
 """Plan Model."""
 
-from . import Base, Query
+from valet.api.db.models.music import Base
+from valet.api.db.models.music import Query
 
 
 class Plan(Base):

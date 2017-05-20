@@ -15,9 +15,8 @@
 
 """Resources utlized by search engine."""
 
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VM, Volume, LEVELS
-
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
 
 class Resource(object):
     """Resource."""
