@@ -18,7 +18,6 @@
 import mock
 import valet.api.common.ostro_helper as helper
 from valet.api.common.ostro_helper import Ostro
-import valet.api.db.models as models
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
@@ -179,8 +178,6 @@ class TestOstroHelper(ApiBase):
         self.validate_test(
             self.ostro.request['parameters'] == "test_parameters")
 
-    @mock.patch.object(models, 'PlacementRequest', mock.MagicMock)
-    @mock.patch.object(models, 'Query', mock.MagicMock)
     def test_send(self):
         """Validate test send by checking engine server error."""
         self.ostro.args = {'stack_id': 'test_stack_id'}

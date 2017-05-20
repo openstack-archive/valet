@@ -22,9 +22,9 @@ import time
 
 import uuid
 from valet.api.common.i18n import _
-from valet.api.db.models import Group
-from valet.api.db.models import PlacementRequest
-from valet.api.db.models import PlacementResult
+from valet.api.db.models.music.groups import Group
+from valet.api.db.models.music.ostro import PlacementRequest
+from valet.api.db.models.music.ostro import PlacementResult
 from valet.api.db.models import Query
 from valet.api import LOG
 

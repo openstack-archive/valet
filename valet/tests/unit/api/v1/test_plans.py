@@ -16,10 +16,12 @@
 """Test Plans."""
 
 import mock
+
 import valet.api.v1.controllers.plans as plans
 from valet.api.v1.controllers.plans import PlansController, PlansItemController
-from valet.api.db.models.music import Query, Results
-from valet.api.db.models import Plan
+from valet.api.db.models.music import Query
+from valet.api.db.models.music import Results
+from valet.api.db.models.music.plans import Plan
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 

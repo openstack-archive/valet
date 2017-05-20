@@ -23,7 +23,7 @@ from pecan_notario import validate
 from valet.api.common.compute import nova_client
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
-from valet.api.db.models import Group
+from valet.api.db.models.music.groups import Group
 from valet.api.v1.controllers import error, valid_group_name
 from valet import api
 

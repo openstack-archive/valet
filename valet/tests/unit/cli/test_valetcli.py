@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Valetcli."""
-
 import mock
+
 from valet.cli.valetcli import Cli
 from valet.tests.base import Base
 

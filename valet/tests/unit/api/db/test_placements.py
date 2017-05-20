@@ -17,7 +17,8 @@
 
 import mock
 from valet.api.db.models.music import Base
-from valet.api.db.models import Placement, Plan
+from valet.api.db.models.music.placements import Placement
+from valet.api.db.models.music.plans import Plan
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
