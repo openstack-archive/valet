@@ -20,6 +20,7 @@ import inspect
 from pecan import conf
 import six
 import uuid
+
 from valet import api
 from valet.api.common.i18n import _
 from valet.common.music import Music
@@ -198,7 +199,8 @@ class Query(object):
         if inspect.isclass(model):
             self.model = model
         elif isinstance(model, basestring):
-            self.model = get_class('valet.api.db.models.' + model)
+            self.model = get_class(
+                'valet.api.db.models.music.placements.' + model)
         assert inspect.isclass(self.model)
 
     def __kwargs(self):

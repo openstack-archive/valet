@@ -18,7 +18,8 @@
 from pecan import expose, request, response
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
-from valet.api.db.models import Placement, Plan
+from valet.api.db.models.music.placements import Placement
+from valet.api.db.models.music.plans import Plan
 from valet.api.v1.controllers import error, reserve_placement, update_placements
 from valet import api
 

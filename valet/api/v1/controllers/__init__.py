@@ -23,7 +23,7 @@ from pecan import redirect, request
 import string
 from valet import api
 from valet.api.common.i18n import _
-from valet.api.db.models import Placement
+from valet.api.db.models.music.placements import Placement
 
 #
 # Notario Helpers
