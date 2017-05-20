@@ -111,6 +111,8 @@ Thumbs.db
 *.lib
 *.sbr
 obj/
-[Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
+
+# Files created by releasenotes build
+releasenotes/build
