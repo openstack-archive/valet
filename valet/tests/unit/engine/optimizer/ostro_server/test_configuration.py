@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Config."""
+"""Test Configuration."""
 
 import sys
 from valet.engine.optimizer.ostro_server.configuration import Config
