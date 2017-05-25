@@ -612,7 +612,8 @@ class MusicHandler(object):
                             vm["host"] = _host
                             self.logger.warn("db: conflicted placement "
                                              "decision from Ostro")
-                            # TODO(GY): affinity, diversity, exclusivity validation check
+                            # TODO(GY): affinity, diversity, exclusivity
+                            # validation check
                             updated = True
                     else:
                         vm["status"] = "scheduled"

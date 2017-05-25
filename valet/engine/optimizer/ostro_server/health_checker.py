@@ -1,9 +1,24 @@
+#
+# Copyright 2014-2017 AT&T Intellectual Property
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import os
-from oslo_config import cfg
 import sys
 import time
 import uuid
+from oslo_config import cfg
 from valet.common.conf import get_logger
 from valet.common.music import REST
 from valet.engine.conf import init_engine
@@ -16,8 +31,8 @@ class HealthCheck(object):
     rest = None
 
     def __init__(self, hosts=[]):
-
-        self.tries = CONF.engine.health_timeout * 2  # default health_timeout=10
+        # default health_timeout=10
+        self.tries = CONF.engine.health_timeout * 2
         self.uuid = str(uuid.uuid4())
 
         kwargs = {
@@ -39,12 +54,21 @@ class HealthCheck(object):
         return engine_id
 
     def _send(self):
+        request = [
+            {
+                "action": "ping",
+                "stack_id": self.uuid
+            }
+        ]
 
         data = {
-            "values": {"stack_id": self.uuid,
-                       "request": "[{\"action\": \"ping\", \"stack_id\": \"" + self.uuid + "\"}]"
-                       },
-            "consistencyInfo": {"type": "eventual"}
+            "values": {
+                "stack_id": self.uuid,
+                "request": request
+            },
+            "consistencyInfo": {
+                "type": "eventual"
+            }
         }
 
         path = '/keyspaces/%(keyspace)s/tables/%(table)s/rows' % {
@@ -58,13 +82,15 @@ class HealthCheck(object):
     def _read_response(self):
 
         engine_id = None
-        path = '/keyspaces/%(keyspace)s/tables/%(table)s/rows?stack_id=%(uid)s' % {
+        pre = '/keyspaces/%(keyspace)s/tables/%(table)s/rows?stack_id=%(uid)s'
+        path = pre % {
             'keyspace': CONF.music.keyspace,
             'table': CONF.music.response_table,
             'uid': self.uuid,
         }
 
-        for i in range(self.tries):  # default 20 tries * 0.5 sec = 10 sec. timeout
+        # default 20 tries * 0.5 sec = 10 sec. timeout
+        for i in range(self.tries):
             time.sleep(0.5)
             try:
                 response = self.rest.request(method='get', path=path)
@@ -79,7 +105,7 @@ class HealthCheck(object):
                     engine_id = placement['resources']['id']
                     break
             except Exception as e:
-                logger.warn("HealthCheck exception in read response - " + str(e))
+                logger.warn("HealthCheck exception in read response " + str(e))
 
         return engine_id
 
@@ -116,14 +142,19 @@ if __name__ == "__main__":
     code = 0
     init_engine(default_config_files=['/etc/valet/valet.conf'])
     logger = get_logger("ostro_daemon")
+
     if os.path.exists(CONF.engine.pid):
         respondent_id = HealthCheck().ping()
+
         if respondent_id == CONF.engine.priority:
             code = CONF.engine.priority
-            logger.info("HealthCheck - Alive, respondent instance id: {}".format(respondent_id))
+            logger.info("HealthCheck - Alive, "
+                        "respondent instance id: {}".format(respondent_id))
         else:
-            logger.warn("HealthCheck - pid file exists, engine {} did not respond in a timely manner (respondent id {})"
-                        .format(CONF.engine.priority, respondent_id))
+            logger.warn("HealthCheck - pid file exists, "
+                        "engine {} did not respond in a timely manner "
+                        "(respondent id {})".format(CONF.engine.priority,
+                                                    respondent_id))
     else:
         logger.info("HealthCheck - no pid file, engine is not running!")
     sys.exit(code)

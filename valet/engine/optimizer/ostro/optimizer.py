@@ -15,11 +15,9 @@
 
 """Optimizer."""
 
-import time
-
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VM
 from valet.engine.optimizer.ostro.search import Search
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 
 
 # FIXME(GJ): make search algorithm pluggable
