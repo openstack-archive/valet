@@ -129,7 +129,7 @@ class Ostro(object):
     def _send(self, stack_id, request):
         """Send request."""
         # Creating the placement request effectively enqueues it.
-        PlacementRequest(stack_id=stack_id, request=request)  # pylint: disable=W0612
+        PlacementRequest(stack_id=stack_id, request=request)
         result_query = Query(PlacementResult)
 
         for __ in range(self.tries, 0, -1):  # pylint: disable=W0612
@@ -193,7 +193,7 @@ class Ostro(object):
                                                                   GROUP_TYPE,
                                                                   EXCLUSIVITY)
 
-        group = Group.query.filter_by(name=group_name).first()  # pylint: disable=E1101
+        group = Group.query.filter_by(name=group_name).first()
 
         if not group:
             self.error_uri = '/errors/not_found'

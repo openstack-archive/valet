@@ -12,14 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Analyzer."""
+import traceback
 
 from novaclient import client
-import traceback
-from valet.tests.functional.valet_validator.common import Result, GeneralLogger
+
+
 from valet.tests.functional.valet_validator.common.auth import Auth
+from valet.tests.functional.valet_validator.common import GeneralLogger
 from valet.tests.functional.valet_validator.common.init import CONF
+from valet.tests.functional.valet_validator.common import Result
 
 
 class Analyzer(object):

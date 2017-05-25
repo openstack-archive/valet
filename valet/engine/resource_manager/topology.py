@@ -16,16 +16,16 @@
 """Topology class - performs actual setting up of Topology object."""
 
 import copy
-
 from sre_parse import isdigit
+
 from valet.engine.resource_manager.resource_base import HostGroup
 
 
 class Topology(object):
-    """
-    Topology class.
+    """Topology class.
+
     currently, using cannonical naming convention to find the topology
-    """ 
+    """
 
     def __init__(self, _config, _logger):
         """Init config and logger."""
@@ -121,8 +121,8 @@ class Topology(object):
                         validated_name = False
                         break
 
-                    if end_of_rack_index == 0 and \
-                        index > (end_of_region_index + 1):
+                    if (end_of_rack_index == 0 and
+                            index > (end_of_region_index + 1)):
 
                         end_of_rack_index = index
                         num_of_fields += 1

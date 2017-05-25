@@ -199,6 +199,7 @@ class MusicHandler(object):
                                      ":" + event_id)
                     continue
 
+                # TODO(lamt) this block of code can use refactoring
                 if method == 'object_action':
                     if 'objinst' in args.keys():
                         objinst = args['objinst']
@@ -211,11 +212,10 @@ class MusicHandler(object):
                                     change_data = objinst['nova_object.data']
                                     if 'vm_state' in change_list and \
                                        'vm_state' in change_data.keys():
-                                        if change_data['vm_state'] == \
-                                                'deleted' \
-                                                or change_data[
-                                                    'vm_state'
-                                                ] == 'active':
+                                        if (change_data['vm_state'] ==
+                                                'deleted' or
+                                                change_data['vm_state'] ==
+                                                'active'):
                                             e = Event(event_id)
                                             e.exchange = exchange
                                             e.method = method
@@ -612,7 +612,8 @@ class MusicHandler(object):
                             vm["host"] = _host
                             self.logger.warn("db: conflicted placement "
                                              "decision from Ostro")
-                            # TODO(GY): affinity, diversity, exclusivity validation check
+                            # TODO(GY): affinity, diversity, exclusivity
+                            # validation check
                             updated = True
                     else:
                         vm["status"] = "scheduled"

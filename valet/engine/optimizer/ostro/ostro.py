@@ -53,11 +53,13 @@ class Ostro(object):
         self.data_lock = threading.Lock()
         self.thread_list = []
 
-        self.topology = TopologyManager(1, "Topology", self.resource,
-                                      self.data_lock, self.config, self.logger)
+        self.topology = TopologyManager(
+            1, "Topology", self.resource,
+            self.data_lock, self.config, self.logger)
 
-        self.compute = ComputeManager(2, "Compute", self.resource,
-                                      self.data_lock, self.config, self.logger)
+        self.compute = ComputeManager(
+            2, "Compute", self.resource,
+            self.data_lock, self.config, self.logger)
 
         self.listener = ListenerManager(3, "Listener", CONF)
 
@@ -134,7 +136,8 @@ class Ostro(object):
             resource_status = self.db.get_resource_status(
                 self.resource.datacenter.name)
             if resource_status is None:
-                self.logger.error("failed to read from table: " + self.config.db_resource_table)
+                self.logger.error("failed to read from table: %s" %
+                                  self.config.db_resource_table)
                 return False
 
             if len(resource_status) > 0:
@@ -155,7 +158,7 @@ class Ostro(object):
             self.resource.update_topology()
 
         except Exception:
-            self.logger.critical("Ostro.bootstrap failed: " +
+            self.logger.critical("Ostro.bootstrap failed: %s" %
                                  traceback.format_exc())
 
         self.logger.info("done bootstrap")
@@ -196,7 +199,7 @@ class Ostro(object):
                 result = self._get_json_results("query", "ok",
                                                 self.status, query_result)
 
-                if self.db.put_result(result) is False:
+                if not self.db.put_result(result):
                     return False
 
                 self.logger.info("done query")
@@ -204,20 +207,24 @@ class Ostro(object):
                 self.logger.info("start app placement")
 
                 result = None
-                (decision_key, old_decision) = self.app_handler.check_history(req)
+                (decision_key, old_decision) = self.app_handler.check_history(
+                    req)
                 if old_decision is None:
                     placement_map = self._place_app(req)
                     if placement_map is None:
-                        result = self._get_json_results("placement", "error", self.status, placement_map)
+                        result = self._get_json_results(
+                            "placement", "error", self.status, placement_map)
                     else:
-                        result = self._get_json_results("placement", "ok", "success", placement_map)
+                        result = self._get_json_results(
+                            "placement", "ok", "success", placement_map)
                     if decision_key is not None:
                         self.app_handler.put_history(decision_key, result)
                 else:
-                    self.logger.warn("decision(" + decision_key + ") already made")
+                    self.logger.warn("decision(%s) already made" %
+                                     decision_key)
                     result = old_decision
 
-                if self.db.put_result(result) is False:
+                if not self.db.put_result(result):
                     return False
 
                 self.logger.info("done app placement")
@@ -233,7 +240,8 @@ class Ostro(object):
                     params = _q["parameters"]
                     if "group_name" in params.keys():
                         self.data_lock.acquire()
-                        vm_list = self._get_vms_from_logical_group(params["group_name"])
+                        vm_list = self._get_vms_from_logical_group(
+                            params["group_name"])
                         self.data_lock.release()
                         query_result[_q["stack_id"]] = vm_list
                     else:
@@ -406,7 +414,7 @@ class Ostro(object):
 
                     if e.vm_state == "active":
                         self.logger.info("Ostro.handle_events: got instance_"
-                                          "active event for " + e.uuid)
+                                         "active event for " + e.uuid)
                         vm_info = self.app_handler.get_vm_info(orch_id[1], orch_id[0], e.host)
                         if vm_info is None:
                             self.logger.error("Ostro.handle_events: error "
@@ -546,7 +554,8 @@ class Ostro(object):
     def _remove_vm_from_logical_groups(self, _uuid, _h_uuid, _host_name):
         host = self.resource.hosts[_host_name]
         if _h_uuid is not None and _h_uuid != "none":
-            self.resource.remove_vm_by_h_uuid_from_logical_groups(host, _h_uuid)
+            self.resource.remove_vm_by_h_uuid_from_logical_groups(
+                host, _h_uuid)
         else:
             self.resource.remove_vm_by_uuid_from_logical_groups(host, _uuid)
 
@@ -659,7 +668,8 @@ class Ostro(object):
                         app_status['message'] = "ping"
 
                         app_result['status'] = app_status
-                        app_result['resources'] = {"ip": self.config.ip, "id": self.config.priority}
+                        app_result['resources'] = {
+                            "ip": self.config.ip, "id": self.config.priority}
 
                         result[appk] = app_result
 

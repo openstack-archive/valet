@@ -1,33 +1,28 @@
-# -*- encoding: utf-8 -*-
+# Copyright 2014-2017 AT&T Intellectual Property
 #
-# Copyright (c) 2014-2016 AT&T
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-#    implied. See the License for the specific language governing permissions and
-#    limitations under the License.
-
-'''Valet Nova Scheduler Filter'''
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import time
 
 from keystoneclient.v2_0 import client
-
 from nova.i18n import _
-from nova.i18n import _LI, _LW, _LE
+from nova.i18n import _LE
+from nova.i18n import _LI
+from nova.i18n import _LW
 from nova.scheduler import filters
-
-from valet_plugins.common import valet_api
-
 from oslo_config import cfg
 from oslo_log import log as logging
 
-import time
+from valet_plugins.common import valet_api
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -80,16 +75,23 @@ class ValetFilter(filters.BaseHostFilter):
     def _register_opts(self):
         '''Register Options'''
         opts = []
-        option = cfg.StrOpt(self.opt_failure_mode_str, choices=['reject', 'yield'], default='reject',
-                            help=_('Mode to operate in if Valet planning fails for any reason.'))
+        option = cfg.StrOpt(
+            self.opt_failure_mode_str,
+            choices=['reject', 'yield'], default='reject',
+            help=_('Mode to operate in if Valet planning fails.'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_project_name_str, default=None, help=_('Valet Project Name'))
+        option = cfg.StrOpt(self.opt_project_name_str,
+                            default=None, help=_('Valet Project Name'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_username_str, default=None, help=_('Valet Username'))
+        option = cfg.StrOpt(self.opt_username_str,
+                            default=None, help=_('Valet Username'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_password_str, default=None, help=_('Valet Password'))
+        option = cfg.StrOpt(self.opt_password_str,
+                            default=None, help=_('Valet Password'))
         opts.append(option)
-        option = cfg.StrOpt(self.opt_auth_uri_str, default=None, help=_('Keystone Authorization API Endpoint'))
+        option = cfg.StrOpt(self.opt_auth_uri_str,
+                            default=None,
+                            help=_('Keystone Authorization API Endpoint'))
         opts.append(option)
 
         opt_group = cfg.OptGroup(self.opt_group_str)
@@ -228,9 +230,12 @@ class ValetFilter(filters.BaseHostFilter):
 
             if not location:
                 # TODO(JD): Get context from exception
-                LOG.error(_LE("Valet placement unknown for resource id {0}, orchestration id {1}.").format(res_id, orch_id))
+                msg = ("Valet placement unknown for resource id {0}, "
+                       "orchestration id {1}.")
+                LOG.error(_LE(msg).format(res_id, orch_id))
                 if failure_mode == 'yield':
-                    LOG.warn(_LW("Valet will yield to Nova for placement decisions."))
+                    msg = "Valet will yield to Nova for placement decisions."
+                    LOG.warn(_LW(msg))
                     yield_all = True
                 else:
                     yield_all = False
@@ -243,15 +248,19 @@ class ValetFilter(filters.BaseHostFilter):
                 match = self._is_same_host(obj.host, location)
                 if match:
                     if ad_hoc:
-                        LOG.info(_LI("Valet ad-hoc placement for resource id {0}: {1}.").format(res_id, obj.host))
+                        msg = ("Valet ad-hoc placement for resource id "
+                               "{0}: {1}.")
+                        LOG.info(_LI(msg).format(res_id, obj.host))
                     else:
-                        LOG.info(_LI("Valet placement for resource id %s, orchestration id {0}: {1}.").format(res_id, orch_id, obj.host))
+                        msg = ("Valet placement for resource id %s, "
+                               "orchestration id {0}: {1}.")
+                        LOG.info(_LI(msg).format(res_id, orch_id, obj.host))
             else:
                 match = None
             if yield_all or match:
                 yield obj
 
-    def host_passes(self, host_state, filter_properties):  # pylint: disable=W0613,R0201
+    def host_passes(self, host_state, filter_properties):
         '''Individual host pass check'''
         # Intentionally let filter_all() handle in one swell foop.
         return False

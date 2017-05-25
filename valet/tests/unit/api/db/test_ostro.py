@@ -12,10 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Ostro(Engine)."""
-
-from valet.api.db.models.music.ostro import PlacementRequest, PlacementResult, Event
+from valet.api.db.models.music.ostro import Event
+from valet.api.db.models.music.ostro import PlacementRequest
+from valet.api.db.models.music.ostro import PlacementResult
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
