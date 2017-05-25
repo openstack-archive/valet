@@ -64,13 +64,15 @@ class AppHandler(object):
         if action == "create":
             decision_key = stack_id + ":" + action + ":none"
             if decision_key in self.decision_history.keys():
-                return (decision_key, self.decision_history[decision_key].result)
+                return (decision_key,
+                        self.decision_history[decision_key].result)
             else:
                 return (decision_key, None)
         elif action == "replan":
             decision_key = stack_id + ":" + action + ":" + _app["orchestration_id"]
             if decision_key in self.decision_history.keys():
-                return (decision_key, self.decision_history[decision_key].result)
+                return (decision_key,
+                        self.decision_history[decision_key].result)
             else:
                 return (decision_key, None)
         else:
@@ -92,7 +94,8 @@ class AppHandler(object):
         count = 0
         num_of_removes = len(self.decision_history) - self.min_decision_history
         remove_item_list = []
-        for decision in (sorted(self.decision_history.values(), key=operator.attrgetter('timestamp'))):
+        for decision in (sorted(self.decision_history.values(),
+                         key=operator.attrgetter('timestamp'))):
             remove_item_list.append(decision.decision_key)
             count += 1
             if count == num_of_removes:
@@ -171,13 +174,17 @@ class AppHandler(object):
             if isinstance(v, VM):
                 if self.apps[v.app_uuid].request_type == "replan":
                     if v.uuid in _app_topology.planned_vm_map.keys():
-                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "replanned")
+                        self.apps[v.app_uuid].add_vm(
+                            v, _placement_map[v], "replanned")
                     else:
-                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "scheduled")
+                        self.apps[v.app_uuid].add_vm(
+                            v, _placement_map[v], "scheduled")
                     if v.uuid == _app_topology.candidate_list_map.keys()[0]:
-                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "replanned")
+                        self.apps[v.app_uuid].add_vm(
+                            v, _placement_map[v], "replanned")
                 else:
-                    self.apps[v.app_uuid].add_vm(v, _placement_map[v], "scheduled")
+                    self.apps[v.app_uuid].add_vm(
+                        v, _placement_map[v], "scheduled")
             # NOTE(GJ): do not handle Volume in this version
             else:
                 if _placement_map[v] in self.resource.hosts.keys():

@@ -77,13 +77,16 @@ def load_conf(args=None, project=DOMAIN, default_files=None):
     CONF(default_config_files=default_files) if default_files else CONF(args or [], project=project)
 
 
-def init_conf(log_file="valet.log", args=None, grp2opt=None, cli_opts=None, default_config_files=None):
+def init_conf(log_file="valet.log", args=None, grp2opt=None,
+              cli_opts=None, default_config_files=None):
     CONF.log_file = log_file
     logging.register_options(CONF)
 
     # init conf
-    general_groups = {server_group: server_opts, music_group: music_opts,
-                      identity_group: identity_opts, messaging_group: messaging_opts}
+    general_groups = {server_group: server_opts,
+                      music_group: music_opts,
+                      identity_group: identity_opts,
+                      messaging_group: messaging_opts}
 
     general_groups.update(grp2opt or {})
 
