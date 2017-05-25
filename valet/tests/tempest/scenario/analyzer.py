@@ -102,7 +102,8 @@ class Analyzer(object):
 
         try:
             for i in range(len(servers_list["servers"])):
-                server = self.nova_client.show_server(servers_list["servers"][i]["id"])
+                server = self.nova_client.show_server(
+                    servers_list["servers"][i]["id"])
                 host_name = server["server"]["OS-EXT-SRV-ATTR:host"]
                 instance_name = servers_list["servers"][i]["name"]
 
@@ -110,7 +111,8 @@ class Analyzer(object):
                 self.instances_on_host[host_name].append(instance_name)
 
         except Exception:
-            self.log.log_error("Exception trying to show_server: %s" % traceback.format_exc())
+            self.log.log_error(
+                "Exception trying to show_server: %s" % traceback.format_exc())
             if self.tries > 0:
                 time.sleep(CONF.valet.PAUSE)
                 self.tries -= 1
@@ -127,7 +129,8 @@ class Analyzer(object):
         """Return host of instance with matching name."""
         hosts = []
 
-        self.log.log_debug("host - instance dictionary is: %s" % self.host_instance_dict)
+        self.log.log_debug(
+            "host - instance dictionary is: %s" % self.host_instance_dict)
 
         for res in res_name:
             name = self.get_instance_name(res)
@@ -150,7 +153,8 @@ class Analyzer(object):
 
         except Exception as ex:
             self.log.log_error("Exception while verifying instances are on "
-                               "the same host/racks: %s" % ex, traceback.format_exc())
+                               "different hosts/racks: "
+                               "%s" % ex, traceback.format_exc())
             return False
         return True
 
@@ -169,18 +173,22 @@ class Analyzer(object):
 
         except Exception as ex:
             self.log.log_error("Exception while verifying instances are on "
-                               "different hosts/racks: %s" % ex, traceback.format_exc())
+                               "different hosts/racks: "
+                               "%s" % ex, traceback.format_exc())
             return False
         return True
 
     def are_we_alone(self, ins_for_group, level):
         """Return True if no other instances in group on server."""
-        self.log.log_info("verifying instances are on the same group hosts/racks")
+        self.log.log_info("verifying instances are on the "
+                          "same group hosts/racks")
 
         exclusivity_group_hosts = self.get_exclusivity_group_hosts()
 
-        self.log.log_debug("exclusivity group hosts are: %s " % exclusivity_group_hosts)
-        self.log.log_debug("instances on host are: %s " % self.instances_on_host)
+        self.log.log_debug(
+            "exclusivity group hosts are: %s " % exclusivity_group_hosts)
+        self.log.log_debug(
+            "instances on host are: %s " % self.instances_on_host)
 
         # instances - all the instances on the exclusivity group hosts
         for host in exclusivity_group_hosts:
@@ -189,7 +197,8 @@ class Analyzer(object):
         self.log.log_debug("exclusivity group instances are: %s " % instances)
 
         if level == "rack":
-            instances = self.get_rack_instances(set(self.host_instance_dict.values()))
+            instances = self.get_rack_instances(
+                set(self.host_instance_dict.values()))
 
         # host_instance_dict should be all the instances on the rack
         if len(instances) < 1:
@@ -215,13 +224,14 @@ class Analyzer(object):
         return ins_group
 
     def get_exclusivity_group_hosts(self):
-        ''' Get all the hosts that the exclusivity group instances are located on '''
+        '''Get all hosts that exclusivity group instances are located on '''
         servers_list = self.nova_client.list_servers()
         exclusivity_hosts = []
         for serv in servers_list["servers"]:
             if "exclusivity" in serv["name"]:
                 server = self.nova_client.show_server(serv["id"])
-                exclusivity_hosts.append(server["server"]["OS-EXT-SRV-ATTR:host"])
+                exclusivity_hosts.append(
+                    server["server"]["OS-EXT-SRV-ATTR:host"])
         return set(exclusivity_hosts)
 
     def get_group_instances(self, resources, group_ins):
@@ -238,7 +248,9 @@ class Analyzer(object):
             return ins_for_group
 
         except Exception as ex:
-            self.log.log_error("Exception at method get_group_instances: %s" % ex, traceback.format_exc())
+            self.log.log_error(
+                "Exception at method get_group_instances: %s" % ex,
+                traceback.format_exc())
             return None
 
     def get_rack_instances(self, hosts):

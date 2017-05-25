@@ -12,20 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Search."""
-
 import copy
 import operator
 
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup, VM, LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.ostro.constraint_solver import ConstraintSolver
-from valet.engine.optimizer.ostro.search_base import Node, Resource, LogicalGroupResource
+from valet.engine.optimizer.ostro.search_base import LogicalGroupResource
+from valet.engine.optimizer.ostro.search_base import Node
+from valet.engine.optimizer.ostro.search_base import Resource
 from valet.engine.resource_manager.resource_base import Datacenter
 
 
 class Search(object):
-    ''' a bin-packing with maximal consolidation approach '''
+    '''A bin-packing with maximal consolidation approach '''
 
     def __init__(self, _logger):
         """Initialization."""
@@ -181,9 +182,8 @@ class Search(object):
 
     def _place_planned_nodes(self):
         init_level = LEVELS[len(LEVELS) - 1]
-        (planned_node_list, level) = self._open_planned_list(self.app_topology.vms,
-                                                             self.app_topology.vgroups,
-                                                             init_level)
+        (planned_node_list, level) = self._open_planned_list(
+            self.app_topology.vms, self.app_topology.vgroups, init_level)
         if len(planned_node_list) == 0:
             return True
 
@@ -295,7 +295,8 @@ class Search(object):
         while len(_node_list) > 0:
             n = _node_list.pop(0)
 
-            best_resource = self._get_best_resource_for_planned(n, _level, avail_resources)
+            best_resource = self._get_best_resource_for_planned(
+                n, _level, avail_resources)
             if best_resource is not None:
                 self._deduct_reservation(_level, best_resource, n)
                 self._close_planned_placement(_level, best_resource, n.node)
@@ -326,7 +327,8 @@ class Search(object):
             else:
                 vms[_n.node.uuid] = _n.node
 
-            (planned_node_list, level) = self._open_planned_list(vms, vgroups, _level)
+            (planned_node_list, level) = self._open_planned_list(
+                vms, vgroups, _level)
 
             host_name = self._get_host_of_level(_n, _level)
             if host_name is None:
@@ -533,11 +535,12 @@ class Search(object):
                     lgr = r.host_memberships[lgk]
                     lgr.num_of_placed_vms -= 1
                     if r.host_name in lgr.num_of_placed_vms_per_host.keys():
+                        num_placed_vm = lgr.num_of_placed_vms_per_host
                         lgr.num_of_placed_vms_per_host[r.host_name] -= 1
                         if lgr.group_type == "EX" or \
                                 lgr.group_type == "AFF" or \
                                 lgr.group_type == "DIV":
-                            if lgr.num_of_placed_vms_per_host[r.host_name] == 0:
+                            if num_placed_vm[r.host_name] == 0:
                                 del lgr.num_of_placed_vms_per_host[r.host_name]
                                 del r.host_memberships[lgk]
                     if lgr.group_type == "EX" or lgr.group_type == "AFF" or \
@@ -557,15 +560,11 @@ class Search(object):
                         if lg.exist_vm_by_h_uuid(h_uuid) is True:
                             lgr = r.rack_memberships[lgk]
                             lgr.num_of_placed_vms -= 1
-                            if r.rack_name in \
-                                    lgr.num_of_placed_vms_per_host.keys():
-                                lgr.num_of_placed_vms_per_host[r.rack_name] -= 1
-                                if lgr.num_of_placed_vms_per_host[
-                                    r.rack_name
-                                ] == 0:
-                                    del lgr.num_of_placed_vms_per_host[
-                                        r.rack_name
-                                    ]
+                            vms_placed = lgr.num_of_placed_vms_per_host
+                            if r.rack_name in vms_placed.keys():
+                                vms_placed[r.rack_name] -= 1
+                                if vms_placed[r.rack_name] == 0:
+                                    del vms_placed[r.rack_name]
                                     for _, rr in self.avail_hosts.iteritems():
                                         if rr.rack_name != "any" and \
                                                 rr.rack_name == \
@@ -667,7 +666,8 @@ class Search(object):
         elif _level == "host":
             avail_resources = _avail_hosts
 
-        _open_node_list.sort(key=operator.attrgetter("sort_base"), reverse=True)
+        _open_node_list.sort(
+            key=operator.attrgetter("sort_base"), reverse=True)
 
         while len(_open_node_list) > 0:
             n = _open_node_list.pop(0)
@@ -678,9 +678,10 @@ class Search(object):
                 break
 
             if n.node not in self.planned_placements.keys():
-                ''' for VM under host level only '''
+                # for VM under host level only
                 self._deduct_reservation(_level, best_resource, n)
-                ''' close all types of nodes under any level, but VM with above host level '''
+                # close all types of nodes under any level, but VM
+                # with above host level
                 self._close_node_placement(_level, best_resource, n.node)
 
         return success
@@ -771,16 +772,18 @@ class Search(object):
                             avail_hosts[hk] = h
 
                 # recursive call
-                if self._run_greedy(open_node_list, level, avail_hosts) is True:
+                if self._run_greedy(open_node_list, level, avail_hosts):
                     best_resource = copy.deepcopy(cr)
                     best_resource.level = _level
                     break
                 else:
                     debug_candidate_name = cr.get_resource_name(_level)
-                    self.logger.warn("rollback of candidate resource = " + debug_candidate_name)
+                    msg = "rollback of candidate resource = {0}"
+                    self.logger.warn(msg.format(debug_candidate_name))
 
                     if planned_host is None:
-                        # recursively rollback deductions of all child VMs of _n
+                        # recursively rollback deductions of all
+                        # child VMs of _n
                         self._rollback_reservation(_n.node)
                         # recursively rollback closing
                         self._rollback_node_placement(_n.node)
@@ -855,8 +858,9 @@ class Search(object):
             lgr.group_type = "EX"
             self.avail_logical_groups[lgr.name] = lgr
 
-            self.logger.info("Search: add new exclusivity (" +
-                              _exclusivity_id + ")")
+            self.logger.info(
+                "Search: add new exclusivity (%s)" % _exclusivity_id)
+
         else:
             lgr = self.avail_logical_groups[_exclusivity_id]
 
@@ -879,7 +883,8 @@ class Search(object):
                             np.rack_memberships[_exclusivity_id] = lgr
                     if chosen_host.cluster_name != "any" and \
                             np.cluster_name == chosen_host.cluster_name:
-                        if _exclusivity_id not in np.cluster_memberships.keys():
+                        if (_exclusivity_id not in
+                                np.cluster_memberships.keys()):
                             np.cluster_memberships[_exclusivity_id] = lgr
             elif _level == "rack":
                 for _, np in self.avail_hosts.iteritems():
@@ -889,13 +894,15 @@ class Search(object):
                             np.rack_memberships[_exclusivity_id] = lgr
                     if chosen_host.cluster_name != "any" and \
                             np.cluster_name == chosen_host.cluster_name:
-                        if _exclusivity_id not in np.cluster_memberships.keys():
+                        if (_exclusivity_id not in
+                                np.cluster_memberships.keys()):
                             np.cluster_memberships[_exclusivity_id] = lgr
             elif _level == "cluster":
                 for _, np in self.avail_hosts.iteritems():
                     if chosen_host.cluster_name != "any" and \
                             np.cluster_name == chosen_host.cluster_name:
-                        if _exclusivity_id not in np.cluster_memberships.keys():
+                        if (_exclusivity_id not in
+                                np.cluster_memberships.keys()):
                             np.cluster_memberships[_exclusivity_id] = lgr
 
     def _add_affinity(self, _level, _best, _affinity_id):
@@ -956,8 +963,8 @@ class Search(object):
             lgr.group_type = "DIV"
             self.avail_logical_groups[lgr.name] = lgr
 
-            self.logger.info("Search: add new diversity (" +
-                              _diversity_id + ")")
+            self.logger.info(
+                "Search: add new diversity (%s)" % _diversity_id)
         else:
             lgr = self.avail_logical_groups[_diversity_id]
 
@@ -1058,7 +1065,8 @@ class Search(object):
             if len(_v.diversity_groups) > 0:
                 for _, diversity_id in _v.diversity_groups.iteritems():
                     if diversity_id.split(":")[1] != "any":
-                        self._remove_diversities(chosen_host, diversity_id, level)
+                        self._remove_diversities(
+                            chosen_host, diversity_id, level)
 
     def _remove_exclusivity(self, _chosen_host, _exclusivity_id, _level):
         if _exclusivity_id.split(":")[0] == _level:
@@ -1087,7 +1095,8 @@ class Search(object):
                         if _chosen_host.cluster_name != "any" and \
                                 np.cluster_name == \
                                 _chosen_host.cluster_name:
-                            if _exclusivity_id in np.cluster_memberships.keys():
+                            if (_exclusivity_id in
+                                    np.cluster_memberships.keys()):
                                 del np.cluster_memberships[_exclusivity_id]
 
             elif _level == "rack":
@@ -1100,7 +1109,8 @@ class Search(object):
                         if _chosen_host.cluster_name != "any" and \
                                 np.cluster_name == \
                                 _chosen_host.cluster_name:
-                            if _exclusivity_id in np.cluster_memberships.keys():
+                            if (_exclusivity_id in
+                                    np.cluster_memberships.keys()):
                                 del np.cluster_memberships[_exclusivity_id]
 
             elif _level == "cluster":
@@ -1109,7 +1119,8 @@ class Search(object):
                         if _chosen_host.cluster_name != "any" and \
                                 np.cluster_name == \
                                 _chosen_host.cluster_name:
-                            if _exclusivity_id in np.cluster_memberships.keys():
+                            if (_exclusivity_id in
+                                    np.cluster_memberships.keys()):
                                 del np.cluster_memberships[_exclusivity_id]
 
     def _remove_affinity(self, _chosen_host, _affinity_id, _level):

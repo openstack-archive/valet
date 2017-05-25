@@ -17,8 +17,10 @@
 
 from pecan.deploy import deploy
 from pecan import make_app
+
 from valet import api
-from valet.api.common import identity, messaging
+from valet.api.common import identity
+from valet.api.common import messaging
 from valet.api.db import models
 from valet.common.conf import get_logger
 from valet.common.conf import init_conf

@@ -1,10 +1,26 @@
+#
+# Copyright 2014-2017 AT&T Intellectual Property
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import mock
+
 import valet.engine.optimizer.ostro_server.health_checker as ping
 from valet.engine.optimizer.ostro_server.health_checker import HealthCheck
 from valet.tests.base import Base
 
-json = r'{"row 0":{"placement": "{\"status\": {\"message\": \"ping\", \"type\": \"ok\"},' \
-       r'\"resources\": {\"ip\": \"localhost\", \"id\": %d}}","stack_id":"%s"}}'
+json = (r'{"row 0":{"placement": "{\"status\": {\"message\": '
+        r'\"ping\", \"type\": \"ok\"},\"resources\": '
+        r'{\"ip\": \"localhost\", \"id\": %d}}","stack_id":"%s"}}')
 
 
 class TestHealthCheck(Base):
@@ -50,13 +66,15 @@ class TestHealthCheck(Base):
     def test_read_response(self):
         mid = 1
         self.pingger.rest.request.return_value.status_code = 200
-        self.pingger.rest.request.return_value.text = json % (mid, self.pingger.uuid)
+        self.pingger.rest.request.return_value.text = json % (
+            mid, self.pingger.uuid)
         self.validate_test(self.pingger._read_response())
 
     def test_read_response_from_other_engine(self):
         my_id = 1
         self.pingger.rest.request.return_value.status_code = 200
-        self.pingger.rest.request.return_value.text = json % (my_id, self.pingger.uuid)
+        self.pingger.rest.request.return_value.text = json % (
+            my_id, self.pingger.uuid)
         self.validate_test(not self.pingger._read_response() == 2)
 
     def test_read_response_unhappy_wrong_res_code(self):

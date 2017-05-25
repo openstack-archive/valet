@@ -1,18 +1,16 @@
-# -*- encoding: utf-8 -*-
 #
-# Copyright (c) 2014-2016 AT&T
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may
+#  not use this file except in compliance with the License. You may obtain
+#  a copy of the License at
 #
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-#    implied. See the License for the specific language governing permissions and
-#    limitations under the License.
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations
+#  under the License.
+
 
 '''Valet API Wrapper'''
 
@@ -44,7 +42,8 @@ def _exception(exc, exc_info, req):
         # FIXME(GJ): if Valet returns error
         error = response.get('error')
         msg = "%(explanation)s (valet-api: %(message)s)" % {
-            'explanation': response.get('explanation', _('No remediation available')),
+            'explanation': response.get('explanation',
+                                        _('No remediation available')),
             'message': error.get('message', _('Unknown error'))
         }
         LOG.error("Response with error: " + msg)
@@ -52,7 +51,9 @@ def _exception(exc, exc_info, req):
     else:
         # TODO(JD): Re-evaluate if this clause is necessary.
         exc_class, exc, traceback = exc_info  # pylint: disable=W0612
-        msg = _("%(exc)s for %(method)s %(url)s with body %(body)s") % {'exc': exc, 'method': exc.request.method, 'url': exc.request.url, 'body': exc.request.body}
+        msg = (_("%(exc)s for %(method)s %(url)s with body %(body)s") %
+               {'exc': exc, 'method': exc.request.method,
+                'url': exc.request.url, 'body': exc.request.body})
         LOG.error("Response is none: " + msg)
         return "error"
 
@@ -89,7 +90,10 @@ class ValetAPIWrapper(object):
             raise  # exception.Error(_('API Endpoint not defined.'))
 
     def _get_timeout(self):
-        '''Returns Valet plugin API request timeout tuple (conn_timeout, read_timeout)'''
+        '''Returns Valet plugin API request timeout.
+
+        Returns the timeout values tuple (conn_timeout, read_timeout)
+        '''
         read_timeout = 600
         try:
             opt = getattr(cfg.CONF, self.opt_group_str)
@@ -97,18 +101,24 @@ class ValetAPIWrapper(object):
             read_timeout = opt[self.opt_read_timeout]
         except Exception:
             pass
-        # Timeout accepts tupple on 'requests' version 2.4.0 and above - adding *connect* timeouts
+        # Timeout accepts tupple on 'requests' version 2.4.0 and above -
+        # adding *connect* timeouts
         # return conn_timeout, read_timeout
         return read_timeout
 
     def _register_opts(self):
         '''Register options'''
         opts = []
-        option = cfg.StrOpt(self.opt_name_str, default=None, help=_('Valet API endpoint'))
+        option = cfg.StrOpt(
+            self.opt_name_str, default=None, help=_('Valet API endpoint'))
         opts.append(option)
-        option = cfg.IntOpt(self.opt_conn_timeout, default=3, help=_('Valet Plugin Connect Timeout'))
+        option = cfg.IntOpt(
+            self.opt_conn_timeout, default=3,
+            help=_('Valet Plugin Connect Timeout'))
         opts.append(option)
-        option = cfg.IntOpt(self.opt_read_timeout, default=5, help=_('Valet Plugin Read Timeout'))
+        option = cfg.IntOpt(
+            self.opt_read_timeout, default=5,
+            help=_('Valet Plugin Read Timeout'))
         opts.append(option)
 
         opt_group = cfg.OptGroup(self.opt_group_str)
@@ -116,7 +126,7 @@ class ValetAPIWrapper(object):
         cfg.CONF.register_opts(opts, group=opt_group)
 
     # TODO(JD): Keep stack param for now. We may need it again.
-    def plans_create(self, stack, plan, auth_token=None):  # pylint: disable=W0613
+    def plans_create(self, stack, plan, auth_token=None):
         '''Create a plan'''
         response = None
         try:
@@ -125,11 +135,12 @@ class ValetAPIWrapper(object):
             url = self._api_endpoint() + '/plans/'
             payload = json.dumps(plan)
             self.headers['X-Auth-Token'] = auth_token
-            req = requests.post(url, data=payload, headers=self.headers, timeout=timeout)
+            req = requests.post(
+                url, data=payload, headers=self.headers, timeout=timeout)
             req.raise_for_status()
             response = json.loads(req.text)
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError)\
-                as exc:
+        except (requests.exceptions.HTTPError, requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError) as exc:
             return _exception(exc, sys.exc_info(), req)
         except Exception as e:
             LOG.error("Exception (at plans_create) is: %s" % e)
@@ -145,8 +156,8 @@ class ValetAPIWrapper(object):
             url = self._api_endpoint() + '/plans/' + stack.id
             self.headers['X-Auth-Token'] = auth_token
             req = requests.delete(url, headers=self.headers, timeout=timeout)
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError)\
-                as exc:
+        except (requests.exceptions.HTTPError, requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError) as exc:
             return _exception(exc, sys.exc_info(), req)
         except Exception as e:
             LOG.error("Exception (plans_delete) is: %s" % e)
@@ -167,7 +178,8 @@ class ValetAPIWrapper(object):
                     "resource_id": res_id
                 }
                 payload = json.dumps(kwargs)
-                req = requests.post(url, data=payload, headers=self.headers, timeout=timeout)
+                req = requests.post(
+                    url, data=payload, headers=self.headers, timeout=timeout)
             else:
                 req = requests.get(url, headers=self.headers, timeout=timeout)
 
@@ -175,8 +187,8 @@ class ValetAPIWrapper(object):
             # req.raise_for_status()
 
             response = json.loads(req.text)
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout, requests.exceptions.ConnectionError)\
-                as exc:
+        except (requests.exceptions.HTTPError, requests.exceptions.Timeout,
+                requests.exceptions.ConnectionError) as exc:
             return _exception(exc, sys.exc_info(), req)
         except Exception as e:  # pylint: disable=W0702
             LOG.error("Exception (placement) is: %s" % e)

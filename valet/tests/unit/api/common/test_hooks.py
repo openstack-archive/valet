@@ -46,8 +46,9 @@ class TestHooks(ApiBase):
         mock_threading.Thread.assert_called_once_with(
             target=mock_conf.messaging.notifier.info, args=(
                 {},
-                'api', {'response': {'body': State.response.body,
-                                     'status_code': State.response.status_code},
+                'api', {'response':
+                        {'body': State.response.body,
+                         'status_code': State.response.status_code},
                         'context': State.request.context,
                         'request': {'path': 'test_path',
                                     'method': 'test_method',
@@ -71,8 +72,9 @@ class TestHooks(ApiBase):
         mock_threading.Thread.assert_called_once_with(
             target=mock_conf.messaging.notifier.error, args=(
                 {},
-                'api', {'response': {'body': State.response.body,
-                                     'status_code': State.response.status_code},
+                'api', {'response':
+                        {'body': State.response.body,
+                         'status_code': State.response.status_code},
                         'context': State.request.context,
                         'request': {'path': 'test_path',
                                     'method': 'test_method',

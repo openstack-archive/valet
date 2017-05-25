@@ -12,14 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Analyzer."""
+import traceback
 
 from novaclient import client
-import traceback
-from valet.tests.functional.valet_validator.common import Result, GeneralLogger
+
+
 from valet.tests.functional.valet_validator.common.auth import Auth
+from valet.tests.functional.valet_validator.common import GeneralLogger
 from valet.tests.functional.valet_validator.common.init import CONF
+from valet.tests.functional.valet_validator.common import Result
 
 
 class Analyzer(object):
@@ -208,4 +209,5 @@ class Analyzer(object):
     def get_vms_by_hypervisor(self, host):
         """Return vms based on hypervisor(host)."""
         return [vm for vm in self.nova.servers.list(
-            search_opts={"all_tenants": True}) if self.get_hostname(vm) == host]
+            search_opts={"all_tenants": True})
+            if self.get_hostname(vm) == host]
