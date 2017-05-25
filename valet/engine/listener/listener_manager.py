@@ -134,8 +134,10 @@ class ListenerManager(threading.Thread):
             else:
                 return
 
-            self.listener_logger.debug("\nMessage No: %s\n", method_frame.delivery_tag)
-            self.listener_logger.debug(json.dumps(message, sort_keys=True, indent=2))
+            self.listener_logger.debug(
+                "\nMessage No: %s\n", method_frame.delivery_tag)
+            self.listener_logger.debug(
+                json.dumps(message, sort_keys=True, indent=2))
             channel.basic_ack(delivery_tag=method_frame.delivery_tag)
         except Exception:
             self.listener_logger.error(traceback.format_exc())

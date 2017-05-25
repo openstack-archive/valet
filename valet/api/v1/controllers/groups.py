@@ -17,15 +17,20 @@
 
 from notario import decorators
 from notario.validators import types
-from pecan import conf, expose, request, response
+from pecan import conf
+from pecan import expose
+from pecan import request
+from pecan import response
 from pecan_notario import validate
 
+from valet import api
 from valet.api.common.compute import nova_client
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
 from valet.api.db.models.music.groups import Group
-from valet.api.v1.controllers import error, valid_group_name
-from valet import api
+from valet.api.v1.controllers import error
+from valet.api.v1.controllers import valid_group_name
+
 
 GROUPS_SCHEMA = (
     (decorators.optional('description'), types.string),
@@ -260,7 +265,8 @@ class GroupsItemController(object):
         """Delete a group."""
         group = request.context['group']
         if isinstance(group.members, list) and len(group.members) > 0:
-            error('/errors/conflict', _('Unable to delete a Group with members.'))
+            error('/errors/conflict',
+                  _('Unable to delete a Group with members.'))
         group.delete()
         response.status = 204
 

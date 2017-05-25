@@ -18,14 +18,14 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
-from valet.tests.functional.valet_validator.tests.functional_base import FunctionalTestCase
+from valet.tests.functional.valet_validator.tests.functional_base \
+    import FunctionalTestCase
 
 
-opt_test_div = \
-    [
-        cfg.StrOpt('STACK_NAME', default="basic_diversity_stack"),
-        cfg.StrOpt('TEMPLATE_NAME', default="diversity_basic_2_instances"),
-    ]
+opt_test_div = [
+    cfg.StrOpt('STACK_NAME', default="basic_diversity_stack"),
+    cfg.StrOpt('TEMPLATE_NAME', default="diversity_basic_2_instances"),
+]
 
 CONF.register_opts(opt_test_div, group="test_diversity")
 LOG = logging.getLogger(__name__)

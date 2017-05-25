@@ -18,16 +18,13 @@
 from notario.decorators import instance_of
 from notario import ensure
 from os import path
-
-from pecan import redirect, request
+from pecan import redirect
+from pecan import request
 import string
+
 from valet import api
 from valet.api.common.i18n import _
 from valet.api.db.models.music.placements import Placement
-
-#
-# Notario Helpers
-#
 
 
 def valid_group_name(value):
@@ -59,7 +56,7 @@ def set_placements(plan, resources, placements):
         name = resources[uuid]['name']
         properties = placements[uuid]['properties']
         location = properties['host']
-        Placement(name, uuid, plan=plan, location=location)  # pylint: disable=W0612
+        Placement(name, uuid, plan=plan, location=location)
 
     return plan
 
@@ -73,7 +70,8 @@ def reserve_placement(placement, resource_id=None, reserve=True, update=True):
     if placement:
         api.LOG.info(_('%(rsrv)s placement of %(orch_id)s in %(loc)s.'),
                      {'rsrv': _("Reserving") if reserve else _("Unreserving"),
-                      'orch_id': placement.orchestration_id, 'loc': placement.location})
+                      'orch_id': placement.orchestration_id,
+                      'loc': placement.location})
         placement.reserved = reserve
         if resource_id:
             api.LOG.info(_('Associating resource id %(res_id)s with orchestration id %(orch_id)s.'),

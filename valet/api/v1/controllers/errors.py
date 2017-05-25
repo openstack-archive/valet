@@ -15,10 +15,13 @@
 
 """Errors."""
 
-from pecan import expose, request, response
+from pecan import expose
+from pecan import request
+from pecan import response
+from webob.exc import status_map
+
 from valet.api.common.i18n import _
 from valet.api import LOG
-from webob.exc import status_map
 
 
 def error_wrapper(func):
@@ -49,7 +52,6 @@ def error_wrapper(func):
     return func_wrapper
 
 
-# pylint: disable=W0613
 class ErrorsController(object):
     """Error Controller /errors/{error_name}."""
 

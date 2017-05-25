@@ -13,16 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Loader."""
-
-from heatclient.client import Client
 import sys
 import time
 import traceback
-from valet.tests.functional.valet_validator.common import Result, GeneralLogger
+
+from heatclient.client import Client
+
 from valet.tests.functional.valet_validator.common.auth import Auth
+from valet.tests.functional.valet_validator.common import GeneralLogger
 from valet.tests.functional.valet_validator.common.init import CONF
-from valet.tests.functional.valet_validator.group_api.valet_group import ValetGroup
+from valet.tests.functional.valet_validator.common import Result
+from valet.tests.functional.valet_validator.group_api.valet_group \
+    import ValetGroup
 
 
 class Loader(object):

@@ -12,16 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Placements."""
-
 import mock
-import valet.api.v1.controllers.placements as placements
-from valet.api.v1.controllers.placements import PlacementsController, PlacementsItemController
-from valet.api.db.models.music import Query
-from valet.api.db.models.music import Results
+
 from valet.api.db.models.music.placements import Placement
 from valet.api.db.models.music.plans import Plan
+from valet.api.db.models.music import Query
+from valet.api.db.models.music import Results
+import valet.api.v1.controllers.placements as placements
+from valet.api.v1.controllers.placements import PlacementsController
+from valet.api.v1.controllers.placements import PlacementsItemController
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
@@ -70,7 +69,8 @@ class TestPlacements(ApiBase):
         """Test placements index method with POST and PUT (not allowed)."""
         mock_request.method = "POST"
         self.placements_controller.index()
-        self.validate_test("The POST method is not allowed" in ApiBase.response)
+        self.validate_test(
+            "The POST method is not allowed" in ApiBase.response)
 
         mock_request.method = "PUT"
         self.placements_item_controller.index()

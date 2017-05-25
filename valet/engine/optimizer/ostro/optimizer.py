@@ -12,13 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Optimizer."""
-
-import time
-
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VM
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.ostro.search import Search
 
 
@@ -47,8 +42,9 @@ class Optimizer(object):
         if len(_app_topology.exclusion_list_map) > 0:
             place_type = "migration"
         else:
-            if (len(_app_topology.old_vm_map) > 0 or len(_app_topology.planned_vm_map) > 0) and \
-               len(_app_topology.candidate_list_map) > 0:
+            if ((len(_app_topology.old_vm_map) > 0 or
+                    len(_app_topology.planned_vm_map) > 0) and
+                    len(_app_topology.candidate_list_map) > 0):
                 place_type = "replan"
             else:
                 place_type = "create"
@@ -73,18 +69,16 @@ class Optimizer(object):
         if success is True:
             placement_map = {}
             for v in self.search.node_placements.keys():
+                node_placement = self.search.node_placements[v]
                 if isinstance(v, VM):
-                    placement_map[v] = self.search.node_placements[v].host_name
+                    placement_map[v] = node_placement.host_name
                 elif isinstance(v, VGroup):
                     if v.level == "host":
-                        placement_map[v] = \
-                            self.search.node_placements[v].host_name
+                        placement_map[v] = node_placement.host_name
                     elif v.level == "rack":
-                        placement_map[v] = \
-                            self.search.node_placements[v].rack_name
+                        placement_map[v] = node_placement.rack_name
                     elif v.level == "cluster":
-                        placement_map[v] = \
-                            self.search.node_placements[v].cluster_name
+                        placement_map[v] = node_placement.cluster_name
 
                 self.logger.debug("    " + v.name + " placed in " +
                                   placement_map[v])
@@ -125,7 +119,8 @@ class Optimizer(object):
                                          (v.uuid, v.name, uuid),
                                          v.vCPUs, v.mem, v.local_volume_size)
 
-            self._update_logical_grouping(v, self.search.avail_hosts[np.host_name], uuid)
+            self._update_logical_grouping(
+                v, self.search.avail_hosts[np.host_name], uuid)
 
             self.resource.update_host_time(np.host_name)
 
@@ -160,8 +155,8 @@ class Optimizer(object):
         self._collect_logical_groups_of_vm(_v, vm_logical_groups)
 
         host = self.resource.hosts[_avail_host.host_name]
-        self.resource.add_vm_to_logical_groups(host, (_v.uuid, _v.name, _uuid),
-                                               vm_logical_groups)
+        self.resource.add_vm_to_logical_groups(
+            host, (_v.uuid, _v.name, _uuid), vm_logical_groups)
 
     def _collect_logical_groups_of_vm(self, _v, _vm_logical_groups):
         if isinstance(_v, VM):
@@ -191,4 +186,5 @@ class Optimizer(object):
                 _vm_logical_groups.append(name)
 
         if _v.survgroup is not None:
-            self._collect_logical_groups_of_vm(_v.survgroup, _vm_logical_groups)
+            self._collect_logical_groups_of_vm(
+                _v.survgroup, _vm_logical_groups)

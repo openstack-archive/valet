@@ -12,14 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""WSGI Wrapper."""
-
-from common.i18n import _
 import os
 from pecan.deploy import deploy
-from valet.common.conf import init_conf, get_logger
+
+from common.i18n import _
+
 from valet import api
+from valet.common.conf import get_logger
+from valet.common.conf import init_conf
 
 
 def config_file(file_name=None):

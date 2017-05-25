@@ -215,13 +215,14 @@ class Analyzer(object):
         return ins_group
 
     def get_exclusivity_group_hosts(self):
-        ''' Get all the hosts that the exclusivity group instances are located on '''
+        '''Get all hosts that exclusivity group instances are located on '''
         servers_list = self.nova_client.list_servers()
         exclusivity_hosts = []
         for serv in servers_list["servers"]:
             if "exclusivity" in serv["name"]:
                 server = self.nova_client.show_server(serv["id"])
-                exclusivity_hosts.append(server["server"]["OS-EXT-SRV-ATTR:host"])
+                exclusivity_hosts.append(
+                    server["server"]["OS-EXT-SRV-ATTR:host"])
         return set(exclusivity_hosts)
 
     def get_group_instances(self, resources, group_ins):
@@ -238,7 +239,9 @@ class Analyzer(object):
             return ins_for_group
 
         except Exception as ex:
-            self.log.log_error("Exception at method get_group_instances: %s" % ex, traceback.format_exc())
+            self.log.log_error(
+                "Exception at method get_group_instances: %s" % ex,
+                traceback.format_exc())
             return None
 
     def get_rack_instances(self, hosts):
