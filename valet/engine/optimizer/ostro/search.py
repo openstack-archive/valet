@@ -12,20 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Search."""
-
 import copy
 import operator
 
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup, VM, LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.ostro.constraint_solver import ConstraintSolver
-from valet.engine.optimizer.ostro.search_base import Node, Resource, LogicalGroupResource
+from valet.engine.optimizer.ostro.search_base import LogicalGroupResource
+from valet.engine.optimizer.ostro.search_base import Node
+from valet.engine.optimizer.ostro.search_base import Resource
 from valet.engine.resource_manager.resource_base import Datacenter
 
 
 class Search(object):
-    ''' a bin-packing with maximal consolidation approach '''
+    '''A bin-packing with maximal consolidation approach '''
 
     def __init__(self, _logger):
         """Initialization."""
@@ -181,9 +182,8 @@ class Search(object):
 
     def _place_planned_nodes(self):
         init_level = LEVELS[len(LEVELS) - 1]
-        (planned_node_list, level) = self._open_planned_list(self.app_topology.vms,
-                                                             self.app_topology.vgroups,
-                                                             init_level)
+        (planned_node_list, level) = self._open_planned_list(
+            self.app_topology.vms, self.app_topology.vgroups, init_level)
         if len(planned_node_list) == 0:
             return True
 
@@ -855,8 +855,9 @@ class Search(object):
             lgr.group_type = "EX"
             self.avail_logical_groups[lgr.name] = lgr
 
-            self.logger.info("Search: add new exclusivity (" +
-                              _exclusivity_id + ")")
+            self.logger.info(
+                "Search: add new exclusivity (%s)" % _exclusivity_id)
+
         else:
             lgr = self.avail_logical_groups[_exclusivity_id]
 
@@ -956,8 +957,8 @@ class Search(object):
             lgr.group_type = "DIV"
             self.avail_logical_groups[lgr.name] = lgr
 
-            self.logger.info("Search: add new diversity (" +
-                              _diversity_id + ")")
+            self.logger.info(
+                "Search: add new diversity (%s)" % _diversity_id)
         else:
             lgr = self.avail_logical_groups[_diversity_id]
 

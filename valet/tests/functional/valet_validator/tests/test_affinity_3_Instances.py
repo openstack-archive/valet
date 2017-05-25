@@ -24,7 +24,7 @@ from valet.tests.functional.valet_validator.tests.functional_base import Functio
 opt_test_aff = [
     cfg.StrOpt('STACK_NAME', default="affinity_3_stack"),
     cfg.StrOpt('TEMPLATE_NAME', default="affinity_ 3_Instances"),
-    ]
+]
 
 CONF.register_opts(opt_test_aff, group="test_affinity_3")
 LOG = logging.getLogger(__name__)

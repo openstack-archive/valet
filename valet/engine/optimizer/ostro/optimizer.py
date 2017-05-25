@@ -12,13 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Optimizer."""
-
-import time
-
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VM
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.ostro.search import Search
 
 
@@ -76,15 +71,13 @@ class Optimizer(object):
                 if isinstance(v, VM):
                     placement_map[v] = self.search.node_placements[v].host_name
                 elif isinstance(v, VGroup):
+                    node_placement = self.search.node_placements[v]
                     if v.level == "host":
-                        placement_map[v] = \
-                            self.search.node_placements[v].host_name
+                        placement_map[v] = node_placement.host_name
                     elif v.level == "rack":
-                        placement_map[v] = \
-                            self.search.node_placements[v].rack_name
+                        placement_map[v] = node_placement.rack_name
                     elif v.level == "cluster":
-                        placement_map[v] = \
-                            self.search.node_placements[v].cluster_name
+                        placement_map[v] = node_placement.cluster_name
 
                 self.logger.debug("    " + v.name + " placed in " +
                                   placement_map[v])

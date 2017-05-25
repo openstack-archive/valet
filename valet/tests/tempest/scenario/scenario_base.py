@@ -148,9 +148,15 @@ class ScenarioTestCase(test.BaseTestCase):
             if os.path.exists(env_url):
                 with open(env_url, "r") as f:
                     filedata = f.read()
-                    filedata = filedata.replace('image_place_holder', CONF.compute.image_ref)
-                    filedata = filedata.replace('flavor_place_holder', CONF.compute.flavor_ref)
-                    filedata = filedata.replace('network_place_holder', CONF.compute.fixed_network_name)
+                    filedata = filedata.replace(
+                        'image_place_holder',
+                        CONF.compute.image_ref)
+                    filedata = filedata.replace(
+                        'flavor_place_holder',
+                        CONF.compute.flavor_ref)
+                    filedata = filedata.replace(
+                        'network_place_holder',
+                        CONF.compute.fixed_network_name)
 
                     return filedata
             else:
@@ -169,8 +175,8 @@ class ScenarioTestCase(test.BaseTestCase):
     def delete_stack(self):
         """Use heat client to delete stack."""
         try:
-          self.heat_client.delete_stack(self.stack_identifier)
-          self.heat_client.wait_for_stack_status(
+            self.heat_client.delete_stack(self.stack_identifier)
+            self.heat_client.wait_for_stack_status(
                 self.stack_identifier, "DELETE_COMPLETE",
                 failure_pattern='^.*DELETE_FAILED$')
 
@@ -199,8 +205,9 @@ class ScenarioTestCase(test.BaseTestCase):
 
         except exceptions.StackBuildErrorException as ex:
             if "Ostro error" in str(ex) and self.tries > 0:
-                self.log.log_error("Ostro error - try number %d" %
-                        (CONF.valet.TRIES_TO_CREATE - self.tries + 2))
+                msg = "Ostro error - try number %d"
+                self.log.log_error(
+                    msg % (CONF.valet.TRIES_TO_CREATE - self.tries + 2))
                 self.tries -= 1
                 self.delete_stack()
                 time.sleep(CONF.valet.PAUSE)

@@ -12,11 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Resources utlized by search engine."""
-
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+
 
 class Resource(object):
     """Resource."""

@@ -12,12 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Init."""
+import time
 
 from oslo_log import log as logging
-import time
-from valet.tests.functional.valet_validator.common.init import CONF, COLORS
+
+from valet.tests.functional.valet_validator.common.init import COLORS
+from valet.tests.functional.valet_validator.common.init import CONF
 
 LOG = logging.getLogger(__name__)
 

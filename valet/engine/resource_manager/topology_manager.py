@@ -12,19 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Topology Manager.
-
-Actions involved in setting up and managing topology. This includes setting
-topology, checking updates, creating new switches( also hosts and links), as
-well as updating them.
-"""
-
 import threading
 import time
 
-from valet.engine.resource_manager.resource_base \
-        import Datacenter, HostGroup, Host
+from valet.engine.resource_manager.resource_base import Datacenter
+from valet.engine.resource_manager.resource_base import Host
+from valet.engine.resource_manager.resource_base import HostGroup
 from valet.engine.resource_manager.topology import Topology
 
 
@@ -198,8 +191,8 @@ class TopologyManager(threading.Thread):
             self.logger.warn("TopologyManager: host (" + _rhost.name +
                              ") updated (tag)")
 
-        if _rhost.host_group is None or \
-            _host.host_group.name != _rhost.host_group.name:
+        if (_rhost.host_group is None or
+                _host.host_group.name != _rhost.host_group.name):
 
             if _host.host_group.name in self.resource.host_groups.keys():
                 _rhost.host_group = \

@@ -17,18 +17,20 @@
 
 from notario import decorators
 from notario.validators import types
-from pecan import expose, request, response
+from pecan import expose
+from pecan import request
+from pecan import response
 from pecan_notario import validate
 
 from valet.api.common.i18n import _
 from valet.api.common.ostro_helper import Ostro
 from valet.api.db.models.music.placements import Placement
 from valet.api.db.models.music.plans import Plan
+from valet.api import LOG
 from valet.api.v1.controllers import error
 from valet.api.v1.controllers import set_placements
 from valet.api.v1.controllers import update_placements
 from valet.api.v1.controllers import valid_plan_update_action
-from valet.api import LOG
 
 
 CREATE_SCHEMA = (
@@ -47,9 +49,6 @@ UPDATE_SCHEMA = (
     ('resources', types.array),
     (decorators.optional('timeout'), types.string)
 )
-
-
-# pylint: disable=R0201
 
 
 class PlansItemController(object):

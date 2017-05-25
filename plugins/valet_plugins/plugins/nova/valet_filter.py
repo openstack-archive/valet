@@ -13,21 +13,18 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
 #    implied. See the License for the specific language governing permissions and
 #    limitations under the License.
-
-'''Valet Nova Scheduler Filter'''
+import time
 
 from keystoneclient.v2_0 import client
-
 from nova.i18n import _
-from nova.i18n import _LI, _LW, _LE
+from nova.i18n import _LE
+from nova.i18n import _LI
+from nova.i18n import _LW
 from nova.scheduler import filters
-
-from valet_plugins.common import valet_api
-
 from oslo_config import cfg
 from oslo_log import log as logging
 
-import time
+from valet_plugins.common import valet_api
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)

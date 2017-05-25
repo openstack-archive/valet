@@ -12,20 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Affinity."""
-
 from oslo_config import cfg
 from oslo_log import log as logging
+
 from valet.tests.functional.valet_validator.common.init import CONF
-from valet.tests.functional.valet_validator.tests.functional_base import FunctionalTestCase
+from valet.tests.functional.valet_validator.tests.functional_base import \
+    FunctionalTestCase
 
 
-opt_test_aff = \
-    [
-        cfg.StrOpt('STACK_NAME', default="basic_affinity_stack"),
-        cfg.StrOpt('TEMPLATE_NAME', default="affinity_basic_2_instances"),
-    ]
+opt_test_aff = [
+    cfg.StrOpt('STACK_NAME', default="basic_affinity_stack"),
+    cfg.StrOpt('TEMPLATE_NAME', default="affinity_basic_2_instances"),
+]
 
 CONF.register_opts(opt_test_aff, group="test_affinity")
 LOG = logging.getLogger(__name__)

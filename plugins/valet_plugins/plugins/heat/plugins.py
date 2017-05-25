@@ -31,7 +31,7 @@ LOG = logging.getLogger(__name__)
 
 
 def validate_uuid4(uuid_string):
-    ''' Validate that a UUID string is in fact a valid uuid4.
+    '''Validate that a UUID string is in fact a valid uuid4.
 
     Happily, the uuid module does the actual checking for us.
     It is vital that the 'version' kwarg be passed to the
@@ -55,7 +55,7 @@ def validate_uuid4(uuid_string):
 
 
 class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
-    ''' Base class for pre-op and post-op work on a stack.
+    '''Base class for pre-op and post-op work on a stack.
 
     Implementations should extend this class and override the methods.
     '''
@@ -68,7 +68,7 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
         self.hints_enabled = cfg.CONF.stack_scheduler_hints
 
     def _parse_stack_preview(self, dest, preview):
-        ''' Walk the preview list (possibly nested)
+        '''Walk the preview list (possibly nested)
 
         extracting parsed template dicts and storing modified versions in a flat dict.
         '''
@@ -100,7 +100,7 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
                 self._parse_stack_preview(dest, item)
 
     def do_pre_op(self, cnxt, stack, current_stack=None, action=None):
-        ''' Method to be run by heat before stack operations. '''
+        '''Method to be run by heat before stack operations. '''
         if not self.hints_enabled or stack.status != 'IN_PROGRESS':
             return
 
@@ -133,7 +133,7 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
 
     def do_post_op(self, cnxt, stack, current_stack=None, action=None,  # pylint: disable=R0913
                    is_stack_failure=False):
-        ''' Method to be run by heat after stack operations, including failures.
+        '''Method to be run by heat after stack operations, including failures.
 
         On failure to execute all the registered pre_ops, this method will be
         called if and only if the corresponding pre_op was successfully called.
@@ -143,7 +143,7 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
         pass
 
     def get_ordinal(self):
-        ''' An ordinal used to order class instances for pre and post operation execution.
+        '''An ordinal used to order class instances for pre and post operation execution.
 
         The values returned by get_ordinal are used to create a partial order
         for pre and post operation method invocations. The default ordinal
