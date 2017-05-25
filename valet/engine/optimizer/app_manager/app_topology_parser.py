@@ -26,8 +26,12 @@
 """
 
 import six
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VGroupLink, VM, VMLink, LEVELS
+
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VGroupLink
+from valet.engine.optimizer.app_manager.app_topology_base import VM
+from valet.engine.optimizer.app_manager.app_topology_base import VMLink
+from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
 
 
 class Parser(object):
@@ -35,7 +39,8 @@ class Parser(object):
 
     This class handles parsing out the data related to the desired
     topology from a template.
-    not supported OS::Nova::ServerGroup OS::Heat::AutoScalingGroup OS::Heat::Stack OS::Heat::ResourceGroup
+    not supported OS::Nova::ServerGroup OS::Heat::AutoScalingGroup
+    OS::Heat::Stack OS::Heat::ResourceGroup
     """
 
     def __init__(self, _high_level_allowed, _logger):

@@ -90,7 +90,9 @@ class PlacementsItemController(object):
             # Ostro's placement is NOT in the list of candidates.
             # Time for Plan B.
             api.LOG.info(_('Placement of resource id %(res_id)s, orchestration id %(orch_id)s in %(loc)s not allowed. Replanning.'),
-                         {'res_id': res_id, 'orch_id': self.placement.orchestration_id, 'loc': self.placement.location})
+                         {'res_id': res_id,
+                          'orch_id': self.placement.orchestration_id,
+                          'loc': self.placement.location})
 
             # Unreserve the placement. Remember the resource id too.
             kwargs = {'resource_id': res_id, 'reserve': False}
@@ -107,7 +109,8 @@ class PlacementsItemController(object):
             exclusions = [x.orchestration_id for x in reserved]
             if exclusions:
                 exclusions_str = ', '.join(exclusions)
-                api.LOG.info(_('Excluded orchestration IDs: %s'), exclusions_str)
+                api.LOG.info(_('Excluded orchestration IDs: %s'),
+                             exclusions_str)
             else:
                 api.LOG.info(_('No excluded orchestration IDs.'))
 

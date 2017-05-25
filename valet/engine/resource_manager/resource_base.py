@@ -618,7 +618,8 @@ class LogicalGroup(object):
 
         if _host_id in self.vms_per_host.keys():
             blen = len(self.vms_per_host[_host_id])
-            self.vms_per_host[_host_id] = [v for v in self.vms_per_host[_host_id] if v[2] != "none"]
+            self.vms_per_host[_host_id] = [
+                v for v in self.vms_per_host[_host_id] if v[2] != "none"]
             alen = len(self.vm_list)
             if alen != blen:
                 success = True

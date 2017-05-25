@@ -17,7 +17,9 @@
 
 from notario import decorators
 from notario.validators import types
-from pecan import expose, request, response
+from pecan import expose
+from pecan import request
+from pecan import response
 from pecan_notario import validate
 
 from valet.api.common.i18n import _

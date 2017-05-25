@@ -16,11 +16,15 @@
 """Functional Base."""
 
 import os
-from oslo_log import log as logging
 import time
+
+from oslo_log import log as logging
+
 from valet.tests.base import Base
-from valet.tests.functional.valet_validator.common.init import COLORS, CONF
-from valet.tests.functional.valet_validator.common.resources import TemplateResources
+from valet.tests.functional.valet_validator.common.init import COLORS
+from valet.tests.functional.valet_validator.common.init import CONF
+from valet.tests.functional.valet_validator.common.resources \
+    import TemplateResources
 from valet.tests.functional.valet_validator.compute.analyzer import Analyzer
 from valet.tests.functional.valet_validator.orchestration.loader import Loader
 

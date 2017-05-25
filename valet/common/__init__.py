@@ -4,7 +4,8 @@ from oslo_config import cfg
 
 def logger_conf(logger_name):
     return [
-        cfg.StrOpt('output_format', default="%(asctime)s - %(levelname)s - %(message)s"),  # dict
+        cfg.StrOpt('output_format',
+                   default="%(asctime)s - %(levelname)s - %(message)s"),
         cfg.BoolOpt('store', default=True),
         cfg.StrOpt('logging_level', default='debug'),
         cfg.StrOpt('logging_dir', default='/var/log/valet/'),

@@ -40,7 +40,8 @@ class GeneralLogger(object):
     def log_info(self, msg):
         """Info log."""
         LOG.info("%s %s - %s %s %s" % (COLORS["L_PURPLE"], self.test_name,
-                                       COLORS["L_GREEN"], msg, COLORS["WHITE"]))
+                                       COLORS["L_GREEN"], msg,
+                                       COLORS["WHITE"]))
 
     def log_error(self, msg, trc_back=None):
         """Log error and trace_back for error if there is one."""
@@ -54,7 +55,8 @@ class GeneralLogger(object):
     def log_debug(self, msg):
         """Log debug."""
         LOG.debug("%s %s - %s %s %s" % (COLORS["L_PURPLE"], self.test_name,
-                                        COLORS["L_BLUE"], msg, COLORS["WHITE"]))
+                                        COLORS["L_BLUE"],
+                                        msg, COLORS["WHITE"]))
 
     def log_group(self, msg):
         """Log info."""

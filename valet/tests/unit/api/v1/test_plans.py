@@ -12,16 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Plans."""
-
 import mock
 
-import valet.api.v1.controllers.plans as plans
-from valet.api.v1.controllers.plans import PlansController, PlansItemController
 from valet.api.db.models.music import Query
 from valet.api.db.models.music import Results
 from valet.api.db.models.music.plans import Plan
+import valet.api.v1.controllers.plans as plans
+from valet.api.v1.controllers.plans import PlansController
+from valet.api.v1.controllers.plans import PlansItemController
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
@@ -67,11 +65,13 @@ class TestPlans(ApiBase):
         """Test plans and plans_item_controller index method failure."""
         mock_request.method = "PUT"
         self.plans_controller.index()
-        self.validate_test("The PUT method is not allowed" in ApiBase.response)
+        self.validate_test(
+            "The PUT method is not allowed" in ApiBase.response)
 
         mock_request.method = "POST"
         self.plans_item_controller.index()
-        self.validate_test("The POST method is not allowed" in ApiBase.response)
+        self.validate_test(
+            "The POST method is not allowed" in ApiBase.response)
 
     def test_index_options(self):
         """Test index_options method for plans and plans_item_controller."""
