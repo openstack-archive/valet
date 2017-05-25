@@ -18,13 +18,14 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
-from valet.tests.functional.valet_validator.tests.functional_base import FunctionalTestCase
+from valet.tests.functional.valet_validator.tests.functional_base \
+    import FunctionalTestCase
 
 
 opt_test_aff = [
     cfg.StrOpt('STACK_NAME', default="affinity_3_stack"),
     cfg.StrOpt('TEMPLATE_NAME', default="affinity_ 3_Instances"),
-    ]
+]
 
 CONF.register_opts(opt_test_aff, group="test_affinity_3")
 LOG = logging.getLogger(__name__)

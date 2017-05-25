@@ -12,10 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Populate command."""
-
 from pecan.commands.base import BaseCommand
+
 from valet import api
 from valet.api.common.i18n import _
 from valet.api.db import models
@@ -25,7 +23,8 @@ from valet.api.db.models import Placement
 from valet.api.db.models import PlacementRequest
 from valet.api.db.models import PlacementResult
 from valet.api.db.models import Plan
-from valet.common.conf import init_conf, get_logger
+from valet.common.conf import get_logger
+from valet.common.conf import init_conf
 
 
 class PopulateCommand(BaseCommand):
