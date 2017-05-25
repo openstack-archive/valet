@@ -12,12 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Plans."""
-
 from uuid import uuid4
 
-from valet.api.db.models import Plan, Placement
+from valet.api.db.models import Placement
+from valet.api.db.models import Plan
 from valet.tests.api.controllers import is_valid_uuid4
 
 # TODO(JD): Add Keystone mock object.

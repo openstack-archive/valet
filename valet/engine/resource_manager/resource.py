@@ -12,16 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Resource - Handles data, metadata, status of resources."""
-
 import time
 import traceback
 
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
-from valet.engine.resource_manager.resource_base \
-        import Datacenter, HostGroup, Host, LogicalGroup
-from valet.engine.resource_manager.resource_base import Flavor, Switch, Link
+from valet.engine.resource_manager.resource_base import Datacenter
+from valet.engine.resource_manager.resource_base import Flavor
+from valet.engine.resource_manager.resource_base import Host
+from valet.engine.resource_manager.resource_base import HostGroup
+from valet.engine.resource_manager.resource_base import LogicalGroup
 
 
 class Resource(object):
@@ -231,8 +230,8 @@ class Resource(object):
         updated = False
         for level in LEVELS:
             for _, host_group in self.host_groups.iteritems():
-                if host_group.host_type == level and \
-                    host_group.check_availability() is True:
+                if (host_group.host_type == level and
+                        host_group.check_availability()):
                     if host_group.last_update > self.current_timestamp:
                         self._update_host_group_topology(host_group)
                         updated = True
@@ -353,7 +352,8 @@ class Resource(object):
             if datacenter_update is not None:
                 json_logging['datacenter'] = datacenter_update
 
-            if self.db.update_resource_status(self.datacenter.name, json_logging) is False:
+            if not self.db.update_resource_status(
+                    self.datacenter.name, json_logging):
                 return None
 
             self.curr_db_timestamp = time.time()
@@ -370,12 +370,14 @@ class Resource(object):
                     for k in lg.metadata.keys():
                         self.logger.debug("        metadata key = " + k)
                 self.logger.debug("    vms")
+                debug_msg = "        orch_id = %s uuid = %s"
                 for v in lg.vm_list:
-                    self.logger.debug("        orch_id = " + v[0] + " uuid = " + v[2])
+                    self.logger.debug(debug_msg % (v[0], v[2]))
                 self.logger.debug("    hosts")
                 for h, v in lg.vms_per_host.iteritems():
-                    self.logger.debug("        host = " + h)
-                    self.logger.debug("        vms = " + str(len(lg.vms_per_host[h])))
+                    self.logger.debug("        host = %s" % h)
+                    self.logger.debug("        vms = %s" %
+                                      str(len(lg.vms_per_host[h])))
                     host = None
                     if h in self.hosts.keys():
                         host = self.hosts[h]
@@ -498,8 +500,9 @@ class Resource(object):
 
         if host.status != _st:
             host.status = _st
-            self.logger.warn("Resource.update_host_resources: host(" + _hn +
-                              ") status changed")
+            self.logger.warn(
+                "Resource.update_host_resources: host(%s) status changed" %
+                _hn)
             updated = True
 
         # FIXME(GJ): should check cpu, memm and disk here?
@@ -549,8 +552,7 @@ class Resource(object):
                     if lg.add_vm_by_h_uuid(_vm_id, _host.name) is True:
                         lg.last_update = time.time()
                 elif isinstance(_host, HostGroup):
-                    if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                        lg.group_type == "DIV":
+                    if self._check_group_type(lg.group_type):
                         if lgk.split(":")[0] == _host.host_type:
                             if lg.add_vm_by_h_uuid(_vm_id, _host.name) is True:
                                 lg.last_update = time.time()
@@ -566,12 +568,14 @@ class Resource(object):
         """Remove vm by orchestration id from lgs. Update host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
-                self.logger.warn("logical group (" + lgk + ") missing while removing " + _h_uuid)
+                self.logger.warn("logical group (%s) missing while "
+                                 "removing %s" % (lgk, h_uuid))
                 continue
             lg = self.logical_groups[lgk]
 
             if isinstance(_host, Host):
-                # Remove host from lg's membership if the host has no vms of lg
+                # Remove host from lg's membership if the host
+                # has no vms of lg
                 if lg.remove_vm_by_h_uuid(_h_uuid, _host.name) is True:
                     lg.last_update = time.time()
 
@@ -580,17 +584,15 @@ class Resource(object):
                     _host.last_update = time.time()
 
             elif isinstance(_host, HostGroup):
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                    lg.group_type == "DIV":
+                if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
-                        if lg.remove_vm_by_h_uuid(_h_uuid, _host.name) is True:
+                        if lg.remove_vm_by_h_uuid(_h_uuid, _host.name):
                             lg.last_update = time.time()
 
-                        if _host.remove_membership(lg) is True:
+                        if _host.remove_membership(lg):
                             _host.last_update = time.time()
 
-            if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                lg.group_type == "DIV":
+            if self._check_group_type(lg.group_type):
                 if len(lg.vm_list) == 0:
                     del self.logical_groups[lgk]
 
@@ -605,22 +607,24 @@ class Resource(object):
         """Remove vm by uuid from lgs and update proper host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
-                self.logger.warn("logical group (" + lgk + ") missing while removing " + _uuid)
+                self.logger.warn("logical group (%s) missing while "
+                                 "removing %s" % (lgk, uuid))
                 continue
             lg = self.logical_groups[lgk]
 
             if isinstance(_host, Host):
-                # Remove host from lg's membership if the host has no vms of lg
+                # Remove host from lg's membership if the host has
+                # no vms of lg
                 if lg.remove_vm_by_uuid(_uuid, _host.name) is True:
                     lg.last_update = time.time()
 
-                # Remove lg from host's membership if lg does not have the host
+                # Remove lg from host's membership if lg does not
+                # have the host
                 if _host.remove_membership(lg) is True:
                     _host.last_update = time.time()
 
             elif isinstance(_host, HostGroup):
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                    lg.group_type == "DIV":
+                if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
                         if lg.remove_vm_by_uuid(_uuid, _host.name) is True:
                             lg.last_update = time.time()
@@ -628,8 +632,7 @@ class Resource(object):
                         if _host.remove_membership(lg) is True:
                             _host.last_update = time.time()
 
-            if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                lg.group_type == "DIV":
+            if self._check_group_type(lg.group_type):
                 if len(lg.vm_list) == 0:
                     del self.logical_groups[lgk]
 
@@ -654,8 +657,7 @@ class Resource(object):
                     _host.last_update = time.time()
 
             elif isinstance(_host, HostGroup):
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                    lg.group_type == "DIV":
+                if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
                         if lg.clean_none_vms(_host.name) is True:
                             lg.last_update = time.time()
@@ -663,8 +665,7 @@ class Resource(object):
                         if _host.remove_membership(lg) is True:
                             _host.last_update = time.time()
 
-            if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                lg.group_type == "DIV":
+            if self._check_group_type(lg.group_type):
                 if len(lg.vm_list) == 0:
                     del self.logical_groups[lgk]
 
@@ -682,8 +683,7 @@ class Resource(object):
                 if lg.update_uuid(_h_uuid, _uuid, _host.name) is True:
                     lg.last_update = time.time()
             elif isinstance(_host, HostGroup):
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                    lg.group_type == "DIV":
+                if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
                         if lg.update_uuid(_h_uuid, _uuid, _host.name) is True:
                             lg.last_update = time.time()
@@ -703,8 +703,7 @@ class Resource(object):
                 if lg.update_h_uuid(_h_uuid, _uuid, _host.name) is True:
                     lg.last_update = time.time()
             elif isinstance(_host, HostGroup):
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                    lg.group_type == "DIV":
+                if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
                         if lg.update_h_uuid(_h_uuid, _uuid, _host.name) is True:
                             lg.last_update = time.time()
@@ -750,7 +749,8 @@ class Resource(object):
                 ram_allocation_ratio = self.config.default_ram_allocation_ratio
 
         if self.config.static_mem_standby_ratio > 0:
-            static_ram_standby_ratio = float(self.config.static_mem_standby_ratio) / float(100)
+            static_ram_standby_ratio = (
+                float(self.config.static_mem_standby_ratio) / float(100))
 
         host.compute_avail_mem(ram_allocation_ratio, static_ram_standby_ratio)
 
@@ -762,9 +762,11 @@ class Resource(object):
                 cpu_allocation_ratio = self.config.default_cpu_allocation_ratio
 
         if self.config.static_cpu_standby_ratio > 0:
-            static_cpu_standby_ratio = float(self.config.static_cpu_standby_ratio) / float(100)
+            static_cpu_standby_ratio = (
+                float(self.config.static_cpu_standby_ratio) / float(100))
 
-        host.compute_avail_vCPUs(cpu_allocation_ratio, static_cpu_standby_ratio)
+        host.compute_avail_vCPUs(
+            cpu_allocation_ratio, static_cpu_standby_ratio)
 
         disk_allocation_ratio = 1.0
         if len(disk_allocation_ratio_list) > 0:
@@ -775,9 +777,12 @@ class Resource(object):
                     self.config.default_disk_allocation_ratio
 
         if self.config.static_local_disk_standby_ratio > 0:
-            static_disk_standby_ratio = float(self.config.static_local_disk_standby_ratio) / float(100)
+            static_disk_standby_ratio = (
+                float(self.config.static_local_disk_standby_ratio) / float(100)
+            )
 
-        host.compute_avail_disk(disk_allocation_ratio, static_disk_standby_ratio)
+        host.compute_avail_disk(
+            disk_allocation_ratio, static_disk_standby_ratio)
 
     def get_flavor(self, _id):
         """Return flavor according to name passed in."""
@@ -796,3 +801,6 @@ class Resource(object):
                 flavor = None
 
         return flavor
+
+    def _check_group_type(self, type):
+        return type in ['EX', 'AFF', 'DIV']

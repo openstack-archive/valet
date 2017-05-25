@@ -12,10 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Ostro(Engine)."""
-
-from valet.api.db.models.music.ostro import PlacementRequest, PlacementResult, Event
+from valet.api.db.models.music.ostro import Event
+from valet.api.db.models.music.ostro import PlacementRequest
+from valet.api.db.models.music.ostro import PlacementResult
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
@@ -46,11 +45,14 @@ class TestOstro(ApiBase):
 
     def test__repr__(self):
         """Test test id in placement request/result and event."""
-        self.validate_test("test_stack_id" in self.placement_request.__repr__())
+        self.validate_test(
+            "test_stack_id" in self.placement_request.__repr__())
 
-        self.validate_test("test_stack_id" in self.placement_result.__repr__())
+        self.validate_test(
+            "test_stack_id" in self.placement_result.__repr__())
 
-        self.validate_test("test_event_id" in self.event.__repr__())
+        self.validate_test(
+            "test_event_id" in self.event.__repr__())
 
     def test__json__(self):
         """Test json return value for placement request, result and event."""

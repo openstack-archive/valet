@@ -199,6 +199,7 @@ class MusicHandler(object):
                                      ":" + event_id)
                     continue
 
+                # TODO(lamt) this block of code can use refactoring
                 if method == 'object_action':
                     if 'objinst' in args.keys():
                         objinst = args['objinst']
@@ -207,25 +208,29 @@ class MusicHandler(object):
                             if nova_object_name == 'Instance':
                                 if 'nova_object.changes' in objinst.keys() and \
                                    'nova_object.data' in objinst.keys():
-                                    change_list = objinst['nova_object.changes']
+                                    change_list = objinst[
+                                        'nova_object.changes']
                                     change_data = objinst['nova_object.data']
                                     if 'vm_state' in change_list and \
                                        'vm_state' in change_data.keys():
-                                        if change_data['vm_state'] == \
-                                                'deleted' \
-                                                or change_data[
-                                                    'vm_state'
-                                                ] == 'active':
+                                        if (change_data['vm_state'] ==
+                                                'deleted' or
+                                                change_data['vm_state'] ==
+                                                'active'):
                                             e = Event(event_id)
                                             e.exchange = exchange
                                             e.method = method
                                             e.args = args
                                             event_list.append(e)
                                         else:
-                                            self.logger.warn("unknown vm_state = " + change_data["vm_state"])
+                                            msg = "unknown vm_state = %s"
+                                            self.logger.warn(
+                                                msg % change_data["vm_state"])
                                             if 'uuid' in change_data.keys():
-                                                self.logger.warn("    uuid = " + change_data['uuid'])
-                                            if self.delete_event(event_id) is False:
+                                                msg = "    uuid = %s"
+                                                self.logger.warn(
+                                                    msg % change_data['uuid'])
+                                            if not self.delete_event(event_id):
                                                 return None
                                     else:
                                         if self.delete_event(event_id) is False:
@@ -304,7 +309,8 @@ class MusicHandler(object):
                                      "in build event")
 
         if len(error_event_list) > 0:
-            event_list[:] = [e for e in event_list if e not in error_event_list]
+            event_list[:] = [
+                e for e in event_list if e not in error_event_list]
 
         if len(event_list) > 0:
             event_list.sort(key=operator.attrgetter('event_id'))
@@ -459,7 +465,7 @@ class MusicHandler(object):
         return json_resource
 
     def update_resource_status(self, _k, _status):
-        """Update resource _k to the new _status (flavors, lgs, hosts, etc)."""
+        """Update resource to the new _status (flavors, lgs, hosts, etc)."""
         row = {}
         try:
             row = self.music.read_row(self.config.db_keyspace,
@@ -612,7 +618,8 @@ class MusicHandler(object):
                             vm["host"] = _host
                             self.logger.warn("db: conflicted placement "
                                              "decision from Ostro")
-                            # TODO(GY): affinity, diversity, exclusivity validation check
+                            # TODO(GY): affinity, diversity, exclusivity
+                            # validation check
                             updated = True
                     else:
                         vm["status"] = "scheduled"
@@ -668,8 +675,8 @@ class MusicHandler(object):
                 self.logger.error("MusicHandler.update_vm_info: vm is missing "
                                   "from stack")
         else:
-            self.logger.warn("MusicHandler.update_vm_info: not found stack for "
-                             "update = " + _s_uuid)
+            self.logger.warn("MusicHandler.update_vm_info: not found "
+                             "stack for update = " + _s_uuid)
 
         if updated is True:
             if self.add_app(_s_uuid, json_app) is False:

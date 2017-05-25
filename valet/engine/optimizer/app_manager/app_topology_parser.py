@@ -26,8 +26,10 @@
 """
 
 import six
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VGroupLink, VM, VMLink, LEVELS
+
+from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 
 
 class Parser(object):
@@ -35,7 +37,8 @@ class Parser(object):
 
     This class handles parsing out the data related to the desired
     topology from a template.
-    not supported OS::Nova::ServerGroup OS::Heat::AutoScalingGroup OS::Heat::Stack OS::Heat::ResourceGroup
+    not supported OS::Nova::ServerGroup OS::Heat::AutoScalingGroup
+    OS::Heat::Stack OS::Heat::ResourceGroup
     """
 
     def __init__(self, _high_level_allowed, _logger):
@@ -142,14 +145,16 @@ class Parser(object):
                     vgroup.level = r["properties"]["level"]
                     if vgroup.level != "host":
                         if self.high_level_allowed is False:
-                            self.status = "only host level of affinity group allowed " + \
-                                          "due to the mis-match of host naming convention"
+                            self.status = ("only host level of affinity group "
+                                           "allowed due to the mis-match of "
+                                           "host naming convention")
                             return {}, {}
                 else:
                     self.status = "no grouping level"
                     return {}, {}
                 vgroups[vgroup.uuid] = vgroup
-                self.logger.info("group = " + vgroup.name + vgroup.name + ", type = " + vgroup.vgroup_type)
+                msg = "group = %s, type = %s"
+                self.logger.info(msg % (vgroup.name, vgroup.vgroup_type))
 
         if self._merge_diversity_groups(_elements, vgroups, vms) is False:
             return {}, {}
@@ -241,32 +246,37 @@ class Parser(object):
                             vgroup.subvgroups[vk] = _vms[vk]
                             _vms[vk].survgroup = vgroup
                             affinity_map[vk] = vgroup
-                            self._add_implicit_diversity_groups(vgroup, _vms[vk].diversity_groups)
-                            self._add_implicit_exclusivity_groups(vgroup, _vms[vk].exclusivity_groups)
+                            self._add_implicit_diversity_groups(
+                                vgroup, _vms[vk].diversity_groups)
+                            self._add_implicit_exclusivity_groups(
+                                vgroup, _vms[vk].exclusivity_groups)
                             self._add_memberships(vgroup, _vms[vk])
                             del _vms[vk]
                         elif vk in _vgroups.keys():
                             vg = _vgroups[vk]
                             if LEVELS.index(vg.level) > LEVELS.index(level):
-                                self.status = "grouping scope: nested " \
-                                              "group's level is higher"
+                                self.status = ("grouping scope: nested "
+                                               "group's level is higher")
                                 return False
                             if vg.vgroup_type == "DIV" or vg.vgroup_type == "EX":
-                                if self._merge_subgroups(vgroup, vg.subvgroups, _vms, _vgroups,
-                                                         _elements, affinity_map) is False:
+                                if not self._merge_subgroups(
+                                        vgroup, vg.subvgroups, _vms, _vgroups,
+                                        _elements, affinity_map):
                                     return False
                                 del _vgroups[vk]
                             else:
-                                if self._exist_in_subgroups(vk, vgroup) is None:
-                                    if self._get_subgroups(vg, _elements,
-                                                           _vgroups, _vms,
-                                                           affinity_map) is False:
+                                if not self._exist_in_subgroups(vk, vgroup):
+                                    if not self._get_subgroups(
+                                            vg, _elements, _vgroups, _vms,
+                                            affinity_map):
                                         return False
                                     vgroup.subvgroups[vk] = vg
                                     vg.survgroup = vgroup
                                     affinity_map[vk] = vgroup
-                                    self._add_implicit_diversity_groups(vgroup, vg.diversity_groups)
-                                    self._add_implicit_exclusivity_groups(vgroup, vg.exclusivity_groups)
+                                    self._add_implicit_diversity_groups(
+                                        vgroup, vg.diversity_groups)
+                                    self._add_implicit_exclusivity_groups(
+                                        vgroup, vg.exclusivity_groups)
                                     self._add_memberships(vgroup, vg)
                                     del _vgroups[vk]
                         else:
@@ -276,43 +286,49 @@ class Parser(object):
                                 self.status = "invalid resource = " + vk
                                 return False
                             if affinity_map[vk].uuid != vgroup.uuid:
-                                if self._exist_in_subgroups(vk, vgroup) is None:
+                                if not self._exist_in_subgroups(vk, vgroup):
                                     self._set_implicit_grouping(
                                         vk, vgroup, affinity_map, _vgroups)
 
         return True
 
-    def _merge_subgroups(self, _vgroup, _subgroups, _vms, _vgroups, _elements, _affinity_map):
+    def _merge_subgroups(self, _vgroup, _subgroups, _vms, _vgroups,
+                         _elements, _affinity_map):
         for vk, _ in _subgroups.iteritems():
             if vk in _vms.keys():
                 _vgroup.subvgroups[vk] = _vms[vk]
                 _vms[vk].survgroup = _vgroup
                 _affinity_map[vk] = _vgroup
-                self._add_implicit_diversity_groups(_vgroup, _vms[vk].diversity_groups)
-                self._add_implicit_exclusivity_groups(_vgroup, _vms[vk].exclusivity_groups)
+                self._add_implicit_diversity_groups(
+                    _vgroup, _vms[vk].diversity_groups)
+                self._add_implicit_exclusivity_groups(
+                    _vgroup, _vms[vk].exclusivity_groups)
                 self._add_memberships(_vgroup, _vms[vk])
                 del _vms[vk]
             elif vk in _vgroups.keys():
                 vg = _vgroups[vk]
                 if LEVELS.index(vg.level) > LEVELS.index(_vgroup.level):
-                    self.status = "grouping scope: nested group's level is " \
-                                  "higher"
+                    self.status = ("grouping scope: nested group's level is "
+                                   "higher")
                     return False
                 if vg.vgroup_type == "DIV" or vg.vgroup_type == "EX":
-                    if self._merge_subgroups(_vgroup, vg.subvgroups,
-                                             _vms, _vgroups,
-                                             _elements, _affinity_map) is False:
+                    if not self._merge_subgroups(_vgroup, vg.subvgroups,
+                                                 _vms, _vgroups,
+                                                 _elements, _affinity_map):
                         return False
                     del _vgroups[vk]
                 else:
                     if self._exist_in_subgroups(vk, _vgroup) is None:
-                        if self._get_subgroups(vg, _elements, _vgroups, _vms, _affinity_map) is False:
+                        if not self._get_subgroups(vg, _elements, _vgroups,
+                                                   _vms, _affinity_map):
                             return False
                         _vgroup.subvgroups[vk] = vg
                         vg.survgroup = _vgroup
                         _affinity_map[vk] = _vgroup
-                        self._add_implicit_diversity_groups(_vgroup, vg.diversity_groups)
-                        self._add_implicit_exclusivity_groups(_vgroup, vg.exclusivity_groups)
+                        self._add_implicit_diversity_groups(
+                            _vgroup, vg.diversity_groups)
+                        self._add_implicit_exclusivity_groups(
+                            _vgroup, vg.exclusivity_groups)
                         self._add_memberships(_vgroup, vg)
                         del _vgroups[vk]
             else:
@@ -323,40 +339,47 @@ class Parser(object):
                     return False
                 if _affinity_map[vk].uuid != _vgroup.uuid:
                     if self._exist_in_subgroups(vk, _vgroup) is None:
-                        self._set_implicit_grouping(vk, _vgroup, _affinity_map, _vgroups)
+                        self._set_implicit_grouping(
+                            vk, _vgroup, _affinity_map, _vgroups)
         return True
 
-    def _get_subgroups(self, _vgroup, _elements, _vgroups, _vms, _affinity_map):
+    def _get_subgroups(self, _vgroup, _elements,
+                       _vgroups, _vms, _affinity_map):
         for vk in _elements[_vgroup.uuid]["properties"]["resources"]:
             if vk in _vms.keys():
                 _vgroup.subvgroups[vk] = _vms[vk]
                 _vms[vk].survgroup = _vgroup
                 _affinity_map[vk] = _vgroup
-                self._add_implicit_diversity_groups(_vgroup, _vms[vk].diversity_groups)
-                self._add_implicit_exclusivity_groups(_vgroup, _vms[vk].exclusivity_groups)
+                self._add_implicit_diversity_groups(
+                    _vgroup, _vms[vk].diversity_groups)
+                self._add_implicit_exclusivity_groups(
+                    _vgroup, _vms[vk].exclusivity_groups)
                 self._add_memberships(_vgroup, _vms[vk])
                 del _vms[vk]
             elif vk in _vgroups.keys():
                 vg = _vgroups[vk]
                 if LEVELS.index(vg.level) > LEVELS.index(_vgroup.level):
-                    self.status = "grouping scope: nested group's level is " \
-                                  "higher"
+                    self.status = ("grouping scope: nested group's level is "
+                                   "higher")
                     return False
                 if vg.vgroup_type == "DIV" or vg.vgroup_type == "EX":
-                    if self._merge_subgroups(_vgroup, vg.subvgroups,
-                                             _vms, _vgroups,
-                                             _elements, _affinity_map) is False:
+                    if not self._merge_subgroups(_vgroup, vg.subvgroups,
+                                                 _vms, _vgroups,
+                                                 _elements, _affinity_map):
                         return False
                     del _vgroups[vk]
                 else:
                     if self._exist_in_subgroups(vk, _vgroup) is None:
-                        if self._get_subgroups(vg, _elements, _vgroups, _vms, _affinity_map) is False:
+                        if not self._get_subgroups(vg, _elements, _vgroups,
+                                                   _vms, _affinity_map):
                             return False
                         _vgroup.subvgroups[vk] = vg
                         vg.survgroup = _vgroup
                         _affinity_map[vk] = _vgroup
-                        self._add_implicit_diversity_groups(_vgroup, vg.diversity_groups)
-                        self._add_implicit_exclusivity_groups(_vgroup, vg.exclusivity_groups)
+                        self._add_implicit_diversity_groups(
+                            _vgroup, vg.diversity_groups)
+                        self._add_implicit_exclusivity_groups(
+                            _vgroup, vg.exclusivity_groups)
                         self._add_memberships(_vgroup, vg)
                         del _vgroups[vk]
             else:
@@ -365,7 +388,8 @@ class Parser(object):
                     return False
                 if _affinity_map[vk].uuid != _vgroup.uuid:
                     if self._exist_in_subgroups(vk, _vgroup) is None:
-                        self._set_implicit_grouping(vk, _vgroup, _affinity_map, _vgroups)
+                        self._set_implicit_grouping(
+                            vk, _vgroup, _affinity_map, _vgroups)
         return True
 
     def _add_implicit_diversity_groups(self, _vgroup, _diversity_groups):
@@ -398,7 +422,8 @@ class Parser(object):
 
         if t_vg.uuid in _affinity_map.keys():
             # if the parent belongs to the other parent vgroup
-            self._set_implicit_grouping(t_vg.uuid, _s_vg, _affinity_map, _vgroups)
+            self._set_implicit_grouping(
+                t_vg.uuid, _s_vg, _affinity_map, _vgroups)
         else:
             if LEVELS.index(t_vg.level) > LEVELS.index(_s_vg.level):
                 t_vg.level = _s_vg.level
@@ -406,8 +431,10 @@ class Parser(object):
                 _s_vg.subvgroups[t_vg.uuid] = t_vg
                 t_vg.survgroup = _s_vg
                 _affinity_map[t_vg.uuid] = _s_vg
-                self._add_implicit_diversity_groups(_s_vg, t_vg.diversity_groups)
-                self._add_implicit_exclusivity_groups(_s_vg, t_vg.exclusivity_groups)
+                self._add_implicit_diversity_groups(
+                    _s_vg, t_vg.diversity_groups)
+                self._add_implicit_exclusivity_groups(
+                    _s_vg, t_vg.exclusivity_groups)
                 self._add_memberships(_s_vg, t_vg)
                 del _vgroups[t_vg.uuid]
 

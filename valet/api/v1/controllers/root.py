@@ -12,25 +12,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Root."""
-
-from pecan import expose, request, response
-from valet.api.common.i18n import _
-from valet.api.v1.controllers import error
-from valet.api.v1.controllers.errors import ErrorsController, error_wrapper
-from valet.api.v1.controllers.v1 import V1Controller
-
+from pecan import expose
+from pecan import request
+from pecan import response
 from webob.exc import status_map
 
-# pylint: disable=R0201
+from valet.api.common.i18n import _
+from valet.api.v1.controllers import error
+from valet.api.v1.controllers.errors import error_wrapper
+from valet.api.v1.controllers.errors import ErrorsController
+from valet.api.v1.controllers.v1 import V1Controller
 
 
 class RootController(object):
     """Root Controller."""
 
     errors = ErrorsController()
-    v1 = V1Controller()  # pylint: disable=C0103
+    v1 = V1Controller()
 
     @classmethod
     def allow(cls):
@@ -77,7 +75,7 @@ class RootController(object):
         """Error handler."""
         try:
             status = int(status)
-        except ValueError:  # pragma: no cover
+        except ValueError:
             status = 500
         message = getattr(status_map.get(status), 'explanation', '')
         return dict(status=status, message=message)

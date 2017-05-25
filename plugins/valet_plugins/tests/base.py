@@ -27,7 +27,6 @@ class Base(BaseTestCase):
     """Test case base class for all unit tests."""
 
     def __init__(self, *args, **kwds):
-        '''  '''
         super(Base, self).__init__(*args, **kwds)
 
         self.CONF = self.useFixture(fixture_config.Config()).conf
@@ -36,7 +35,6 @@ class Base(BaseTestCase):
         super(Base, self).setUp()
 
     def run_test(self, stack_name, template_path):
-        ''' main function '''
         pass
 
     def validate(self, result):

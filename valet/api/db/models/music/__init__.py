@@ -15,7 +15,8 @@
 
 """Music ORM - Common Methods"""
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
 import inspect
 from pecan import conf
 import six
@@ -102,7 +103,7 @@ class Results(list):
 
 @six.add_metaclass(ABCMeta)
 class Base(object):
-    """ A custom declarative base that provides some Elixir-inspired shortcuts. """
+    """Custom declarative base that provides some Elixir-inspired shortcuts."""
 
     __tablename__ = None
 

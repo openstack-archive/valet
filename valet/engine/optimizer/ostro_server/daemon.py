@@ -102,7 +102,7 @@ class Daemon(object):
         return pid
 
     def checkpid(self, pid):
-        """ Check For the existence of a unix pid. """
+        """Check For the existence of a unix pid. """
         alive = False
         try:
             if pid:
