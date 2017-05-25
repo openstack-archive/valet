@@ -87,9 +87,8 @@ def add_to_parser(service_sub):
     parser_delete_group.add_argument('groupid', type=str, help='<GROUP_ID>')
 
     # delete group member
-    parser_delete_group_member = subparsers.add_parser('delete-member',
-                                                       help='Delete member from'
-                                                            'specified group.')
+    parser_delete_group_member = subparsers.add_parser(
+        'delete-member', help='Delete member from specified group.')
     parser_delete_group_member.add_argument('groupid', type=str,
                                             help='<GROUP_ID>')
     parser_delete_group_member.add_argument('memberid', type=str,
@@ -144,7 +143,8 @@ def cmd_details(args):
     elif args.subcmd == 'delete-all-members':
         return requests.delete, '/%s/members' % args.groupid
     elif args.subcmd == 'delete-member':
-        return requests.delete, '/%s/members/%s' % (args.groupid, args.memberid)
+        return (requests.delete, '/%s/members/%s' %
+                (args.groupid, args.memberid))
     elif args.subcmd == 'show':
         return requests.get, '/%s' % args.groupid
     elif args.subcmd == 'list':
@@ -219,8 +219,8 @@ def run(args):
     args.body = populate_args_request_body(args)
 
     try:
-        print_verbose(args.verbose, args.url, args.headers, args.body, rest_cmd,
-                      args.timeout)
+        print_verbose(args.verbose, args.url, args.headers, args.body,
+                      rest_cmd, args.timeout)
         if args.body:
             resp = rest_cmd(args.url, timeout=args.timeout, data=args.body,
                             headers=args.headers)

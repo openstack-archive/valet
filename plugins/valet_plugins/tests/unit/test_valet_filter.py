@@ -45,27 +45,36 @@ class TestValetFilter(Base):
         mock_create.return_value = None
 
         with mock.patch('oslo_config.cfg.CONF') as config:
-            setattr(config, "valet", {self.valet_filter.opt_failure_mode_str: "yield",
-                                      self.valet_filter.opt_project_name_str: "test_admin_tenant_name",
-                                      self.valet_filter.opt_username_str: "test_admin_username",
-                                      self.valet_filter.opt_password_str: "test_admin_password",
-                                      self.valet_filter.opt_auth_uri_str: "test_admin_auth_url"})
+            setattr(
+                config, "valet",
+                {self.valet_filter.opt_failure_mode_str: "yield",
+                 self.valet_filter.opt_project_name_str:
+                    "test_admin_tenant_name",
+                 self.valet_filter.opt_username_str: "test_admin_username",
+                 self.valet_filter.opt_password_str: "test_admin_password",
+                 self.valet_filter.opt_auth_uri_str: "test_admin_auth_url"})
 
-            filter_properties = {'request_spec': {'instance_properties': {'uuid': ""}},
-                                 'scheduler_hints': {'heat_resource_uuid': "123456"},
-                                 'instance_type': {'name': "instance_name"}}
+            filter_properties = {
+                'request_spec': {'instance_properties': {'uuid': ""}},
+                'scheduler_hints': {'heat_resource_uuid': "123456"},
+                'instance_type': {'name': "instance_name"}}
 
-            resources = self.valet_filter.filter_all([TestResources("first_host"), TestResources("second_host")], filter_properties)
+            resources = self.valet_filter.filter_all(
+                [TestResources("first_host"), TestResources("second_host")],
+                filter_properties)
 
             for resource in resources:
                 self.validate_test(resource.host in "first_host, second_host")
                 self.validate_test(mock_placement.called)
 
-            filter_properties = {'request_spec': {'instance_properties': {'uuid': ""}},
-                                 'scheduler_hints': "scheduler_hints",
-                                 'instance_type': {'name': "instance_name"}}
+            filter_properties = {
+                'request_spec': {'instance_properties': {'uuid': ""}},
+                'scheduler_hints': "scheduler_hints",
+                'instance_type': {'name': "instance_name"}}
 
-            resources = self.valet_filter.filter_all([TestResources("first_host"), TestResources("second_host")], filter_properties)
+            resources = self.valet_filter.filter_all(
+                [TestResources("first_host"), TestResources("second_host")],
+                filter_properties)
 
             for _ in resources:
                 self.validate_test(mock_create.called)

@@ -12,26 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Topology Manager.
-
-Actions involved in setting up and managing topology. This includes setting
-topology, checking updates, creating new switches( also hosts and links), as
-well as updating them.
-"""
-
 import threading
 import time
 
-from valet.engine.resource_manager.resource_base \
-        import Datacenter, HostGroup, Host
+from valet.engine.resource_manager.resource_base import Datacenter
+from valet.engine.resource_manager.resource_base import Host
+from valet.engine.resource_manager.resource_base import HostGroup
 from valet.engine.resource_manager.topology import Topology
 
 
 class TopologyManager(threading.Thread):
     """Topology Manager Class."""
 
-    def __init__(self, _t_id, _t_name, _resource, _data_lock, _config, _logger):
+    def __init__(self, _t_id, _t_name, _resource,
+                 _data_lock, _config, _logger):
         """Init Topology Manager."""
         threading.Thread.__init__(self)
 
@@ -59,11 +53,13 @@ class TopologyManager(threading.Thread):
                 time.sleep(70)
                 curr_ts = time.time()
                 if curr_ts > period_end:
-                    # Give some time (batch_wait) to update resource status via message bus
-                    # Otherwise, late update will be cleaned up
-                    if (curr_ts - self.resource.current_timestamp) > self.update_batch_wait:
+                    # Give some time (batch_wait) to update resource status via
+                    # message bus. Otherwise, late update will be cleaned up
+                    time_diff = curr_ts - self.resource.current_timestamp
+                    if time_diff > self.update_batch_wait:
                         self._run()
-                        period_end = curr_ts + self.config.topology_trigger_freq
+                        period_end = (curr_ts +
+                                      self.config.topology_trigger_freq)
         # NOTE(GJ): do not timer based batch
         self.logger.info("exit topology_manager " + self.thread_name)
 
@@ -198,8 +194,8 @@ class TopologyManager(threading.Thread):
             self.logger.warn("TopologyManager: host (" + _rhost.name +
                              ") updated (tag)")
 
-        if _rhost.host_group is None or \
-            _host.host_group.name != _rhost.host_group.name:
+        if (_rhost.host_group is None or
+                _host.host_group.name != _rhost.host_group.name):
 
             if _host.host_group.name in self.resource.host_groups.keys():
                 _rhost.host_group = \
