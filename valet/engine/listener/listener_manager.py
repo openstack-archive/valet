@@ -56,16 +56,17 @@ class ListenerManager(threading.Thread):
                     'hosts': self.config.music.hosts,
                     'port': self.config.music.port,
                     'replication_factor': self.config.music.replication_factor,
-                    'music_server_retries': self.config.music.music_server_retries,
+                    'music_server_retries':
+                        self.config.music.music_server_retries,
                     'logger': self.listener_logger,
                 }
                 engine = Music(**kwargs)
                 engine.create_keyspace(self.config.music.keyspace)
                 self.MUSIC = {'engine': engine,
                               'keyspace': self.config.music.keyspace}
-                self.listener_logger.debug('Storing in music on %s, keyspace %s'
-                                           % (self.config.music.host,
-                                              self.config.music.keyspace))
+                self.listener_logger.debug(
+                    'Storing in music on %s, keyspace %s' %
+                    (self.config.music.host, self.config.music.keyspace))
 
             self.listener_logger.debug('Connecting to %s, with %s' %
                                        (self.config.messaging.host,
@@ -103,7 +104,8 @@ class ListenerManager(threading.Thread):
             channel.queue_bind(exchange=exchange_name, queue=queue_name,
                                routing_key=binding_key)
             self.listener_logger.info('Channel is bound,listening on%s '
-                                      'exchange %s', self.config.messaging.host,
+                                      'exchange %s',
+                                      self.config.messaging.host,
                                       self.config.events_listener.exchange)
 
             # Start consuming messages
@@ -134,8 +136,10 @@ class ListenerManager(threading.Thread):
             else:
                 return
 
-            self.listener_logger.debug("\nMessage No: %s\n", method_frame.delivery_tag)
-            self.listener_logger.debug(json.dumps(message, sort_keys=True, indent=2))
+            self.listener_logger.debug(
+                "\nMessage No: %s\n", method_frame.delivery_tag)
+            self.listener_logger.debug(
+                json.dumps(message, sort_keys=True, indent=2))
             channel.basic_ack(delivery_tag=method_frame.delivery_tag)
         except Exception:
             self.listener_logger.error(traceback.format_exc())

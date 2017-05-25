@@ -62,11 +62,13 @@ class ComputeManager(threading.Thread):
                 time.sleep(60)
                 curr_ts = time.time()
                 if curr_ts > period_end:
-                    # Give some time (batch_wait) to update resource status via message bus
-                    # Otherwise, late update will be cleaned up
-                    if (curr_ts - self.resource.current_timestamp) > self.update_batch_wait:
+                    # Give some time (batch_wait) to update resource status via
+                    # message bus. Otherwise, late update will be cleaned up.
+                    time_diff = curr_ts - self.resource.current_timestamp
+                    if time_diff > self.update_batch_wait:
                         self._run()
-                        period_end = curr_ts + self.config.compute_trigger_freq
+                        period_end = (curr_ts +
+                                      self.config.compute_trigger_freq)
 
         # NOTE(GJ): do not timer based batch
         self.logger.info("exit compute_manager " + self.thread_name)
@@ -119,7 +121,8 @@ class ComputeManager(threading.Thread):
 
         for lk in _logical_groups.keys():
             if lk not in self.resource.logical_groups.keys():
-                self.resource.logical_groups[lk] = deepcopy(_logical_groups[lk])
+                self.resource.logical_groups[lk] = deepcopy(
+                    _logical_groups[lk])
 
                 self.resource.logical_groups[lk].last_update = time.time()
                 self.logger.warn("ComputeManager: new logical group (" +
@@ -339,7 +342,8 @@ class ComputeManager(threading.Thread):
         alen = len(_rhost.vm_list)
         if alen != blen:
             topology_updated = True
-            self.logger.warn("host (" + _rhost.name + ") " + str(blen - alen) + " none vms removed")
+            msg = "host ({0}) {1} none vms removed"
+            self.logger.warn(msg.format(_rhost.name, str(blen - alen)))
 
         self.resource.clean_none_vms_from_logical_groups(_rhost)
 
@@ -352,17 +356,20 @@ class ComputeManager(threading.Thread):
 
         for rvm_id in _rhost.vm_list:
             if _host.exist_vm_by_uuid(rvm_id[2]) is False:
-                self.resource.remove_vm_by_uuid_from_logical_groups(_rhost, rvm_id[2])
+                self.resource.remove_vm_by_uuid_from_logical_groups(
+                    _rhost, rvm_id[2])
                 topology_updated = True
                 self.logger.warn("ComputeManager: host (" + _rhost.name +
                                  ") updated (vm removed)")
 
         blen = len(_rhost.vm_list)
-        _rhost.vm_list = [v for v in _rhost.vm_list if _host.exist_vm_by_uuid(v[2]) is True]
+        _rhost.vm_list = [
+            v for v in _rhost.vm_list if _host.exist_vm_by_uuid(v[2]) is True]
         alen = len(_rhost.vm_list)
         if alen != blen:
             topology_updated = True
-            self.logger.warn("host (" + _rhost.name + ") " + str(blen - alen) + " vms removed")
+            msg = "host ({0}) {1} vms removed"
+            self.logger.warn(msg.format(_rhost.name, str(blen - alen)))
 
         return topology_updated
 

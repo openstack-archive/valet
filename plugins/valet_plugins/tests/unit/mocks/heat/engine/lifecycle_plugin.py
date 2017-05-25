@@ -11,15 +11,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-'''
-Created on Sep 14, 2016
-
-@author: stack
-'''
-
 
 class LifecyclePlugin(object):
-    ''' classdocs '''
 
     def __init__(self, params):
-        ''' Constructor '''
+        pass

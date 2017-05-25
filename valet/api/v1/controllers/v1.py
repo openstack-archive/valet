@@ -12,11 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""v1."""
-
-from pecan import conf, expose, request, response
+from pecan import conf
+from pecan import expose
+from pecan import request
+from pecan import response
 from pecan.secure import SecureController
+
 from valet import api
 from valet.api.common.i18n import _
 from valet.api.v1.controllers import error

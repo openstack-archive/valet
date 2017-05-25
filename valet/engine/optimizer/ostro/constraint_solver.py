@@ -13,10 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""ConstraintSolver."""
-
-from valet.engine.optimizer.app_manager.app_topology_base \
-    import VGroup, VM, LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.ostro.openstack_filters \
     import AggregateInstanceExtraSpecsFilter
 from valet.engine.optimizer.ostro.openstack_filters \
@@ -191,7 +190,8 @@ class ConstraintSolver(object):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def _constrain_diversity_with_others(self, _level, _diversity_id,
                                          _candidate_list):
@@ -202,7 +202,8 @@ class ConstraintSolver(object):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def exist_group(self, _level, _id, _group_type, _candidate):
         """Check if group esists."""
@@ -224,11 +225,12 @@ class ConstraintSolver(object):
         conflict_list = []
 
         for r in _candidate_list:
-            if self.conflict_diversity(_level, _n, _node_placements, r) is True:
+            if self.conflict_diversity(_level, _n, _node_placements, r):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def conflict_diversity(self, _level, _n, _node_placements, _candidate):
         """Return True if the candidate has a placement conflict."""
@@ -270,7 +272,8 @@ class ConstraintSolver(object):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def conflict_exclusivity(self, _level, _candidate):
         """Check for an exculsivity conflict."""
@@ -300,8 +303,8 @@ class ConstraintSolver(object):
         return exclusivities
 
     def _constrain_exclusivity(self, _level, _exclusivity_id, _candidate_list):
-        candidate_list = self._get_exclusive_candidates(_level, _exclusivity_id,
-                                                        _candidate_list)
+        candidate_list = self._get_exclusive_candidates(
+            _level, _exclusivity_id, _candidate_list)
 
         if len(candidate_list) == 0:
             candidate_list = self._get_hibernated_candidates(_level,
@@ -317,7 +320,7 @@ class ConstraintSolver(object):
         candidate_list = []
 
         for r in _candidate_list:
-            if self.exist_group(_level, _exclusivity_id, "EX", r) is True:
+            if self.exist_group(_level, _exclusivity_id, "EX", r):
                 if r not in candidate_list:
                     candidate_list.append(r)
 
@@ -334,8 +337,9 @@ class ConstraintSolver(object):
         return candidate_list
 
     def check_hibernated(self, _level, _candidate):
-        """Check if the candidate is hibernated."""
-        """Return True if the candidate has no placed VMs at the specified
+        """Check if the candidate is hibernated.
+
+        Return True if the candidate has no placed VMs at the specified
         level.
         """
         match = False
@@ -354,10 +358,15 @@ class ConstraintSolver(object):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def check_host_aggregates(self, _level, _candidate, _v):
-        """Check if the candidate passes the aggregate instance extra specs zone filter."""
+        """Check if candidate passes aggregate instance extra specs.
+
+        Return true if the candidate passes the aggregate instance extra specs
+        zone filter.
+        """
         return self.openstack_AIES.host_passes(_level, _candidate, _v)
 
     def _constrain_availability_zone(self, _level, _n, _candidate_list):
@@ -368,7 +377,8 @@ class ConstraintSolver(object):
                 if r not in conflict_list:
                     conflict_list.append(r)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def check_availability_zone(self, _level, _candidate, _v):
         """Check if the candidate passes the availability zone filter."""
@@ -381,7 +391,8 @@ class ConstraintSolver(object):
             if self.check_cpu_capacity(_level, _n.node, ch) is False:
                 conflict_list.append(ch)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def check_cpu_capacity(self, _level, _v, _candidate):
         """Check if the candidate passes the core filter."""
@@ -394,7 +405,8 @@ class ConstraintSolver(object):
             if self.check_mem_capacity(_level, _n.node, ch) is False:
                 conflict_list.append(ch)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def check_mem_capacity(self, _level, _v, _candidate):
         """Check if the candidate passes the RAM filter."""
@@ -407,7 +419,8 @@ class ConstraintSolver(object):
             if self.check_local_disk_capacity(_level, _n.node, ch) is False:
                 conflict_list.append(ch)
 
-        _candidate_list[:] = [c for c in _candidate_list if c not in conflict_list]
+        _candidate_list[:] = [
+            c for c in _candidate_list if c not in conflict_list]
 
     def check_local_disk_capacity(self, _level, _v, _candidate):
         """Check if the candidate passes the disk filter."""

@@ -152,11 +152,11 @@ class HostGroup(object):
         """Init Host Group memberships."""
         for lgk in self.memberships.keys():
             lg = self.memberships[lgk]
-            if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                lg.group_type == "DIV":
+            if (lg.group_type == "EX" or lg.group_type == "AFF" or
+                    lg.group_type == "DIV"):
                 level = lg.name.split(":")[0]
-                if LEVELS.index(level) < LEVELS.index(self.host_type) or \
-                    self.name not in lg.vms_per_host.keys():
+                if (LEVELS.index(level) < LEVELS.index(self.host_type) or
+                        self.name not in lg.vms_per_host.keys()):
                     del self.memberships[lgk]
             else:
                 del self.memberships[lgk]
@@ -165,8 +165,8 @@ class HostGroup(object):
         """Return True if membership to group _lg removed."""
         cleaned = False
 
-        if _lg.group_type == "EX" or _lg.group_type == "AFF" or \
-            _lg.group_type == "DIV":
+        if (_lg.group_type == "EX" or _lg.group_type == "AFF" or
+                _lg.group_type == "DIV"):
             if self.name not in _lg.vms_per_host.keys():
                 del self.memberships[_lg.name]
                 cleaned = True
@@ -267,8 +267,8 @@ class Host(object):
         """Return True if host removed from logical group _lg passed in."""
         cleaned = False
 
-        if _lg.group_type == "EX" or _lg.group_type == "AFF" or \
-            _lg.group_type == "DIV":
+        if (_lg.group_type == "EX" or _lg.group_type == "AFF" or
+                _lg.group_type == "DIV"):
             if self.name not in _lg.vms_per_host.keys():
                 del self.memberships[_lg.name]
                 cleaned = True
@@ -277,8 +277,8 @@ class Host(object):
 
     def check_availability(self):
         """Return True if host is up, enabled and tagged as nova infra."""
-        if self.status == "enabled" and self.state == "up" and \
-                ("nova" in self.tag) and ("infra" in self.tag):
+        if (self.status == "enabled" and self.state == "up" and
+                ("nova" in self.tag) and ("infra" in self.tag)):
             return True
         else:
             return False
@@ -546,8 +546,7 @@ class LogicalGroup(object):
         if self.exist_vm_by_h_uuid(_vm_id[0]) is False:
             self.vm_list.append(_vm_id)
 
-            if self.group_type == "EX" or self.group_type == "AFF" or \
-                self.group_type == "DIV":
+            if self._check_group_type(self.group_type):
                 if _host_id not in self.vms_per_host.keys():
                     self.vms_per_host[_host_id] = []
             self.vms_per_host[_host_id].append(_vm_id)
@@ -573,10 +572,9 @@ class LogicalGroup(object):
                     success = True
                     break
 
-        if self.group_type == "EX" or self.group_type == "AFF" or \
-            self.group_type == "DIV":
-            if (_host_id in self.vms_per_host.keys()) and \
-                len(self.vms_per_host[_host_id]) == 0:
+        if self._check_group_type(self.group_type):
+            if ((_host_id in self.vms_per_host.keys()) and
+                    len(self.vms_per_host[_host_id]) == 0):
                 del self.vms_per_host[_host_id]
 
         return success
@@ -598,10 +596,9 @@ class LogicalGroup(object):
                     success = True
                     break
 
-        if self.group_type == "EX" or self.group_type == "AFF" or \
-            self.group_type == "DIV":
-            if (_host_id in self.vms_per_host.keys()) and \
-                len(self.vms_per_host[_host_id]) == 0:
+        if self._check_group_type(self.group_type):
+            if ((_host_id in self.vms_per_host.keys()) and
+                    len(self.vms_per_host[_host_id]) == 0):
                 del self.vms_per_host[_host_id]
 
         return success
@@ -618,15 +615,15 @@ class LogicalGroup(object):
 
         if _host_id in self.vms_per_host.keys():
             blen = len(self.vms_per_host[_host_id])
-            self.vms_per_host[_host_id] = [v for v in self.vms_per_host[_host_id] if v[2] != "none"]
+            self.vms_per_host[_host_id] = [
+                v for v in self.vms_per_host[_host_id] if v[2] != "none"]
             alen = len(self.vm_list)
             if alen != blen:
                 success = True
 
-        if self.group_type == "EX" or self.group_type == "AFF" or \
-            self.group_type == "DIV":
-            if (_host_id in self.vms_per_host.keys()) and \
-                len(self.vms_per_host[_host_id]) == 0:
+        if self._check_group_type(self.group_type):
+            if ((_host_id in self.vms_per_host.keys()) and
+                    len(self.vms_per_host[_host_id]) == 0):
                 del self.vms_per_host[_host_id]
 
         return success
@@ -639,6 +636,9 @@ class LogicalGroup(object):
                 'vm_list': self.vm_list,
                 'vms_per_host': self.vms_per_host,
                 'last_update': self.last_update}
+
+    def _check_group_type(self, type):
+        return type in ['EX', 'AFF', 'DIV']
 
 
 class Flavor(object):

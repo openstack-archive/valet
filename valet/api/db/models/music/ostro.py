@@ -15,7 +15,7 @@
 
 """Ostro Models."""
 
-from . import Base
+from valet.api.db.models.music import Base
 
 
 class PlacementRequest(Base):

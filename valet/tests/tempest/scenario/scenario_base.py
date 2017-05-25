@@ -101,7 +101,8 @@ class ScenarioTestCase(test.BaseTestCase):
             for key in groups:
                 if groups[key].group_type == "exclusivity":
                     self.log.log_info(" creating valet group ")
-                    grp_name = data_utils.rand_name(name=groups[key].group_name)
+                    grp_name = data_utils.rand_name(
+                        name=groups[key].group_name)
                     template_resources.template_data = \
                         template_resources.template_data.replace(
                             groups[key].group_name, grp_name)
@@ -119,7 +120,8 @@ class ScenarioTestCase(test.BaseTestCase):
             return res
 
         except Exception:
-            self.log.log_error("Failed to prepare stack for creation", traceback.format_exc())
+            self.log.log_error("Failed to prepare stack for creation",
+                               traceback.format_exc())
             return False
         return True
 
@@ -148,34 +150,43 @@ class ScenarioTestCase(test.BaseTestCase):
             if os.path.exists(env_url):
                 with open(env_url, "r") as f:
                     filedata = f.read()
-                    filedata = filedata.replace('image_place_holder', CONF.compute.image_ref)
-                    filedata = filedata.replace('flavor_place_holder', CONF.compute.flavor_ref)
-                    filedata = filedata.replace('network_place_holder', CONF.compute.fixed_network_name)
+                    filedata = filedata.replace(
+                        'image_place_holder',
+                        CONF.compute.image_ref)
+                    filedata = filedata.replace(
+                        'flavor_place_holder',
+                        CONF.compute.flavor_ref)
+                    filedata = filedata.replace(
+                        'network_place_holder',
+                        CONF.compute.fixed_network_name)
 
                     return filedata
             else:
                 return None
         except Exception:
-            self.log.log_error("Failed to load environment file", traceback.format_exc())
+            self.log.log_error("Failed to load environment file",
+                               traceback.format_exc())
 
     def _delete_group(self, group_id):
         try:
             self.valet_client.delete_all_members(group_id)
             self.valet_client.delete_group(group_id)
         except Exception:
-            self.log.log_error("Failed to delete group", traceback.format_exc())
+            self.log.log_error("Failed to delete group",
+                               traceback.format_exc())
             raise
 
     def delete_stack(self):
         """Use heat client to delete stack."""
         try:
-          self.heat_client.delete_stack(self.stack_identifier)
-          self.heat_client.wait_for_stack_status(
+            self.heat_client.delete_stack(self.stack_identifier)
+            self.heat_client.wait_for_stack_status(
                 self.stack_identifier, "DELETE_COMPLETE",
                 failure_pattern='^.*DELETE_FAILED$')
 
         except Exception:
-            self.log.log_error("Failed to delete stack", traceback.format_exc())
+            self.log.log_error("Failed to delete stack",
+                               traceback.format_exc())
             raise
 
     def show_stack(self, stack_id):
@@ -199,14 +210,16 @@ class ScenarioTestCase(test.BaseTestCase):
 
         except exceptions.StackBuildErrorException as ex:
             if "Ostro error" in str(ex) and self.tries > 0:
-                self.log.log_error("Ostro error - try number %d" %
-                        (CONF.valet.TRIES_TO_CREATE - self.tries + 2))
+                msg = "Ostro error - try number %d"
+                self.log.log_error(
+                    msg % (CONF.valet.TRIES_TO_CREATE - self.tries + 2))
                 self.tries -= 1
                 self.delete_stack()
                 time.sleep(CONF.valet.PAUSE)
                 self.wait_for_stack(stack_name, env_data, template_resources)
             else:
-                self.log.log_error("Failed to create stack", traceback.format_exc())
+                self.log.log_error("Failed to create stack",
+                                   traceback.format_exc())
                 return False
 
         return True

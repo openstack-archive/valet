@@ -18,24 +18,23 @@
 from notario.decorators import instance_of
 from notario import ensure
 from os import path
-
-from pecan import redirect, request
+from pecan import redirect
+from pecan import request
 import string
+
 from valet import api
 from valet.api.common.i18n import _
 from valet.api.db.models.music.placements import Placement
 
-#
-# Notario Helpers
-#
-
 
 def valid_group_name(value):
     """Validator for group name type."""
-    if not value or not set(value) <= set(string.letters + string.digits + "-._~"):
+    if (not value or
+            not set(value) <= set(string.letters + string.digits + "-._~")):
         api.LOG.error("group name is not valid")
-        api.LOG.error("group name must contain only uppercase and lowercase letters, decimal digits, \
-            hyphens, periods, underscores, and tildes [RFC 3986, Section 2.3]")
+        api.LOG.error("group name must contain only uppercase and lowercase "
+                      "letters, decimal digits, hyphens, periods, "
+                      "underscores, "" and tildes [RFC 3986, Section 2.3]")
 
 
 @instance_of((list, dict))
@@ -59,7 +58,7 @@ def set_placements(plan, resources, placements):
         name = resources[uuid]['name']
         properties = placements[uuid]['properties']
         location = properties['host']
-        Placement(name, uuid, plan=plan, location=location)  # pylint: disable=W0612
+        Placement(name, uuid, plan=plan, location=location)
 
     return plan
 
@@ -73,11 +72,14 @@ def reserve_placement(placement, resource_id=None, reserve=True, update=True):
     if placement:
         api.LOG.info(_('%(rsrv)s placement of %(orch_id)s in %(loc)s.'),
                      {'rsrv': _("Reserving") if reserve else _("Unreserving"),
-                      'orch_id': placement.orchestration_id, 'loc': placement.location})
+                      'orch_id': placement.orchestration_id,
+                      'loc': placement.location})
         placement.reserved = reserve
         if resource_id:
-            api.LOG.info(_('Associating resource id %(res_id)s with orchestration id %(orch_id)s.'),
-                         {'res_id': resource_id, 'orch_id': placement.orchestration_id})
+            msg = _('Associating resource id %(res_id)s with orchestration '
+                    'id %(orch_id)s.')
+            api.LOG.info(msg, {'res_id': resource_id,
+                               'orch_id': placement.orchestration_id})
             placement.resource_id = resource_id
         if update:
             placement.update()
@@ -92,9 +94,11 @@ def update_placements(placements, reserve_id=None, unlock_all=False):
             properties = placements[uuid]['properties']
             location = properties['host']
             if placement.location != location:
-                api.LOG.info(_('Changing placement of %(orch_id)s from %(old_loc)s to %(new_loc)s.'),
-                             {'orch_id': placement.orchestration_id, 'old_loc': placement.location,
-                              'new_loc': location})
+                msg = _('Changing placement of %(orch_id)s from %(old_loc)s '
+                        'to %(new_loc)s.')
+                api.LOG.info(msg, {'orch_id': placement.orchestration_id,
+                                   'old_loc': placement.location,
+                                   'new_loc': location})
                 placement.location = location
             if unlock_all:
                 reserve_placement(placement, reserve=False, update=False)

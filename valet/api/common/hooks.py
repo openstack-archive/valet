@@ -88,11 +88,13 @@ class MessageNotificationHook(PecanHook):
         # notifier_fn blocks in case rabbit mq is down
         # it prevents Valet API to return its response
         # send the notification in a different thread
-        notifier_thread = threading.Thread(target=notifier_fn, args=(ctxt, event_type, payload))
+        notifier_thread = threading.Thread(
+            target=notifier_fn, args=(ctxt, event_type, payload))
         notifier_thread.start()
         # launch a timer to verify no hung threads are left behind
         # (when timeout expires kill the notifier thread if it still alive)
-        watcher = threading.Timer(conf.messaging.timeout, terminate_thread, args=[notifier_thread])
+        watcher = threading.Timer(
+            conf.messaging.timeout, terminate_thread, args=[notifier_thread])
         watcher.start()
 
         api.LOG.info('notification sent.')

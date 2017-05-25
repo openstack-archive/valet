@@ -17,8 +17,10 @@
 
 from valet.tests.functional.valet_validator.common.auth import Auth
 from valet.tests.functional.valet_validator.common import GeneralLogger
-from valet.tests.functional.valet_validator.group_api.valet_group import ValetGroup
-from valet.tests.functional.valet_validator.tests.functional_base import FunctionalTestCase
+from valet.tests.functional.valet_validator.group_api.valet_group \
+    import ValetGroup
+from valet.tests.functional.valet_validator.tests.functional_base \
+    import FunctionalTestCase
 
 
 class TestGroups(FunctionalTestCase):
@@ -65,8 +67,8 @@ class TestGroups(FunctionalTestCase):
         GeneralLogger.log_group(str(self.groups.get_list_groups()))
 
         GeneralLogger.log_group("Create test member (NOT tenant ID)")
-        member_respone = self.groups.update_group_members(grp_id,
-                                                          members="test_member")
+        member_respone = self.groups.update_group_members(
+            grp_id, members="test_member")
         self.assertEqual(409, member_respone.status_code,
                          "update_group_members failed with code %s"
                          % member_respone.status_code)

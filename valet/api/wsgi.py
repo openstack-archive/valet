@@ -12,14 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""WSGI Wrapper."""
-
-from common.i18n import _
 import os
 from pecan.deploy import deploy
-from valet.common.conf import init_conf, get_logger
+
+from common.i18n import _
+
 from valet import api
+from valet.common.conf import get_logger
+from valet.common.conf import init_conf
 
 
 def config_file(file_name=None):
@@ -50,7 +50,8 @@ if __name__ == '__main__':
 #         from valet.api.conf import register_conf, set_domain
         init_conf("wsgi.log")
         api.LOG = get_logger("wsgi")
-        HTTPD = make_server('', 8090, deploy(config_file('/var/www/valet/config.py')))
+        HTTPD = make_server(
+            '', 8090, deploy(config_file('/var/www/valet/config.py')))
         print(_("Serving HTTP on port 8090..."))
 
         # Respond to requests until process is killed
