@@ -50,11 +50,9 @@ extensions = [
     'sphinx.ext.viewcode',
 ]
 
-# TODO(lamt) We need to enable oslosphix whenever we can get pass the
-# check-requirements gate.
-# on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-# if not on_rtd:
-#     extensions.append('oslosphinx')
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if not on_rtd:
+    extensions.append('oslosphinx')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
