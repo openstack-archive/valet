@@ -3,7 +3,7 @@
 # process, which may cause wedges in the gate later.
 
 
-hacking<0.11,>=0.10.0
+hacking!=0.13.0,<0.14,>=0.12.0 # Apache-2.0
 os-testr<=0.7.0
 markupsafe<=0.23
 pecan<=0.8.2
