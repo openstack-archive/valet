@@ -11,11 +11,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from keystoneclient.v2_0 import client
+
 import mock
-from valet_plugins.common import valet_api
-from valet_plugins.plugins.nova.valet_filter import ValetFilter
-from valet_plugins.tests.base import Base
+
+from keystoneclient.v2_0 import client
+
+from valet.plugins.common.valet_api import ValetAPIWrapper 
+from valet.plugins.nova.valet_filter import ValetFilter
+from valet.tests.base import Base
 
 
 class TestResources(object):
@@ -31,15 +34,15 @@ class TestValetFilter(Base):
         client.Client = mock.MagicMock()
         self.valet_filter = self.init_ValetFilter()
 
-    @mock.patch.object(valet_api.ValetAPIWrapper, '_register_opts')
+    @mock.patch.object(ValetAPIWrapper, '_register_opts')
     @mock.patch.object(ValetFilter, '_register_opts')
     def init_ValetFilter(self, mock_opt, mock_init):
         mock_init.return_value = None
         mock_opt.return_value = None
         return ValetFilter()
 
-    @mock.patch.object(valet_api.ValetAPIWrapper, 'plans_create')
-    @mock.patch.object(valet_api.ValetAPIWrapper, 'placement')
+    @mock.patch.object(ValetAPIWrapper, 'plans_create')
+    @mock.patch.object(ValetAPIWrapper, 'placement')
     def test_filter_all(self, mock_placement, mock_create):
         mock_placement.return_value = None
         mock_create.return_value = None

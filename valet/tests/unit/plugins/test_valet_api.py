@@ -12,10 +12,10 @@
 #    under the License.
 
 import mock
+import requests
 
-from valet_plugins.common.valet_api import requests
-from valet_plugins.common.valet_api import ValetAPIWrapper
-from valet_plugins.tests.base import Base
+from valet.plugins.common.valet_api import ValetAPIWrapper
+from valet.tests.base import Base
 
 
 class TestValetApi(Base):
