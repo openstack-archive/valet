@@ -40,7 +40,13 @@ transport = oslo_messaging.get_transport(cfg.CONF)
 targets = [oslo_messaging.Target(topic='notifications')]
 endpoints = [NotificationEndpoint()]
 
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2
 server = oslo_messaging.get_notification_listener(
     transport, targets, endpoints)
+=======
+server = oslo_messaging.get_notification_listener(transport,
+                                                  targets,
+                                                  endpoints)
+>>>>>>> [WIP] Refactoring the plugin code and tests
 server.start()
 server.wait()

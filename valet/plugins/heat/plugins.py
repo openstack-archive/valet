@@ -6,6 +6,7 @@
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,25 +14,46 @@
 # limitations under the License.
 import string
 import uuid
+=======
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+#    implied. See the License for the specific language governing permissions and
+#    limitations under the License.
+
+"""Valet Plugins for Heat"""
+
+import uuid
+import string
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
 
 from heat.engine import lifecycle_plugin
 from oslo_config import cfg
 from oslo_log import log as logging
 
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
 from valet_plugins.common import valet_api
 
+=======
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
 def validate_uuid4(uuid_string):
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
     '''Validate that a UUID string is in fact a valid uuid4.
+=======
+    """Validate that a UUID string is in fact a valid uuid4.
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
 
     Happily, the uuid module does the actual checking for us.
     It is vital that the 'version' kwarg be passed to the
     UUID() call, otherwise any 32-character hex string
     is considered valid.
-    '''
+    """
     try:
         val = uuid.UUID(uuid_string, version=4)
     except ValueError:
@@ -49,10 +71,14 @@ def validate_uuid4(uuid_string):
 
 
 class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
     '''Base class for pre-op and post-op work on a stack.
+=======
+    """Base class for pre-op and post-op work on a stack.
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
 
     Implementations should extend this class and override the methods.
-    '''
+    """
     def __init__(self):
         self.api = valet_api.ValetAPIWrapper()
         self.hints_enabled = False
@@ -62,11 +88,19 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
         self.hints_enabled = cfg.CONF.stack_scheduler_hints
 
     def _parse_stack_preview(self, dest, preview):
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
         '''Walk the preview list (possibly nested)
 
         extracting parsed template dicts and storing modified
         versions in a flat dict.
         '''
+=======
+        """Walk the preview list (possibly nested)
+
+        extracting parsed template dicts and storing modified versions in a
+        flat dictionary
+        """
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
         # The preview is either a list or not.
         if not isinstance(preview, list):
             # Heat does not assign orchestration UUIDs to
@@ -95,7 +129,11 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
                 self._parse_stack_preview(dest, item)
 
     def do_pre_op(self, cnxt, stack, current_stack=None, action=None):
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
         '''Method to be run by heat before stack operations. '''
+=======
+        """Method to be run by heat before stack operations. """
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
         if not self.hints_enabled or stack.status != 'IN_PROGRESS':
             return
 
@@ -128,17 +166,26 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
 
     def do_post_op(self, cnxt, stack, current_stack=None, action=None,
                    is_stack_failure=False):
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
         '''Method to be run by heat after stack operations, including failures.
+=======
+        """Method to be run by heat after stack operations, including failures.
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
 
         On failure to execute all the registered pre_ops, this method will be
         called if and only if the corresponding pre_op was successfully called.
         On failures of the actual stack operation, this method will
         be called if all the pre operations were successfully called.
-        '''
+        """
         pass
 
     def get_ordinal(self):
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2:plugins/valet_plugins/plugins/heat/plugins.py
         '''An ordinal used to order instances for pre/post operation execution.
+=======
+        """An ordinal used to order class instances for pre and post operation
+        execution.
+>>>>>>> [WIP] Refactoring the plugin code and tests:valet/plugins/heat/plugins.py
 
         The values returned by get_ordinal are used to create a partial order
         for pre and post operation method invocations. The default ordinal
@@ -149,5 +196,5 @@ class ValetLifecyclePlugin(lifecycle_plugin.LifecyclePlugin):
         class1inst will be executed after the method on class2inst.
         If class1inst.ordinal() == class2inst.ordinal(), then the order of
         method invocation is indeterminate.
-        '''
+        """
         return 100

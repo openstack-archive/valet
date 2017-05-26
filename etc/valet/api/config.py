@@ -15,6 +15,13 @@
 
 from oslo_config import cfg
 from pecan.hooks import TransactionHook
+<<<<<<< 7de1e62db57776cc8db132d419963e650c6c7af2
+=======
+
+from valet.api.db import models
+from valet.api.common.hooks import NotFoundHook
+from valet.api.common.hooks import MessageNotificationHook
+>>>>>>> [WIP] Refactoring the plugin code and tests
 
 from valet.api.common.hooks import MessageNotificationHook
 from valet.api.common.hooks import NotFoundHook
