@@ -14,8 +14,6 @@
 #    implied. See the License for the specific language governing permissions and
 #    limitations under the License.
 
-'''GroupAssignment Heat Resource Plugin'''
-
 from heat.common.i18n import _
 from heat.engine import constraints
 from heat.engine import properties
@@ -27,20 +25,25 @@ LOG = logging.getLogger(__name__)
 
 
 class GroupAssignment(resource.Resource):
-    ''' A Group Assignment describes one or more resources assigned to a particular type of group.
+    """GroupAssignment Heat Resource Plugin
+    A Group Assignment describes one or more resources assigned to a
+    particular type of group.
 
-    Assignments can reference other assignments, so long as there are no circular references.
+    Assignments can reference other assignments, so long as there are no
+    circular references.
+    
     There are three types of groups: affinity, diversity, and exclusivity.
     Exclusivity groups have a unique name, assigned through Valet.
 
-    This resource is purely informational in nature and makes no changes to heat, nova, or cinder.
+    This resource is purely informational in nature and makes no changes to
+    heat, nova, or cinder.
     The Valet Heat Lifecycle Plugin passes this information to the optimizer.
-    '''
+    """
 
     _RELATIONSHIP_TYPES = (
         AFFINITY, DIVERSITY, EXCLUSIVITY,
     ) = (
-        "affinity", "diversity", "exclusivity",
+        'affinity', 'diversity', 'exclusivity',
     )
 
     PROPERTIES = (
@@ -88,18 +91,18 @@ class GroupAssignment(resource.Resource):
     }
 
     def handle_create(self):
-        '''Create resource'''
+        """Create resource"""
         self.resource_id_set(self.physical_resource_name())
 
     def handle_update(self, json_snippet, templ_diff, prop_diff):  # pylint: disable=W0613
-        '''Update resource'''
+        """Update resource"""
         self.resource_id_set(self.physical_resource_name())
 
     def handle_delete(self):
-        '''Delete resource'''
+        """Delete resource"""
         self.resource_id_set(None)
 
 
 def resource_mapping():
-    '''Map names to resources.'''
+    """Map names to resources."""
     return {'ATT::Valet::GroupAssignment': GroupAssignment, }

@@ -15,8 +15,10 @@
 
 from oslo_config import cfg
 from pecan.hooks import TransactionHook
+
 from valet.api.db import models
-from valet.api.common.hooks import NotFoundHook, MessageNotificationHook
+from valet.api.common.hooks import NotFoundHook
+from valet.api.common.hooks import MessageNotificationHook
 
 
 CONF = cfg.CONF
