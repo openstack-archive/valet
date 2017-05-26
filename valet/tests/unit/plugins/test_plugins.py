@@ -12,8 +12,9 @@
 #  under the License.
 
 import mock
-from valet_plugins.plugins.heat.plugins import ValetLifecyclePlugin
-from valet_plugins.tests.base import Base
+
+from valet.plugins.heat.plugins import ValetLifecyclePlugin
+from valet.tests.base import Base
 
 
 class TestPlugins(Base):
@@ -23,7 +24,7 @@ class TestPlugins(Base):
 
         self.valet_life_cycle_plugin = self.init_ValetLifecyclePlugin()
 
-    @mock.patch('valet_plugins.common.valet_api.ValetAPIWrapper')
+    @mock.patch('valet.plugins.common.valet_api.ValetAPIWrapper')
     def init_ValetLifecyclePlugin(self, mock_class):
         with mock.patch('oslo_config.cfg.CONF'):
             return ValetLifecyclePlugin()

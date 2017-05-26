@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Valet cli."""
-
 import argparse
 import sys
 import valet.cli.groupcli as groupcli
