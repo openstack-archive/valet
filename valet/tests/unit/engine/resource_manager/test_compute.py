@@ -13,25 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Search."""
+"""Test Compute."""
 
-import logging
-import mock
-from valet.engine.optimizer.ostro.search import Search
 from valet.tests.base import Base
 
-LOG = logging.getLogger(__name__)
 
-
-class TestSearch(Base):
-    """Unit tests for valet.engine.optimizer.ostro.search."""
+class TestCompute(Base):
 
     def setUp(self):
-        """Setup Test Search Class."""
-        super(TestSearch, self).setUp()
-
-        self.search = Search(LOG)
-
-    def test_copy_resource_status(self):
-        """Test Copy Resource Status."""
-        self.search.copy_resource_status(mock.MagicMock())
+    	super(TestCompute, self).setUp()
