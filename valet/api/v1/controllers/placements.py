@@ -26,9 +26,6 @@ from valet.api.v1.controllers import reserve_placement
 from valet.api.v1.controllers import update_placements
 
 
-# pylint: disable=R0201
-
-
 class PlacementsItemController(object):
     """Placements Item Controller /v1/placements/{placement_id}."""
 
@@ -36,11 +33,9 @@ class PlacementsItemController(object):
         """Initializer."""
         self.uuid = uuid4
         self.placement = Placement.query.filter_by(id=self.uuid).first()
-        # pylint: disable=E1101
         if not self.placement:
             self.placement = Placement.query.filter_by(
                 orchestration_id=self.uuid).first()
-            # disable=E1101
             if not self.placement:
                 error('/errors/not_found', _('Placement not found'))
         request.context['placement_id'] = self.placement.id
