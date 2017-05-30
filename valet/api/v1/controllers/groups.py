@@ -31,7 +31,6 @@ from valet.api.db.models.music.groups import Group
 from valet.api.v1.controllers import error
 from valet.api.v1.controllers import valid_group_name
 
-
 GROUPS_SCHEMA = (
     (decorators.optional('description'), types.string),
     ('name', valid_group_name),

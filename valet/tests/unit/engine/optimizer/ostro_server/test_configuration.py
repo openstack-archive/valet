@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Config."""
+"""Test Configuration."""
+
+from oslo_config import cfg
 
 import sys
 from valet.engine.optimizer.ostro_server.configuration import Config
 from valet.tests.base import Base
-
-from oslo_config import cfg
 
 
 class TestConfig(Base):
