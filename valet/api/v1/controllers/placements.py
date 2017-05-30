@@ -25,7 +25,6 @@ from valet.api.v1.controllers import error
 from valet.api.v1.controllers import reserve_placement
 from valet.api.v1.controllers import update_placements
 
-
 # pylint: disable=R0201
 
 
