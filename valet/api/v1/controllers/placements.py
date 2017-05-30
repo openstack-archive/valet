@@ -26,9 +26,6 @@ from valet.api.v1.controllers import reserve_placement
 from valet.api.v1.controllers import update_placements
 
 
-# pylint: disable=R0201
-
-
 class PlacementsItemController(object):
     """Placements Item Controller /v1/placements/{placement_id}."""
 
