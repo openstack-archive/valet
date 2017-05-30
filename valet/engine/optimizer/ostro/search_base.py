@@ -12,11 +12,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Resources utlized by search engine."""
-
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
+from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+
 
 class Resource(object):
     """Resource."""
@@ -27,14 +25,20 @@ class Resource(object):
         self.level = None
 
         self.host_name = None
-        self.host_memberships = {}          # all mapped logical groups to host
-        self.host_vCPUs = 0                 # original total vCPUs before overcommit
-        self.host_avail_vCPUs = 0           # remaining vCPUs after overcommit
-        self.host_mem = 0                   # original total mem cap before overcommit
-        self.host_avail_mem = 0             # remaining mem cap after
-        self.host_local_disk = 0            # original total local disk cap before overcommit
-        self.host_avail_local_disk = 0      # remaining local disk cap after overcommit
-        self.host_num_of_placed_vms = 0     # the number of vms currently placed in this host
+        self.host_memberships = {}  # all mapped logical groups to host
+        self.host_vCPUs = 0  # original total vCPUs before overcommit
+        self.host_avail_vCPUs = 0  # remaining vCPUs after overcommit
+        self.host_mem = 0  # original total mem cap before overcommit
+        self.host_avail_mem = 0  # remaining mem cap after
+
+        # original total local disk cap before overcommit
+        self.host_local_disk = 0
+
+        # remaining local disk cap after overcommit
+        self.host_avail_local_disk = 0
+
+        # the number of vms currently placed in this host
+        self.host_num_of_placed_vms = 0
 
         self.rack_name = None               # where this host is located
         self.rack_memberships = {}
@@ -106,7 +110,7 @@ class Resource(object):
         return memberships
 
     def get_num_of_placed_vms(self, _level):
-        """Get the number of placed vms of this resource at the specified level."""
+        """Get the number of placed vms of this resource at a given level."""
         num_of_vms = 0
 
         if _level == "cluster":
@@ -119,7 +123,11 @@ class Resource(object):
         return num_of_vms
 
     def get_avail_resources(self, _level):
-        """Get the available vCPUs, memory, local disk of this resource at the specified level."""
+        """Get available resources of this resource at a given level.
+
+        Returns the available vCPUs, memory, local disk of this resource
+        the specified level.
+        """
         avail_vCPUs = 0
         avail_mem = 0
         avail_local_disk = 0
@@ -140,7 +148,11 @@ class Resource(object):
         return (avail_vCPUs, avail_mem, avail_local_disk)
 
     def get_local_disk(self, _level):
-        """Get the local disk and available local disk of this resource at the specified level."""
+        """Get the local disk information.
+
+        Returns the local disk and available local disk of this resource
+        at the specified level.
+        """
         local_disk = 0
         avail_local_disk = 0
 
@@ -157,7 +169,11 @@ class Resource(object):
         return (local_disk, avail_local_disk)
 
     def get_vCPUs(self, _level):
-        """Get the vCPUs and available vCPUs of this resource at the specified level."""
+        """Get the vCPUs information.
+
+        Returns the vCPUs and available vCPUs of this resource at the
+        specified level.
+        """
         vCPUs = 0
         avail_vCPUs = 0
 
@@ -174,7 +190,11 @@ class Resource(object):
         return (vCPUs, avail_vCPUs)
 
     def get_mem(self, _level):
-        """Get the memory and available memory of this resource at the specified level."""
+        """Get memory information.
+
+        Returns the memory and available memory of this resource at the
+        specified level.
+        """
         mem = 0
         avail_mem = 0
 

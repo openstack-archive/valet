@@ -31,7 +31,8 @@ class REST(object):
 
     _urls = None
 
-    def __init__(self, hosts, port, path='/', timeout='10', music_server_retries=3, logger=None):
+    def __init__(self, hosts, port, path='/', timeout='10',
+                 music_server_retries=3, logger=None):
         """Initializer. Accepts target host list, port, and path."""
 
         self.hosts = hosts  # List of IP or FQDNs
@@ -82,7 +83,10 @@ class REST(object):
             for attempt in range(self.music_server_retries):
                 # Ignore the previous exception.
                 try:
-                    response = method_fn(full_url, data=data_json, headers=self.__headers(content_type), timeout=self.timeout)
+                    response = method_fn(
+                        full_url, data=data_json,
+                        headers=self.__headers(content_type),
+                        timeout=self.timeout)
                     response.raise_for_status()
 
                     return response
@@ -91,13 +95,17 @@ class REST(object):
                     response.status_code = 408
                     response.url = full_url
                     if self.logger:
-                        self.logger.debug("Music: %s  Method: %s  Full Url: %s", err.message, method.upper(), full_url)
+                        self.logger.debug(
+                            "Music: %s  Method: %s  Full Url: %s",
+                            err.message, method.upper(), full_url)
                 except requests.exceptions.RequestException as err:
                     response = requests.Response()
                     response.status_code = 400
                     response.url = full_url
                     if self.logger:
-                        self.logger.debug("Music: %s  Method: %s  Full Url: %s", err.message, method.upper(), full_url)
+                        self.logger.debug(
+                            "Music: %s  Method: %s  Full Url: %s",
+                            err.message, method.upper(), full_url)
 
         # If we get here, an exception was raised for every url,
         # but we passed so we could try each endpoint. Raise status

@@ -38,14 +38,16 @@ class MusicHandler(object):
         self.config = _config
         self.logger = _logger
 
-        self.music = Music(hosts=self.config.hosts, port=self.config.port,
-                           replication_factor=self.config.replication_factor,
-                           music_server_retries=self.config.music_server_retries,
-                           logger=self.logger)
+        self.music = Music(
+            hosts=self.config.hosts, port=self.config.port,
+            replication_factor=self.config.replication_factor,
+            music_server_retries=self.config.music_server_retries,
+            logger=self.logger)
         if self.config.hosts is not None:
             self.logger.info("DB: music host = %s", self.config.hosts)
         if self.config.replication_factor is not None:
-            self.logger.info("DB: music replication factor = " + str(self.config.replication_factor))
+            self.logger.info("DB: music replication factor = %s ",
+                             str(self.config.replication_factor))
 
     # FIXME(GJ): this may not need
     def init_db(self):
@@ -172,8 +174,9 @@ class MusicHandler(object):
                 if exchange != "nova":
                     if self.delete_event(event_id) is False:
                         return None
-                    self.logger.debug("MusicHandler.get_events: event exchange "
-                                      "(" + exchange + ") is not supported")
+                    self.logger.debug(
+                        "MusicHandler.get_events: event exchange "
+                        "(" + exchange + ") is not supported")
                     continue
 
                 if method != 'object_action' and method != 'build_and_run_' \
@@ -187,8 +190,8 @@ class MusicHandler(object):
                 if len(args_data) == 0:
                     if self.delete_event(event_id) is False:
                         return None
-                    self.logger.debug("MusicHandler.get_events: event does not "
-                                      "have args")
+                    self.logger.debug("MusicHandler.get_events: "
+                                      "event does not have args")
                     continue
 
                 try:
@@ -199,6 +202,7 @@ class MusicHandler(object):
                                      ":" + event_id)
                     continue
 
+                # TODO(lamt) this block of code can use refactoring
                 if method == 'object_action':
                     if 'objinst' in args.keys():
                         objinst = args['objinst']
@@ -207,28 +211,32 @@ class MusicHandler(object):
                             if nova_object_name == 'Instance':
                                 if 'nova_object.changes' in objinst.keys() and \
                                    'nova_object.data' in objinst.keys():
-                                    change_list = objinst['nova_object.changes']
+                                    change_list = objinst[
+                                        'nova_object.changes']
                                     change_data = objinst['nova_object.data']
                                     if 'vm_state' in change_list and \
                                        'vm_state' in change_data.keys():
-                                        if change_data['vm_state'] == \
-                                                'deleted' \
-                                                or change_data[
-                                                    'vm_state'
-                                                ] == 'active':
+                                        if (change_data['vm_state'] ==
+                                                'deleted' or
+                                                change_data['vm_state'] ==
+                                                'active'):
                                             e = Event(event_id)
                                             e.exchange = exchange
                                             e.method = method
                                             e.args = args
                                             event_list.append(e)
                                         else:
-                                            self.logger.warn("unknown vm_state = " + change_data["vm_state"])
+                                            msg = "unknown vm_state = %s"
+                                            self.logger.warn(
+                                                msg % change_data["vm_state"])
                                             if 'uuid' in change_data.keys():
-                                                self.logger.warn("    uuid = " + change_data['uuid'])
-                                            if self.delete_event(event_id) is False:
+                                                msg = "    uuid = %s"
+                                                self.logger.warn(
+                                                    msg % change_data['uuid'])
+                                            if not self.delete_event(event_id):
                                                 return None
                                     else:
-                                        if self.delete_event(event_id) is False:
+                                        if not self.delete_event(event_id):
                                             return None
                                 else:
                                     if self.delete_event(event_id) is False:
@@ -304,7 +312,8 @@ class MusicHandler(object):
                                      "in build event")
 
         if len(error_event_list) > 0:
-            event_list[:] = [e for e in event_list if e not in error_event_list]
+            event_list[:] = [
+                e for e in event_list if e not in error_event_list]
 
         if len(event_list) > 0:
             event_list.sort(key=operator.attrgetter('event_id'))
@@ -459,7 +468,7 @@ class MusicHandler(object):
         return json_resource
 
     def update_resource_status(self, _k, _status):
-        """Update resource _k to the new _status (flavors, lgs, hosts, etc)."""
+        """Update resource to the new _status (flavors, lgs, hosts, etc)."""
         row = {}
         try:
             row = self.music.read_row(self.config.db_keyspace,
@@ -485,7 +494,8 @@ class MusicHandler(object):
             if 'logical_groups' in _status.keys():
                 logical_groups = _status['logical_groups']
                 for lgk, lg in logical_groups.iteritems():
-                    if lgk in ensurekey(json_resource, 'logical_groups').keys():
+                    keys = ensurekey(json_resource, 'logical_groups').keys()
+                    if lgk in keys:
                         del json_resource['logical_groups'][lgk]
                     json_resource['logical_groups'][lgk] = lg
 
@@ -612,7 +622,8 @@ class MusicHandler(object):
                             vm["host"] = _host
                             self.logger.warn("db: conflicted placement "
                                              "decision from Ostro")
-                            # TODO(GY): affinity, diversity, exclusivity validation check
+                            # TODO(GY): affinity, diversity, exclusivity
+                            # validation check
                             updated = True
                     else:
                         vm["status"] = "scheduled"
@@ -668,8 +679,8 @@ class MusicHandler(object):
                 self.logger.error("MusicHandler.update_vm_info: vm is missing "
                                   "from stack")
         else:
-            self.logger.warn("MusicHandler.update_vm_info: not found stack for "
-                             "update = " + _s_uuid)
+            self.logger.warn("MusicHandler.update_vm_info: not found "
+                             "stack for update = " + _s_uuid)
 
         if updated is True:
             if self.add_app(_s_uuid, json_app) is False:

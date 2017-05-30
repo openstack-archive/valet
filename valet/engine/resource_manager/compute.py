@@ -12,13 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Compute."""
+import traceback
 
 from novaclient import client as nova_client
 from oslo_config import cfg
-from resource_base import Host, LogicalGroup, Flavor
-import traceback
+
+from resource_base import Flavor
+from resource_base import Host
+from resource_base import LogicalGroup
+
 
 # Nova API v2
 VERSION = 2
@@ -205,7 +207,7 @@ class Compute(object):
         return "success"
 
     def _set_resources(self, _hosts):
-        ''' returns Hypervisor list '''
+        '''Returns Hypervisor list '''
 
         host_list = self.nova.hypervisors.list()
 
@@ -252,7 +254,7 @@ class Compute(object):
             return error_status
 
     def _set_flavors(self, _flavors):
-        ''' get a list of all flavors '''
+        '''Get a list of all flavors.'''
 
         flavor_list = self.nova.flavors.list()
 
@@ -280,7 +282,8 @@ class Compute(object):
                     if sw != '':
                         swap_mb = float(sw)
 
-                flavor.disk_cap = root_gb + ephemeral_gb + swap_mb / float(1024)
+                flavor.disk_cap = (
+                    root_gb + ephemeral_gb + swap_mb / float(1024))
                 _flavors[flavor.name] = flavor
 
         except (ValueError, KeyError, TypeError):

@@ -12,15 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Groups."""
-
 import mock
 import pecan
+
 from valet.api.db.models.music.groups import Group
-from valet.api.db.models.music import Query, Results
+from valet.api.db.models.music import Query
+from valet.api.db.models.music import Results
 import valet.api.v1.controllers.groups as groups
-from valet.api.v1.controllers.groups import GroupsController, MembersController, GroupsItemController, MembersItemController
+from valet.api.v1.controllers.groups import GroupsController
+from valet.api.v1.controllers.groups import GroupsItemController
+from valet.api.v1.controllers.groups import MembersController
+from valet.api.v1.controllers.groups import MembersItemController
 from valet.tests.unit.api.v1.api_base import ApiBase
 
 
@@ -92,7 +94,8 @@ class TestGroups(ApiBase):
         self.validate_test(
             self.groups_item_controller.allow() == "GET,PUT,DELETE")
 
-        self.validate_test(self.members_item_controller.allow() == "GET,DELETE")
+        self.validate_test(
+            self.members_item_controller.allow() == "GET,DELETE")
 
     @mock.patch.object(groups, 'error', ApiBase.mock_error)
     @mock.patch.object(groups, 'request')
@@ -164,7 +167,8 @@ class TestGroups(ApiBase):
 
     @mock.patch.object(groups, 'tenant_servers_in_group')
     @mock.patch.object(groups, 'request')
-    def test_index_delete_member_item_controller(self, mock_request, mock_func):
+    def test_index_delete_member_item_controller(self, mock_request,
+                                                 mock_func):
         """Members_item_controller index_delete, check status and members."""
         grp = Group("test_name", "test_description", "test_type", None)
         grp.members = ["demo members"]
@@ -214,7 +218,8 @@ class TestGroups(ApiBase):
                                                "test_description",
                                                "test_type",
                                                None)}
-        r = self.groups_item_controller.index_put(description="new description")
+        r = self.groups_item_controller.index_put(
+            description="new description")
 
         self.validate_test(groups.response.status == 201)
         self.validate_test(r.description == "new description")
@@ -269,16 +274,18 @@ class TestGroups(ApiBase):
         self.members_item_controller.index_get()
         self.validate_test(groups.response.status == 204)
 
-        self.validate_test("test_name" in item_controller_response["group"].name)
+        self.validate_test(
+            "test_name" in item_controller_response["group"].name)
         self.validate_test(len(response) == 1)
         self.validate_test(len(response["groups"]) == len(all_groups))
         self.validate_test(all_groups == response["groups"])
 
     def test_index_post(self):
         """Test group_controller index_post, check status and name."""
-        group = self.groups_controller.index_post(name="testgroup",
-                                                  description="test description",
-                                                  type="testtype")
+        group = self.groups_controller.index_post(
+            name="testgroup",
+            description="test description",
+            type="testtype")
 
         self.validate_test(groups.response.status == 201)
         self.validate_test(group.name == "testgroup")

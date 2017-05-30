@@ -64,13 +64,16 @@ class AppHandler(object):
         if action == "create":
             decision_key = stack_id + ":" + action + ":none"
             if decision_key in self.decision_history.keys():
-                return (decision_key, self.decision_history[decision_key].result)
+                return (decision_key,
+                        self.decision_history[decision_key].result)
             else:
                 return (decision_key, None)
         elif action == "replan":
-            decision_key = stack_id + ":" + action + ":" + _app["orchestration_id"]
+            msg = "%s:%s:%s"
+            decision_key = msg % (stack_id, action, _app["orchestration_id"])
             if decision_key in self.decision_history.keys():
-                return (decision_key, self.decision_history[decision_key].result)
+                return (decision_key,
+                        self.decision_history[decision_key].result)
             else:
                 return (decision_key, None)
         else:
@@ -92,7 +95,8 @@ class AppHandler(object):
         count = 0
         num_of_removes = len(self.decision_history) - self.min_decision_history
         remove_item_list = []
-        for decision in (sorted(self.decision_history.values(), key=operator.attrgetter('timestamp'))):
+        for decision in (sorted(self.decision_history.values(),
+                         key=operator.attrgetter('timestamp'))):
             remove_item_list.append(decision.decision_key)
             count += 1
             if count == num_of_removes:
@@ -127,7 +131,8 @@ class AppHandler(object):
                                                    app_topology, action)
             if re_app is None:
                 self.apps[stack_id] = None
-                self.status = "cannot locate the original plan for stack = " + stack_id
+                msg = "cannot locate the original plan for stack = %s"
+                self.status = msg % stack_id
                 return None
 
             if action == "replan":
@@ -171,13 +176,17 @@ class AppHandler(object):
             if isinstance(v, VM):
                 if self.apps[v.app_uuid].request_type == "replan":
                     if v.uuid in _app_topology.planned_vm_map.keys():
-                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "replanned")
+                        self.apps[v.app_uuid].add_vm(
+                            v, _placement_map[v], "replanned")
                     else:
-                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "scheduled")
+                        self.apps[v.app_uuid].add_vm(
+                            v, _placement_map[v], "scheduled")
                     if v.uuid == _app_topology.candidate_list_map.keys()[0]:
-                        self.apps[v.app_uuid].add_vm(v, _placement_map[v], "replanned")
+                        self.apps[v.app_uuid].add_vm(
+                            v, _placement_map[v], "replanned")
                 else:
-                    self.apps[v.app_uuid].add_vm(v, _placement_map[v], "scheduled")
+                    self.apps[v.app_uuid].add_vm(
+                        v, _placement_map[v], "scheduled")
             # NOTE(GJ): do not handle Volume in this version
             else:
                 if _placement_map[v] in self.resource.hosts.keys():
@@ -226,7 +235,8 @@ class AppHandler(object):
 
         return True
 
-    def _regenerate_app_topology(self, _stack_id, _app, _app_topology, _action):
+    def _regenerate_app_topology(self, _stack_id, _app,
+                                 _app_topology, _action):
         re_app = {}
 
         old_app = self.db.get_app_info(_stack_id)
@@ -257,23 +267,22 @@ class AppHandler(object):
                     properties["availability_zone"] = vm["availability_zones"]
                 resources[vmk]["properties"] = properties
 
-                if len(vm["diversity_groups"]) > 0:
-                    for divk, level_name in vm["diversity_groups"].iteritems():
-                        div_id = divk + ":" + level_name
-                        if div_id not in diversity_groups.keys():
-                            diversity_groups[div_id] = []
-                        diversity_groups[div_id].append(vmk)
+                for divk, level_name in vm["diversity_groups"].iteritems():
+                    div_id = divk + ":" + level_name
+                    if div_id not in diversity_groups.keys():
+                        diversity_groups[div_id] = []
+                    diversity_groups[div_id].append(vmk)
 
-                if len(vm["exclusivity_groups"]) > 0:
-                    for exk, level_name in vm["exclusivity_groups"].iteritems():
-                        ex_id = exk + ":" + level_name
-                        if ex_id not in exclusivity_groups.keys():
-                            exclusivity_groups[ex_id] = []
-                        exclusivity_groups[ex_id].append(vmk)
+                for exk, level_name in vm["exclusivity_groups"].iteritems():
+                    ex_id = exk + ":" + level_name
+                    if ex_id not in exclusivity_groups.keys():
+                        exclusivity_groups[ex_id] = []
+                    exclusivity_groups[ex_id].append(vmk)
 
                 if _action == "replan":
                     if vmk == _app["orchestration_id"]:
-                        _app_topology.candidate_list_map[vmk] = _app["locations"]
+                        _app_topology.candidate_list_map[vmk] = \
+                            _app["locations"]
                     elif vmk in _app["exclusions"]:
                         _app_topology.planned_vm_map[vmk] = vm["host"]
                     if vm["status"] == "replanned":
@@ -320,11 +329,12 @@ class AppHandler(object):
                             exclusivity_groups[ex_id] = []
                         exclusivity_groups[ex_id].append(gk)
 
+        group_type = "ATT::Valet::GroupAssignment"
+
         for div_id, resource_list in diversity_groups.iteritems():
             divk_level_name = div_id.split(":")
             resources[divk_level_name[0]] = {}
-            resources[divk_level_name[0]]["type"] = \
-                "ATT::Valet::GroupAssignment"
+            resources[divk_level_name[0]]["type"] = group_type
             properties = {}
             properties["group_type"] = "diversity"
             properties["group_name"] = divk_level_name[2]
@@ -335,7 +345,7 @@ class AppHandler(object):
         for ex_id, resource_list in exclusivity_groups.iteritems():
             exk_level_name = ex_id.split(":")
             resources[exk_level_name[0]] = {}
-            resources[exk_level_name[0]]["type"] = "ATT::Valet::GroupAssignment"
+            resources[exk_level_name[0]]["type"] = group_type
             properties = {}
             properties["group_type"] = "exclusivity"
             properties["group_name"] = exk_level_name[2]
