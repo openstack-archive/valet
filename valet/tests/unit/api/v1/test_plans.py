@@ -43,7 +43,7 @@ class TestPlans(ApiBase):
         try:
             PlansItemController("uuid4")
         except Exception as e:
-            self.validate_test("'str' object has no attribute 'id'" in e)
+            self.validate_test("'str' object has no attribute 'id'" in str(e))
         self.validate_test("Plan not found" in ApiBase.response)
 
         mock_filter.return_value = Results([Plan("test_name",
