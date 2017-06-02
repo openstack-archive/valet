@@ -16,11 +16,11 @@
 """Ostro helper library."""
 
 import json
+import time
+import uuid
 
 from pecan import conf
-import time
 
-import uuid
 from valet.api.common.i18n import _
 from valet.api.db.models.music.groups import Group
 from valet.api.db.models.music.ostro import PlacementRequest
@@ -77,7 +77,7 @@ class Ostro(object):
     def _build_uuid_map(cls, resources):
         """Build a dict mapping names to UUIDs."""
         mapping = {}
-        for key in resources.iterkeys():
+        for key in resources:
             if 'name' in resources[key]:
                 name = resources[key]['name']
                 mapping[name] = key
@@ -86,7 +86,7 @@ class Ostro(object):
     @classmethod
     def _sanitize_resources(cls, resources):
         """Ensure lowercase keys at the top level of each resource."""
-        for res in resources.itervalues():
+        for res in resources.values():
             for key in list(res.keys()):
                 if not key.islower():
                     res[key.lower()] = res.pop(key)
@@ -100,7 +100,7 @@ class Ostro(object):
     def _map_names_to_uuids(self, mapping, data):
         """Map resource names to their UUID equivalents."""
         if isinstance(data, dict):
-            for key in data.iterkeys():
+            for key in data:
                 if key != 'name':
                     data[key] = self._map_names_to_uuids(mapping, data[key])
         elif isinstance(data, list):
@@ -160,7 +160,7 @@ class Ostro(object):
         is not a group member. Returns None if ok.
         """
         message = None
-        for res in resources.itervalues():
+        for res in resources.values():
             res_type = res.get('type')
             if res_type == GROUP_ASSIGNMENT:
                 properties = res.get('properties')
@@ -256,7 +256,7 @@ class Ostro(object):
         """Return true if request has at least one serviceable resource."""
         # TODO(JD): Ostro should return no placements vs throw an error.
         resources = self.request.get('resources', {})
-        for res in resources.itervalues():
+        for res in resources.values():
             res_type = res.get('type')
             if res_type and res_type in SERVICEABLE_RESOURCES:
                 return True
