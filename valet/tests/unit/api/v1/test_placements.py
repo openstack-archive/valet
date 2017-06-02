@@ -44,7 +44,7 @@ class TestPlacements(ApiBase):
         try:
             PlacementsItemController("uuid4")
         except Exception as e:
-            self.validate_test("'str' object has no attribute 'id'" in e)
+            self.validate_test("'str' object has no attribute 'id'" in str(e))
         self.validate_test("Placement not found" in ApiBase.response)
 
         mock_filter.return_value = Results([
