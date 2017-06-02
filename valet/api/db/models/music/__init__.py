@@ -14,17 +14,17 @@
 # limitations under the License.
 
 """Music ORM - Common Methods"""
+import os
+import pkgutil
+import uuid
 
 from abc import ABCMeta
 from abc import abstractmethod
 from importlib import import_module
 import inspect
-import os
-import pkgutil
-import uuid
-
 from pecan import conf
 import six
+from six.moves import builtins
 
 from valet import api
 from valet.api.common.i18n import _
@@ -204,7 +204,7 @@ class Query(object):
         """Initializer"""
         if inspect.isclass(model):
             self.model = model
-        elif isinstance(model, basestring):
+        elif isinstance(model, builtins.str):
             self.model = get_class(model)
         assert inspect.isclass(self.model)
 
@@ -253,7 +253,7 @@ class Query(object):
             # *Iff* a secondary key has been manually made via cql, e.g.:
             #   CREATE INDEX ON keyspace.table (field);
             # and that field/value is the only one in kwargs, we'll try it.
-            key = kwargs.keys()[0]
+            key = list(kwargs)[0]
             value = kwargs[key]
             try:
                 filtered_items = self.all_matching_key(key=key, value=value)
