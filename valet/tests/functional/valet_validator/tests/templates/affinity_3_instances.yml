@@ -1,0 +1,56 @@
+heat_template_version: 2015-04-30
+
+description: Create stack – host level affinity – 3 Instances
+
+resources:
+
+  my-instance-1:
+    type: OS::Nova::Server
+    properties:
+      name: test-1
+    #  key_name: ssh-key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+     # networks:
+      #  - network: 0c405776-0c37-4212-a814-e8aa539b32b5
+
+  my-instance-2:
+    type: OS::Nova::Server
+    properties:
+      name: test-2
+      #key_name: ssh-key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+      #networks:
+       # - network: 0c405776-0c37-4212-a814-e8aa539b32b5
+
+  my-instance-3:
+    type: OS::Nova::Server
+    properties:
+      name: test-3
+     # key_name: ssh-key
+      image: cirros-0.3.4-x86_64
+      flavor: m1.tiny
+     # networks:
+       # - network: 0c405776-0c37-4212-a814-e8aa539b32b5
+
+  test-affinity-group1:
+    type: ATT::Valet::GroupAssignment
+    properties:
+      group_type: affinity
+      level: host
+      resources:
+      - {get_resource: my-instance-1}
+      - {get_resource: my-instance-2}
+      - {get_resource: my-instance-3}
+  
+outputs:
+  instance_ip-1:
+    description: The IP addresses of the deployed instance 1
+    value: { get_attr: [my-instance-1, first_address] }
+  instance_ip-2:
+    description: The IP addresses of the deployed instance 2
+    value: { get_attr: [my-instance-2, first_address] }
+  instance_ip-3:
+    description: The IP addresses of the deployed instance 3
+    value: { get_attr: [my-instance-3, first_address] }
