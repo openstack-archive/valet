@@ -12,10 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import oslo_i18n as i18n
 
-"""i18n library."""
+DOMAIN = 'valet'
 
-import gettext
+_translators = i18n.TranslatorFactory(domain=DOMAIN)
 
-# TODO(jdandrea): Use oslo_i18n.TranslatorFactory
-_ = gettext.gettext
+# The primary translation function using the well-known name "_"
+_ = _translators.primary
+
+
+def translate(value, user_locale=None):
+    return i18n.translate(value, user_locale)
+
+
+def get_available_languages():
+    return i18n.get_available_languages(DOMAIN)
