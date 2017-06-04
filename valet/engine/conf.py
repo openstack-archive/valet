@@ -16,7 +16,6 @@ import sys
 
 from oslo_config import cfg
 
-from valet.common import conf as common
 from valet.common import logger_conf
 
 
@@ -94,12 +93,3 @@ listener_opts = [
     cfg.BoolOpt('auto_delete', default=False),
     cfg.BoolOpt('store', default=True),
 ] + logger_conf("ostro_listener")
-
-
-def init_engine(default_config_files=None):
-    """Register the engine and the listener groups """
-    common.init_conf("engine.log", args=sys.argv[1:],
-                     grp2opt={engine_group: engine_opts,
-                     listener_group: listener_opts},
-                     cli_opts=[ostro_cli_opts],
-                     default_config_files=default_config_files)
