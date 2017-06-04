@@ -23,7 +23,6 @@ from oslo_config import cfg
 
 from valet.common.conf import get_logger
 from valet.common.music import REST
-from valet.engine.conf import init_engine
 
 CONF = cfg.CONF
 LOG = get_logger(__name__)
@@ -144,7 +143,11 @@ if __name__ == "__main__":
 
     respondent_id = None
     code = 0
+<<<<<<< HEAD
     init_engine(default_config_files=['/etc/valet/valet.conf'])
+=======
+    logger = get_logger("ostro_daemon")
+>>>>>>> c44d85a... Centralized configuration and auto generation
 
     if os.path.exists(CONF.engine.pid):
         respondent_id = HealthCheck().ping()
