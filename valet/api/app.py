@@ -23,7 +23,6 @@ from valet.api.common import identity
 from valet.api.common import messaging
 from valet.api.db import models
 from valet.common.conf import get_logger
-from valet.common.conf import init_conf
 
 
 def setup_app(config):
@@ -41,7 +40,6 @@ def setup_app(config):
 # entry point for apache2
 def load_app(config_file):
     """App Load."""
-    init_conf("api.log")
     api.LOG = get_logger("api")
 
     return deploy(config_file)
