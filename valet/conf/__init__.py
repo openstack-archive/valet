@@ -1,6 +1,3 @@
-#
-# Copyright 2014-2017 AT&T Intellectual Property
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,18 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Config."""
+from oslo_config import cfg
 
-from valet.tests.base import Base
+from valet.conf import engine
+from valet.conf import music
+from valet.conf import server
 
 
-class TestConfig(Base):
-    """Unit tests for Valet.engine.optimizer.ostro_server.configuration."""
+CONF = cfg.CONF
 
-    def setUp(self):
-        """Setup Test Config Testing Class."""
-        super(TestConfig, self).setUp()
-
-    def test_unhappy_config_io(self):
-        """Test unhappy.cfg I/O and validate I/O error in config status."""
-        pass
+engine.register_opts(CONF)
+music.register_opts(CONF)
+server.register_opts(CONF)
