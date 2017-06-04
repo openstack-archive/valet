@@ -1,6 +1,3 @@
-#
-# Copyright 2014-2017 AT&T Intellectual Property
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -13,18 +10,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Config."""
+from oslo_config import cfg
 
-from valet.tests.base import Base
+server_options = [
+    cfg.StrOpt(
+        'host',
+        default='0.0.0.0',
+        help="""
+    IP address or FQDN used to contact the MUSIC service.
+    Strings can be given in the format "localhost:8080, ip2:8080,host3:8080".
+    """),
+    cfg.PortOpt(
+        'port',
+        default=8090,
+        help='Port Opened to allow messages to the MUSIC REST service.'
+    )
+]
 
 
-class TestConfig(Base):
-    """Unit tests for Valet.engine.optimizer.ostro_server.configuration."""
+def register_opts(conf):
+    conf.register_opts(server_options)
 
-    def setUp(self):
-        """Setup Test Config Testing Class."""
-        super(TestConfig, self).setUp()
 
-    def test_unhappy_config_io(self):
-        """Test unhappy.cfg I/O and validate I/O error in config status."""
-        pass
+def list_opts():
+    return {'server': server_options}
