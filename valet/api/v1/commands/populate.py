@@ -24,7 +24,6 @@ from valet.api.db.models.music.ostro import PlacementResult
 from valet.api.db.models.music.placements import Placement
 from valet.api.db.models.music.plans import Plan
 from valet.common.conf import get_logger
-from valet.common.conf import init_conf
 
 
 class PopulateCommand(BaseCommand):
@@ -34,7 +33,6 @@ class PopulateCommand(BaseCommand):
         """Function creates and initializes database and environment."""
         super(PopulateCommand, self).run(args)
         try:
-            init_conf("populate.log")
             LOG = api.LOG = get_logger("populate")
             LOG.info(_("Loading environment"))
             self.load_app()

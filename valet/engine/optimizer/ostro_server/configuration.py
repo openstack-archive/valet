@@ -29,7 +29,6 @@ class Config(object):
     """Valet Engine Server Configuration."""
 
     def __init__(self, *default_config_files):
-        init_engine(default_config_files=default_config_files)
 
         # System parameters
         self.root_loc = os.path.dirname(CONF.default_config_files[0])
