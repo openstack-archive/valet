@@ -36,7 +36,7 @@ class NotificationEndpoint(object):
         """Error."""
         None
 
-transport = oslo_messaging.get_transport(cfg.CONF)
+transport = oslo_messaging.get_notification_transport(cfg.CONF)
 targets = [oslo_messaging.Target(topic='notifications')]
 endpoints = [NotificationEndpoint()]
 

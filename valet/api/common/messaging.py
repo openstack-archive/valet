@@ -23,7 +23,7 @@ from pecan import conf
 def _messaging_notifier_from_config(config):
     """Initialize the messaging engine based on supplied config."""
     transport_url = config.get('transport_url')
-    transport = messaging.get_transport(cfg.CONF, transport_url)
+    transport = messaging.get_notification_transport(cfg.CONF, transport_url)
     notifier = messaging.Notifier(transport, driver='messaging',
                                   publisher_id='valet',
                                   topic='notifications', retry=10)
