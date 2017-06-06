@@ -13,16 +13,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Daemon foe Valet Engine."""
-
 import os
 import sys
 import traceback
+
+from oslo_log import log
+
 from valet.common.conf import get_logger
 from valet.engine.optimizer.ostro.ostro import Ostro
 from valet.engine.optimizer.ostro_server.configuration import Config
 from valet.engine.optimizer.ostro_server.daemon import Daemon
+
+LOG = log.getLogger(__name__)
 
 
 class OstroDaemon(Daemon):
@@ -30,7 +32,7 @@ class OstroDaemon(Daemon):
 
     def run(self):
         """Run the daemon."""
-        self.logger.info("##### Valet Engine is launched #####")
+        LOG.info("##### Valet Engine is launched #####")
         try:
             ostro = Ostro(config, self.logger)
         except Exception:
