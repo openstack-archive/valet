@@ -16,19 +16,20 @@ Prior to installation:
 * Access to a [valet-api](https://github.com/att-comdev/valet/blob/master/doc/valet_api.md) endpoint
 
 Throughout this document, the following installation-specific items are required. Have values for these prepared and ready before continuing. Suggestions for values are provided in this document where applicable.
+::
 
-| Name | Description | Example |
-|------|-------------|-------|
-| ``USER`` | User id | ``user1234`` |
-| ``$VENV`` | Python virtual environment path (if any) | ``/etc/valet/venv`` |
-| ``$VALET_OS_PATH`` | Local git repository's ``valet_os`` directory | ``/home/user1234/git/valet/valet_os`` |
-| ``$VALET_HOST`` | valet-api hostname | ``localhost`` |
-| ``$VALET_USERNAME`` | OpenStack placement service username | ``valet`` |
-| ``$VALET_PASSWORD`` | OpenStack placement service password | |
-| ``$VALET_TENANT_NAME`` | OpenStack placement service default tenant | ``service`` |
-| ``$VALET_FAILURE_MODE`` | Desired failure mode for Nova ValetFilter | ``reject`` |
-| ``$KEYSTONE_AUTH_API`` | Keystone Auth API publicurl endpoint | ``http://controller:5000/`` |
-| ``$KEYSTONE_REGION`` | Keystone Region | ``RegionOne`` |
+    | Name | Description | Example |
+    |------|-------------|-------|
+    | ``USER`` | User id | ``user1234`` |
+    | ``$VENV`` | Python virtual environment path (if any) | ``/etc/valet/venv`` |
+    | ``$VALET_OS_PATH`` | Local git repository's ``valet_os`` directory | ``/home/user1234/git/valet/valet_os`` |
+    | ``$VALET_HOST`` | valet-api hostname | ``localhost`` |
+    | ``$VALET_USERNAME`` | OpenStack placement service username | ``valet`` |
+    | ``$VALET_PASSWORD`` | OpenStack placement service password | |
+    | ``$VALET_TENANT_NAME`` | OpenStack placement service default tenant | ``service`` |
+    | ``$VALET_FAILURE_MODE`` | Desired failure mode for Nova ValetFilter | ``reject`` |
+    | ``$KEYSTONE_AUTH_API`` | Keystone Auth API publicurl endpoint | ``http://controller:5000/`` |
+    | ``$KEYSTONE_REGION`` | Keystone Region | ``RegionOne`` |
 
 Root or sufficient sudo privileges are required for some steps.
 

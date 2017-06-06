@@ -4,7 +4,6 @@ Welcome to Valet's documentation!
 .. toctree::
    :maxdepth: 1
 
-   devstack
    contributing
 
 Indices and tables
