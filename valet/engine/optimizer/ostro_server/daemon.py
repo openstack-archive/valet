@@ -17,12 +17,15 @@
 
 import atexit
 import os
-from oslo_config import cfg
-from signal import SIGTERM
 import sys
 import time
 
+from oslo_config import cfg
+from oslo_log import log
+from signal import SIGTERM
+
 CONF = cfg.CONF
+LOG = log.getLogger(__name__)
 
 
 class Daemon(object):
@@ -31,7 +34,7 @@ class Daemon(object):
     """Usage: subclass the Daemon class and override the run() method
     """
 
-    def __init__(self, priority, pidfile, logger, stdin='/dev/null',
+    def __init__(self, priority, pidfile, stdin='/dev/null',
                  stdout='/dev/null', stderr='/dev/null'):
         """Initialization."""
         self.stdin = stdin
@@ -39,7 +42,6 @@ class Daemon(object):
         self.stderr = stderr
         self.pidfile = pidfile
         self.priority = priority
-        self.logger = logger
 
     def daemonize(self):
         """Do the UNIX double-fork magic."""
@@ -53,7 +55,7 @@ class Daemon(object):
                 # exit first parent
                 sys.exit(0)
         except OSError as e:
-            self.logger.error("Daemon error at step1: " + e.strerror)
+            LOG.error("Daemon error at step1: " + e.strerror)
             sys.stderr.write("fork #1 failed: %d (%s)\n" %
                              (e.errno, e.strerror))
             sys.exit(1)
@@ -70,7 +72,7 @@ class Daemon(object):
                 # exit from second parent
                 sys.exit(0)
         except OSError as e:
-            self.logger.error("Daemon error at step2: " + e.strerror)
+            LOG.error("Daemon error at step2: " + e.strerror)
             sys.stderr.write("fork #2 failed: %d (%s)\n" %
                              (e.errno, e.strerror))
             sys.exit(1)

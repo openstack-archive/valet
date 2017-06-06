@@ -16,9 +16,13 @@
 """Topology class - performs actual setting up of Topology object."""
 
 import copy
+
+from oslo_log import log
 from sre_parse import isdigit
 
 from valet.engine.resource_manager.resource_base import HostGroup
+
+LOG = log.getLogger(__name__)
 
 
 class Topology(object):
@@ -27,10 +31,9 @@ class Topology(object):
     currently, using cannonical naming convention to find the topology
     """
 
-    def __init__(self, _config, _logger):
+    def __init__(self, _config):
         """Init config and logger."""
         self.config = _config
-        self.logger = _logger
 
     # Triggered by rhosts change
     def set_topology(self, _datacenter, _host_groups, _hosts, _rhosts):
@@ -52,7 +55,7 @@ class Topology(object):
 
             (region_name, rack_name, _, status) = self._set_layout_by_name(rhk)
             if status != "success":
-                self.logger.warn(status + " in host_name (" + rhk + ")")
+                LOG.warning(status + " in host_name (" + rhk + ")")
 
             if region_name not in _datacenter.region_code_list:
                 _datacenter.region_code_list.append(region_name)
@@ -76,10 +79,10 @@ class Topology(object):
             _datacenter.resources[hgk] = hg
 
         if len(_datacenter.region_code_list) > 1:
-            self.logger.warn("more than one region code")
+            LOG.warning("more than one region code")
 
         if "none" in _host_groups.keys():
-            self.logger.warn("some hosts are into unknown rack")
+            LOG.warning("some hosts are into unknown rack")
 
         return "success"
 

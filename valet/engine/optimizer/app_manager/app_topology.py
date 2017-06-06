@@ -24,7 +24,7 @@ class AppTopology(object):
     calculating and setting optimization.
     """
 
-    def __init__(self, _resource, _logger):
+    def __init__(self, _resource):
         """Init App Topology Class."""
         self.vgroups = {}
         self.vms = {}
@@ -38,14 +38,13 @@ class AppTopology(object):
         self.exclusion_list_map = {}
 
         self.resource = _resource
-        self.logger = _logger
 
         # restriction of host naming convention
         high_level_allowed = True
         if "none" in self.resource.datacenter.region_code_list:
             high_level_allowed = False
 
-        self.parser = Parser(high_level_allowed, self.logger)
+        self.parser = Parser(high_level_allowed)
 
         self.total_CPU = 0
         self.total_mem = 0

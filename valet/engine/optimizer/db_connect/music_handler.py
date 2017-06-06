@@ -17,8 +17,13 @@
 
 import json
 import operator
+
+from oslo_log import log
+
 from valet.common.music import Music
 from valet.engine.optimizer.db_connect.event import Event
+
+LOG = log.getLogger(__name__)
 
 
 def ensurekey(d, k):
@@ -33,21 +38,19 @@ class MusicHandler(object):
     database for valet and returns/deletes/updates objects within it.
     """
 
-    def __init__(self, _config, _logger):
+    def __init__(self, _config):
         """Init Music Handler."""
         self.config = _config
-        self.logger = _logger
 
         self.music = Music(
             hosts=self.config.hosts, port=self.config.port,
             replication_factor=self.config.replication_factor,
-            music_server_retries=self.config.music_server_retries,
-            logger=self.logger)
+            music_server_retries=self.config.music_server_retries)
         if self.config.hosts is not None:
-            self.logger.info("DB: music host = %s", self.config.hosts)
+            LOG.info("DB: music host = %s", self.config.hosts)
         if self.config.replication_factor is not None:
-            self.logger.info("DB: music replication factor = %s ",
-                             str(self.config.replication_factor))
+            LOG.info("DB: music replication factor = %s ",
+                     str(self.config.replication_factor))
 
     # FIXME(GJ): this may not need
     def init_db(self):
@@ -57,12 +60,12 @@ class MusicHandler(object):
         necessary tables with the proper schemas in Music using API calls.
         Return True if no exceptions are caught.
         """
-        self.logger.info("MusicHandler.init_db: create table")
+        LOG.info("MusicHandler.init_db: create table")
 
         try:
             self.music.create_keyspace(self.config.db_keyspace)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         schema = {
@@ -74,7 +77,7 @@ class MusicHandler(object):
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_request_table, schema)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         schema = {
@@ -86,7 +89,7 @@ class MusicHandler(object):
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_response_table, schema)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         schema = {
@@ -100,7 +103,7 @@ class MusicHandler(object):
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_event_table, schema)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         schema = {
@@ -112,7 +115,7 @@ class MusicHandler(object):
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_resource_table, schema)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         schema = {
@@ -124,7 +127,7 @@ class MusicHandler(object):
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_app_table, schema)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         schema = {
@@ -137,7 +140,7 @@ class MusicHandler(object):
             self.music.create_table(self.config.db_keyspace,
                                     self.config.db_uuid_table, schema)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         return True
@@ -157,7 +160,7 @@ class MusicHandler(object):
             events = self.music.read_all_rows(self.config.db_keyspace,
                                               self.config.db_event_table)
         except Exception as e:
-            self.logger.error("DB:event: " + str(e))
+            LOG.error("DB:event: " + str(e))
             # FIXME(GJ): return None?
             return {}
 
@@ -168,13 +171,13 @@ class MusicHandler(object):
                 method = row['method']
                 args_data = row['args']
 
-                self.logger.debug("MusicHandler.get_events: event (" +
-                                  event_id + ") is entered")
+                LOG.debug("MusicHandler.get_events: event (" +
+                          event_id + ") is entered")
 
                 if exchange != "nova":
                     if self.delete_event(event_id) is False:
                         return None
-                    self.logger.debug(
+                    LOG.debug(
                         "MusicHandler.get_events: event exchange "
                         "(" + exchange + ") is not supported")
                     continue
@@ -183,23 +186,23 @@ class MusicHandler(object):
                                                            'instance':
                     if self.delete_event(event_id) is False:
                         return None
-                    self.logger.debug("MusicHandler.get_events: event method "
-                                      "(" + method + ") is not considered")
+                    LOG.debug("MusicHandler.get_events: event method "
+                              "(" + method + ") is not considered")
                     continue
 
                 if len(args_data) == 0:
                     if self.delete_event(event_id) is False:
                         return None
-                    self.logger.debug("MusicHandler.get_events: "
-                                      "event does not have args")
+                    LOG.debug("MusicHandler.get_events: "
+                              "event does not have args")
                     continue
 
                 try:
                     args = json.loads(args_data)
                 except (ValueError, KeyError, TypeError):
-                    self.logger.warn("MusicHandler.get_events: error while "
-                                     "decoding to JSON event = " + method +
-                                     ":" + event_id)
+                    LOG.warning("MusicHandler.get_events: error while "
+                                "decoding to JSON event = " + method +
+                                ":" + event_id)
                     continue
 
                 # TODO(lamt) this block of code can use refactoring
@@ -227,11 +230,11 @@ class MusicHandler(object):
                                             event_list.append(e)
                                         else:
                                             msg = "unknown vm_state = %s"
-                                            self.logger.warn(
+                                            LOG.warning(
                                                 msg % change_data["vm_state"])
                                             if 'uuid' in change_data.keys():
                                                 msg = "    uuid = %s"
-                                                self.logger.warn(
+                                                LOG.warning(
                                                     msg % change_data['uuid'])
                                             if not self.delete_event(event_id):
                                                 return None
@@ -296,20 +299,20 @@ class MusicHandler(object):
                        e.host is None or e.host == "none" or \
                        e.vcpus == -1 or e.mem == -1:
                         error_event_list.append(e)
-                        self.logger.warn("MusicHandler.get_events: data "
-                                         "missing in instance object event")
+                        LOG.warning("MusicHandler.get_events: data "
+                                    "missing in instance object event")
 
                 elif e.object_name == 'ComputeNode':
                     if e.host is None or e.host == "none":
                         error_event_list.append(e)
-                        self.logger.warn("MusicHandler.get_events: data "
-                                         "missing in compute object event")
+                        LOG.warning("MusicHandler.get_events: data "
+                                    "missing in compute object event")
 
             elif e.method == "build_and_run_instance":
                 if e.uuid is None or e.uuid == "none":
                     error_event_list.append(e)
-                    self.logger.warn("MusicHandler.get_events: data missing "
-                                     "in build event")
+                    LOG.warning("MusicHandler.get_events: data missing "
+                                "in build event")
 
         if len(error_event_list) > 0:
             event_list[:] = [
@@ -327,7 +330,7 @@ class MusicHandler(object):
                                              self.config.db_event_table,
                                              'timestamp', _event_id)
         except Exception as e:
-            self.logger.error("DB: while deleting event: " + str(e))
+            LOG.error("DB: while deleting event: " + str(e))
             return False
 
         return True
@@ -342,7 +345,7 @@ class MusicHandler(object):
             row = self.music.read_row(self.config.db_keyspace,
                                       self.config.db_uuid_table, 'uuid', _uuid)
         except Exception as e:
-            self.logger.error("DB: while reading uuid: " + str(e))
+            LOG.error("DB: while reading uuid: " + str(e))
             return None
 
         if len(row) > 0:
@@ -376,7 +379,7 @@ class MusicHandler(object):
             self.music.create_row(self.config.db_keyspace,
                                   self.config.db_uuid_table, data)
         except Exception as e:
-            self.logger.error("DB: while inserting uuid: " + str(e))
+            LOG.error("DB: while inserting uuid: " + str(e))
             return False
 
         return True
@@ -388,7 +391,7 @@ class MusicHandler(object):
                                              self.config.db_uuid_table, 'uuid',
                                              _k)
         except Exception as e:
-            self.logger.error("DB: while deleting uuid: " + str(e))
+            LOG.error("DB: while deleting uuid: " + str(e))
             return False
 
         return True
@@ -402,16 +405,16 @@ class MusicHandler(object):
             requests = self.music.read_all_rows(self.config.db_keyspace,
                                                 self.config.db_request_table)
         except Exception as e:
-            self.logger.error("DB: while reading requests: " + str(e))
+            LOG.error("DB: while reading requests: " + str(e))
             # FIXME(GJ): return None?
             return {}
 
         if len(requests) > 0:
-            self.logger.info("MusicHandler.get_requests: placement request "
-                             "arrived")
+            LOG.info("MusicHandler.get_requests: placement request "
+                     "arrived")
 
             for _, row in requests.iteritems():
-                self.logger.info("    request_id = " + row['stack_id'])
+                LOG.info("    request_id = " + row['stack_id'])
 
                 r_list = json.loads(row['request'])
                 for r in r_list:
@@ -431,8 +434,8 @@ class MusicHandler(object):
                 self.music.create_row(self.config.db_keyspace,
                                       self.config.db_response_table, data)
             except Exception as e:
-                self.logger.error("MUSIC error while putting placement "
-                                  "result: " + str(e))
+                LOG.error("MUSIC error while putting placement "
+                          "result: " + str(e))
                 return False
 
         for appk in _result.keys():
@@ -441,8 +444,8 @@ class MusicHandler(object):
                                                  self.config.db_request_table,
                                                  'stack_id', appk)
             except Exception as e:
-                self.logger.error("MUSIC error while deleting handled "
-                                  "request: " + str(e))
+                LOG.error("MUSIC error while deleting handled "
+                          "request: " + str(e))
                 return False
 
         return True
@@ -455,10 +458,10 @@ class MusicHandler(object):
         try:
             row = self.music.read_row(self.config.db_keyspace,
                                       self.config.db_resource_table,
-                                      'site_name', _k, self.logger)
+                                      'site_name', _k)
         except Exception as e:
-            self.logger.error("MUSIC error while reading resource status: " +
-                              str(e))
+            LOG.error("MUSIC error while reading resource status: " +
+                      str(e))
             return None
 
         if len(row) > 0:
@@ -475,8 +478,8 @@ class MusicHandler(object):
                                       self.config.db_resource_table,
                                       'site_name', _k)
         except Exception as e:
-            self.logger.error("MUSIC error while reading resource status: " +
-                              str(e))
+            LOG.error("MUSIC error while reading resource status: " +
+                      str(e))
             return False
 
         json_resource = {}
@@ -525,8 +528,8 @@ class MusicHandler(object):
                                                  self.config.db_resource_table,
                                                  'site_name', _k)
             except Exception as e:
-                self.logger.error("MUSIC error while deleting resource "
-                                  "status: " + str(e))
+                LOG.error("MUSIC error while deleting resource "
+                          "status: " + str(e))
                 return False
 
         else:
@@ -541,10 +544,10 @@ class MusicHandler(object):
             self.music.create_row(self.config.db_keyspace,
                                   self.config.db_resource_table, data)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
-        self.logger.info("DB: resource status updated")
+        LOG.info("DB: resource status updated")
 
         return True
 
@@ -555,7 +558,7 @@ class MusicHandler(object):
                 self.config.db_keyspace, self.config.db_app_table,
                 'stack_id', _k)
         except Exception as e:
-            self.logger.error("DB: while deleting app: " + str(e))
+            LOG.error("DB: while deleting app: " + str(e))
             return False
 
         if _app_data is not None:
@@ -568,7 +571,7 @@ class MusicHandler(object):
                 self.music.create_row(self.config.db_keyspace,
                                       self.config.db_app_table, data)
             except Exception as e:
-                self.logger.error("DB: while inserting app: " + str(e))
+                LOG.error("DB: while inserting app: " + str(e))
                 return False
 
         return True
@@ -583,7 +586,7 @@ class MusicHandler(object):
                                       self.config.db_app_table, 'stack_id',
                                       _s_uuid)
         except Exception as e:
-            self.logger.error("DB: while reading app info: " + str(e))
+            LOG.error("DB: while reading app info: " + str(e))
             return None
 
         if len(row) > 0:
@@ -606,7 +609,7 @@ class MusicHandler(object):
                                       self.config.db_app_table, 'stack_id',
                                       _s_uuid)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return None
 
         if len(row) > 0:
@@ -620,25 +623,25 @@ class MusicHandler(object):
                         if vm["host"] != _host:
                             vm["planned_host"] = vm["host"]
                             vm["host"] = _host
-                            self.logger.warn("db: conflicted placement "
-                                             "decision from Ostro")
+                            LOG.warning("db: conflicted placement "
+                                        "decision from Ostro")
                             # TODO(GY): affinity, diversity, exclusivity
                             # validation check
                             updated = True
                     else:
                         vm["status"] = "scheduled"
-                        self.logger.warn("DB: vm was deleted")
+                        LOG.warning("DB: vm was deleted")
                         updated = True
 
                     vm_info = vm
                     break
             else:
-                self.logger.error("MusicHandler.get_vm_info: vm is missing "
-                                  "from stack")
+                LOG.error("MusicHandler.get_vm_info: vm is missing "
+                          "from stack")
 
         else:
-            self.logger.warn("MusicHandler.get_vm_info: not found stack for "
-                             "update = " + _s_uuid)
+            LOG.warning("MusicHandler.get_vm_info: not found stack for "
+                        "update = " + _s_uuid)
 
         if updated is True:
             if self.add_app(_s_uuid, json_app) is False:
@@ -657,7 +660,7 @@ class MusicHandler(object):
                                       self.config.db_app_table, 'stack_id',
                                       _s_uuid)
         except Exception as e:
-            self.logger.error("DB: " + str(e))
+            LOG.error("DB: " + str(e))
             return False
 
         if len(row) > 0:
@@ -669,18 +672,18 @@ class MusicHandler(object):
                 if vmk == _h_uuid:
                     if vm["status"] != "deleted":
                         vm["status"] = "deleted"
-                        self.logger.warn("DB: deleted marked")
+                        LOG.warning("DB: deleted marked")
                         updated = True
                     else:
-                        self.logger.warn("DB: vm was already deleted")
+                        LOG.warning("DB: vm was already deleted")
 
                     break
             else:
-                self.logger.error("MusicHandler.update_vm_info: vm is missing "
-                                  "from stack")
+                LOG.error("MusicHandler.update_vm_info: vm is missing "
+                          "from stack")
         else:
-            self.logger.warn("MusicHandler.update_vm_info: not found "
-                             "stack for update = " + _s_uuid)
+            LOG.warning("MusicHandler.update_vm_info: not found "
+                        "stack for update = " + _s_uuid)
 
         if updated is True:
             if self.add_app(_s_uuid, json_app) is False:
