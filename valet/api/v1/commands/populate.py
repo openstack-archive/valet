@@ -17,12 +17,12 @@ from pecan.commands.base import BaseCommand
 from valet import api
 from valet.api.common.i18n import _
 from valet.api.db import models
-from valet.api.db.models import Event
-from valet.api.db.models import Group
-from valet.api.db.models import Placement
-from valet.api.db.models import PlacementRequest
-from valet.api.db.models import PlacementResult
-from valet.api.db.models import Plan
+from valet.api.db.models.music.ostro import Event
+from valet.api.db.models.music.groups import Group
+from valet.api.db.models.music.placements import Placement
+from valet.api.db.models.music.ostro import PlacementRequest
+from valet.api.db.models.music.ostro import PlacementResult
+from valet.api.db.models.music.plans import Plan
 from valet.common.conf import get_logger
 from valet.common.conf import init_conf
 

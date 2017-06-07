@@ -64,6 +64,7 @@ class Resource(object):
     def bootstrap_from_db(self, _resource_status):
         """Return True if bootsrap resource from database successful."""
         try:
+            self.logger.info("Resource status from DB = %s" % _resource_status)
             logical_groups = _resource_status.get("logical_groups")
             if logical_groups:
                 for lgk, lg in logical_groups.iteritems():

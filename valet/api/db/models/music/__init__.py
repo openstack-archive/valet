@@ -21,20 +21,23 @@ import inspect
 from pecan import conf
 import six
 import uuid
+import pkgutil
+import os
+from importlib import import_module
 
 from valet import api
 from valet.api.common.i18n import _
 from valet.common.music import Music
 
-
 def get_class(kls):
     """Returns a class given a fully qualified class name"""
-    parts = kls.split('.')
-    module = ".".join(parts[:-1])
-    mod = __import__(module)
-    for comp in parts[1:]:
-        mod = getattr(mod, comp)
-    return mod
+    pkg_path = os.path.dirname(__file__)
+    for _, mod_name, _ in pkgutil.iter_modules([pkg_path]):
+        mod = import_module('valet.api.db.models.music.'+mod_name)
+        cls = getattr(mod, kls, None)
+        if cls:
+            return cls
+    return None
 
 
 class abstractclassmethod(classmethod):  # pylint: disable=C0103,R0903
@@ -200,8 +203,7 @@ class Query(object):
         if inspect.isclass(model):
             self.model = model
         elif isinstance(model, basestring):
-            self.model = get_class(
-                'valet.api.db.models.music.placements.' + model)
+            self.model = get_class(model)
         assert inspect.isclass(self.model)
 
     def __kwargs(self):
