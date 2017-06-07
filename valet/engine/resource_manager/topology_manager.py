@@ -223,6 +223,7 @@ class TopologyManager(threading.Thread):
             self.logger.warn("TopologyManager: host_group (" + _rhg.name +
                              ") updated (enabled)")
 
+        if _hg.parent_resource != _rhg.parent_resource:
             if _hg.parent_resource.name in self.resource.host_groups.keys():
                 _rhg.parent_resource = \
                     self.resource.host_groups[_hg.parent_resource.name]
