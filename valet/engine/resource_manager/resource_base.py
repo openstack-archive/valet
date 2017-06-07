@@ -190,6 +190,10 @@ class HostGroup(object):
         for ck in self.child_resources.keys():
             child_list.append(ck)
 
+        parent_name = None
+        if self.parent_resource:
+            parent_name = self.parent_resource.name
+
         return {'status': self.status,
                 'host_type': self.host_type,
                 'membership_list': membership_list,
@@ -202,7 +206,7 @@ class HostGroup(object):
                 'local_disk': self.local_disk_cap,
                 'original_local_disk': self.original_local_disk_cap,
                 'avail_local_disk': self.avail_local_disk_cap,
-                'parent': self.parent_resource.name,
+                'parent': parent_name,
                 'children': child_list,
                 'vm_list': self.vm_list,
                 'last_update': self.last_update}

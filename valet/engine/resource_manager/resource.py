@@ -64,6 +64,7 @@ class Resource(object):
     def bootstrap_from_db(self, _resource_status):
         """Return True if bootsrap resource from database successful."""
         try:
+            self.logger.info("Resource status from DB = %s", _resource_status)
             logical_groups = _resource_status.get("logical_groups")
             if logical_groups:
                 for lgk, lg in logical_groups.iteritems():
@@ -376,11 +377,11 @@ class Resource(object):
                 self.logger.debug("    vms")
                 debug_msg = "        orch_id = %s uuid = %s"
                 for v in lg.vm_list:
-                    self.logger.debug(debug_msg % (v[0], v[2]))
+                    self.logger.debug(debug_msg, v[0], v[2])
                 self.logger.debug("    hosts")
                 for h, v in lg.vms_per_host.iteritems():
-                    self.logger.debug("        host = %s" % h)
-                    self.logger.debug("        vms = %s" %
+                    self.logger.debug("        host = %s", h)
+                    self.logger.debug("        vms = %s",
                                       str(len(lg.vms_per_host[h])))
                     host = None
                     if h in self.hosts.keys():
@@ -508,9 +509,8 @@ class Resource(object):
 
         if host.status != _st:
             host.status = _st
-            self.logger.warn(
-                "Resource.update_host_resources: host(%s) status changed" %
-                _hn)
+            self.logger.info(
+                "Resource.update_host_resources: host(%s) status changed", _hn)
             updated = True
 
         # FIXME(GJ): should check cpu, memm and disk here?
@@ -578,7 +578,7 @@ class Resource(object):
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
                 self.logger.warn("logical group (%s) missing while "
-                                 "removing %s" % (lgk, _h_uuid))
+                                 "removing %s", lgk, _h_uuid)
                 continue
             lg = self.logical_groups[lgk]
 
@@ -618,7 +618,7 @@ class Resource(object):
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
                 self.logger.warn("logical group (%s) missing while "
-                                 "removing %s" % (lgk, _uuid))
+                                 "removing %s", lgk, _uuid)
                 continue
             lg = self.logical_groups[lgk]
 

@@ -65,12 +65,12 @@ class ListenerManager(threading.Thread):
                 self.MUSIC = {'engine': engine,
                               'keyspace': self.config.music.keyspace}
                 self.listener_logger.debug(
-                    'Storing in music on %s, keyspace %s' %
-                    (self.config.music.host, self.config.music.keyspace))
+                    'Storing in music on %s, keyspace %s',
+                    self.config.music.hosts, self.config.music.keyspace)
 
-            self.listener_logger.debug('Connecting to %s, with %s' %
-                                       (self.config.messaging.host,
-                                        self.config.messaging.username))
+            self.listener_logger.debug('Connecting to %s, with %s',
+                                       self.config.messaging.host,
+                                       self.config.messaging.username)
             credentials = pika.PlainCredentials(self.config.messaging.username,
                                                 self.config.messaging.password)
             parameters = pika.ConnectionParameters(self.config.messaging.host,
@@ -103,7 +103,7 @@ class ListenerManager(threading.Thread):
             # Bind the queue to the selected exchange
             channel.queue_bind(exchange=exchange_name, queue=queue_name,
                                routing_key=binding_key)
-            self.listener_logger.info('Channel is bound,listening on%s '
+            self.listener_logger.info('Channel is bound,listening on %s '
                                       'exchange %s',
                                       self.config.messaging.host,
                                       self.config.events_listener.exchange)
