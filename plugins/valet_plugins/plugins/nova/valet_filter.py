@@ -99,10 +99,9 @@ class ValetFilter(filters.BaseHostFilter):
         cfg.CONF.register_opts(opts, group=opt_group)
 
     # TODO(JD): Factor out common code between this and the cinder filter
-    def filter_all(self, filter_obj_list, filter_properties):
+    def filter_all(self, filter_obj_list, request_spec):
         '''Filter all hosts in one swell foop'''
 
-        hints_key = 'scheduler_hints'
         orch_id_key = 'heat_resource_uuid'
 
         ad_hoc = False
@@ -113,10 +112,9 @@ class ValetFilter(filters.BaseHostFilter):
         failure_mode = opt[self.opt_failure_mode_str]
 
         # Get the resource_id (physical id) and host candidates
-        request_spec = filter_properties.get('request_spec')
-        instance_properties = request_spec.get('instance_properties')
-        res_id = instance_properties.get('uuid')
+        res_id = request_spec.instance_uuid
         hosts = [obj.host for obj in filter_obj_list]
+        hints = request_spec.scheduler_hints
 
         # TODO(JD): If we can't reach Valet at all, we may opt to fail
         # TODO(JD): all hosts depending on a TBD config flag.
@@ -128,6 +126,7 @@ class ValetFilter(filters.BaseHostFilter):
             self._authorize()
         except Exception as ex:
             failed = ex
+
         if failed:
             msg = _LW("Failed to filter the hosts, failure mode is %s")
             LOG.warn(msg % failure_mode)
@@ -136,16 +135,14 @@ class ValetFilter(filters.BaseHostFilter):
                 yield_all = True
             else:
                 LOG.error(failed)
-#         if not filter_properties.get(hints_key, {}).has_key(orch_id_key):
-        elif orch_id_key not in filter_properties.get(hints_key, {}):
+        elif orch_id_key not in hints:
             msg = _LW("Valet: Heat Stack Lifecycle Scheduler Hints not found. "
                       "Performing ad-hoc placement.")
             LOG.info(msg)
             ad_hoc = True
 
             # We'll need the flavor.
-            instance_type = filter_properties.get('instance_type')
-            flavor = instance_type.get('name')
+            flavor = request_spec.flavor.flavorid
 
             # Because this wasn't orchestrated, there's no stack.
             # We're going to compose a resource as if there as one.
@@ -163,7 +160,7 @@ class ValetFilter(filters.BaseHostFilter):
 
             # Only add the AZ if it was expressly defined
             res_properties = resources[res_id]["properties"]
-            a_zone = instance_properties.get('availability_zone')
+            a_zone = request_spec.availability_zone
             if a_zone:
                 res_properties["availability_zone"] = a_zone
 
@@ -216,7 +213,7 @@ class ValetFilter(filters.BaseHostFilter):
                 else:
                     yield_all = False
         else:
-            orch_id = filter_properties[hints_key][orch_id_key]
+            orch_id = hints[orch_id_key]
 
             count = 0
             response = None
