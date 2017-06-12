@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Configuration."""
-
 from oslo_config import cfg
 import sys
 
@@ -23,10 +21,8 @@ from valet.tests.base import Base
 
 
 class TestConfig(Base):
-    """Unit tests for Valet.engine.optimizer.ostro_server.configuration."""
 
     def setUp(self):
-        """Setup Test Config Testing Class."""
         super(TestConfig, self).setUp()
         sys.argv = [sys.argv[0]]
 
