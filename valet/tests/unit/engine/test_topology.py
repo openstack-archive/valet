@@ -13,17 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Topology."""
-
 from valet.engine.resource_manager.topology import Topology
 from valet.tests.base import Base
 
 
 class TestTopology(Base):
-    """Unit Tests for valet.engine.resource_manager.topology."""
 
     def setUp(self):
-        """Setup TestTopology Test Class."""
         super(TestTopology, self).setUp()
         self.topo = Topology(Config(), None)
 
@@ -38,7 +34,6 @@ class TestTopology(Base):
         self.validate_test(status == "success")
 
     def test_domain_topology(self):
-        """Test Domain Topology."""
         (region, rack, node_type, status) = \
             self.topo._set_layout_by_name("ihk01r01c001.emea.att.com")
 
@@ -71,7 +66,6 @@ class TestTopology(Base):
 
 
 class Config(object):
-    """Config for topology."""
 
     num_of_region_chars = 3
     rack_code_list = "r"
