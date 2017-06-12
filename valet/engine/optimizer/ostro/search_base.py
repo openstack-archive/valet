@@ -13,17 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Resources utlized by search engine."""
-
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
 from valet.engine.optimizer.app_manager.app_topology_base import VGroup
 
 
 class Resource(object):
-    """Resource."""
 
     def __init__(self):
-        """Initialization."""
         # level of placement
         self.level = None
 

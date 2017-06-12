@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test Search."""
-
 import mock
 from oslo_log import log
 
@@ -25,14 +23,11 @@ LOG = log.getLogger(__name__)
 
 
 class TestSearch(Base):
-    """Unit tests for valet.engine.optimizer.ostro.search."""
 
     def setUp(self):
-        """Setup Test Search Class."""
         super(TestSearch, self).setUp()
 
         self.search = Search(LOG)
 
     def test_copy_resource_status(self):
-        """Test Copy Resource Status. Currently a stub test."""
         self.search.copy_resource_status(mock.MagicMock())
