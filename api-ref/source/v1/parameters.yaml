@@ -1,0 +1,50 @@
+# Parameters in header
+
+# Parameters in query
+group_id_query:
+  description: |
+    The UUID of a group
+  in: query
+  required: true
+  type: string
+member_id_query:
+  description: |
+    The UUID of a member
+  in: query
+  required: true
+  type: string
+
+# Parameters in body
+group_description:
+  description: |
+    Description of a group.
+  in: body
+  required: true
+  type: string
+group_id_body:
+  description: |
+    The UUID of a group
+  in: body
+  required: true
+  type: UUID
+group_members:
+  description: |
+    List of group member UUIDs.
+  in: body
+  required: true
+  type: list
+group_name:
+  description: |
+    Name for a group.  Must contain only letters (A-Za-z), numbers (0-9),
+    hypens (-), periods (.), underscores (_), and tildes (~).  See
+    RFC 3986, Section 2.3.  This parameter is immutable.
+  in: body
+  required: true
+  type: string
+group_type:
+  description: |
+    Type of a group.  Currently, the only valid value is ``exclusivity``.
+    This parameter is immutable.
+  in: body
+  required: true
+  type: string
