@@ -27,9 +27,8 @@ class AggregateInstanceExtraSpecsFilter(object):
     # Aggregate data and instance type does not change within a request
     run_filter_once_per_request = True
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Initialization."""
-        self.logger = _logger
 
     def host_passes(self, _level, _host, _v):
         """Return a list of hosts that can create instance_type."""
@@ -109,9 +108,8 @@ class AvailabilityZoneFilter(object):
     # Availability zones do not change within a request
     run_filter_once_per_request = True
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Initialization."""
-        self.logger = _logger
 
     def host_passes(self, _level, _host, _v):
         """Return True if all availalibility zones in _v exist in the host."""
@@ -138,9 +136,8 @@ class AvailabilityZoneFilter(object):
 class RamFilter(object):
     """RamFilter."""
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Initialization."""
-        self.logger = _logger
 
     def host_passes(self, _level, _host, _v):
         """Return True if host has sufficient available RAM."""
@@ -161,9 +158,8 @@ class RamFilter(object):
 class CoreFilter(object):
     """CoreFilter."""
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Initialization."""
-        self.logger = _logger
 
     def host_passes(self, _level, _host, _v):
         """Return True if host has sufficient CPU cores."""
@@ -185,9 +181,8 @@ class CoreFilter(object):
 class DiskFilter(object):
     """DiskFilter."""
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Initialization."""
-        self.logger = _logger
 
     def host_passes(self, _level, _host, _v):
         """Filter based on disk usage."""

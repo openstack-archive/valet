@@ -15,12 +15,16 @@
 
 """Compute Manager."""
 
+from copy import deepcopy
 import threading
 import time
 
-from copy import deepcopy
+from oslo_log import log
+
 from valet.engine.resource_manager.compute import Compute
 from valet.engine.resource_manager.resource_base import Host
+
+LOG = log.getLogger(__name__)
 
 
 class ComputeManager(threading.Thread):
@@ -30,7 +34,7 @@ class ComputeManager(threading.Thread):
     flavors, etc. Calls many functions from Resource.
     """
 
-    def __init__(self, _t_id, _t_name, _rsc, _data_lock, _config, _logger):
+    def __init__(self, _t_id, _t_name, _rsc, _data_lock, _config):
         """Init Compute Manager."""
         threading.Thread.__init__(self)
 
@@ -43,8 +47,6 @@ class ComputeManager(threading.Thread):
 
         self.config = _config
 
-        self.logger = _logger
-
         self.admin_token = None
         self.project_token = None
 
@@ -52,8 +54,8 @@ class ComputeManager(threading.Thread):
 
     def run(self):
         """Start Compute Manager thread to run setup."""
-        self.logger.info("ComputeManager: start " + self.thread_name +
-                         " ......")
+        LOG.info("ComputeManager: start " + self.thread_name +
+                 " ......")
 
         if self.config.compute_trigger_freq > 0:
             period_end = time.time() + self.config.compute_trigger_freq
@@ -71,21 +73,21 @@ class ComputeManager(threading.Thread):
                                       self.config.compute_trigger_freq)
 
         # NOTE(GJ): do not timer based batch
-        self.logger.info("exit compute_manager " + self.thread_name)
+        LOG.info("exit compute_manager " + self.thread_name)
 
     def _run(self):
-        self.logger.info("ComputeManager: --- start compute_nodes "
-                         "status update ---")
+        LOG.info("ComputeManager: --- start compute_nodes "
+                 "status update ---")
 
         triggered_host_updates = self.set_hosts()
         if triggered_host_updates is not True:
-            self.logger.warn("fail to set hosts from nova")
+            LOG.warning("fail to set hosts from nova")
         triggered_flavor_updates = self.set_flavors()
         if triggered_flavor_updates is not True:
-            self.logger.warn("fail to set flavor from nova")
+            LOG.warning("fail to set flavor from nova")
 
-        self.logger.info("ComputeManager: --- done compute_nodes "
-                         "status update ---")
+        LOG.info("ComputeManager: --- done compute_nodes "
+                 "status update ---")
 
         return True
 
@@ -94,7 +96,7 @@ class ComputeManager(threading.Thread):
         hosts = {}
         logical_groups = {}
 
-        compute = Compute(self.logger)
+        compute = Compute()
 
         status = compute.set_hosts(hosts, logical_groups)
         if status != "success":
@@ -125,8 +127,8 @@ class ComputeManager(threading.Thread):
                     _logical_groups[lk])
 
                 self.resource.logical_groups[lk].last_update = time.time()
-                self.logger.warn("ComputeManager: new logical group (" +
-                                 lk + ") added")
+                LOG.warning("ComputeManager: new logical group (" +
+                            lk + ") added")
                 updated = True
 
         for rlk in self.resource.logical_groups.keys():
@@ -137,8 +139,8 @@ class ComputeManager(threading.Thread):
                     self.resource.logical_groups[rlk].status = "disabled"
 
                     self.resource.logical_groups[rlk].last_update = time.time()
-                    self.logger.warn("ComputeManager: logical group (" +
-                                     rlk + ") removed")
+                    LOG.warning("ComputeManager: logical group (" +
+                                rlk + ") removed")
                     updated = True
 
         for lk in _logical_groups.keys():
@@ -149,8 +151,8 @@ class ComputeManager(threading.Thread):
                 if self._check_logical_group_metadata_update(lg, rlg) is True:
 
                     rlg.last_update = time.time()
-                    self.logger.warn("ComputeManager: logical group (" +
-                                     lk + ") updated")
+                    LOG.warning("ComputeManager: logical group (" +
+                                lk + ") updated")
                     updated = True
 
         return updated
@@ -193,8 +195,8 @@ class ComputeManager(threading.Thread):
                 self.resource.hosts[new_host.name] = new_host
 
                 new_host.last_update = time.time()
-                self.logger.warn("ComputeManager: new host (" +
-                                 new_host.name + ") added")
+                LOG.warning("ComputeManager: new host (" +
+                            new_host.name + ") added")
                 updated = True
 
         for rhk, rhost in self.resource.hosts.iteritems():
@@ -203,8 +205,8 @@ class ComputeManager(threading.Thread):
                     rhost.tag.remove("nova")
 
                     rhost.last_update = time.time()
-                    self.logger.warn("ComputeManager: host (" +
-                                     rhost.name + ") disabled")
+                    LOG.warning("ComputeManager: host (" +
+                                rhost.name + ") disabled")
                     updated = True
 
         for hk in _hosts.keys():
@@ -217,8 +219,8 @@ class ComputeManager(threading.Thread):
         for hk, h in self.resource.hosts.iteritems():
             if h.clean_memberships() is True:
                 h.last_update = time.time()
-                self.logger.warn("ComputeManager: host (" + h.name +
-                                 ") updated (delete EX/AFF/DIV membership)")
+                LOG.warning("ComputeManager: host (" + h.name +
+                            ") updated (delete EX/AFF/DIV membership)")
                 updated = True
 
         for hk, host in self.resource.hosts.iteritems():
@@ -247,20 +249,20 @@ class ComputeManager(threading.Thread):
         if "nova" not in _rhost.tag:
             _rhost.tag.append("nova")
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (tag added)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (tag added)")
 
         if _host.status != _rhost.status:
             _rhost.status = _host.status
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (status changed)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (status changed)")
 
         if _host.state != _rhost.state:
             _rhost.state = _host.state
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (state changed)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (state changed)")
 
         return topology_updated
 
@@ -274,8 +276,8 @@ class ComputeManager(threading.Thread):
             _rhost.original_vCPUs = _host.original_vCPUs
             _rhost.avail_vCPUs = _host.avail_vCPUs
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (CPU updated)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (CPU updated)")
 
         if _host.mem_cap != _rhost.mem_cap or \
            _host.original_mem_cap != _rhost.original_mem_cap or \
@@ -284,8 +286,8 @@ class ComputeManager(threading.Thread):
             _rhost.original_mem_cap = _host.original_mem_cap
             _rhost.avail_mem_cap = _host.avail_mem_cap
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (mem updated)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (mem updated)")
 
         if _host.local_disk_cap != _rhost.local_disk_cap or \
            _host.original_local_disk_cap != _rhost.original_local_disk_cap or \
@@ -294,8 +296,8 @@ class ComputeManager(threading.Thread):
             _rhost.original_local_disk_cap = _host.original_local_disk_cap
             _rhost.avail_local_disk_cap = _host.avail_local_disk_cap
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (local disk space updated)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (local disk space updated)")
 
         if _host.vCPUs_used != _rhost.vCPUs_used or \
            _host.free_mem_mb != _rhost.free_mem_mb or \
@@ -306,8 +308,8 @@ class ComputeManager(threading.Thread):
             _rhost.free_disk_gb = _host.free_disk_gb
             _rhost.disk_available_least = _host.disk_available_least
             topology_updated = True
-            self.logger.warn("ComputeManager: host (" + _rhost.name +
-                             ") updated (other resource numbers)")
+            LOG.warning("ComputeManager: host (" + _rhost.name +
+                        ") updated (other resource numbers)")
 
         return topology_updated
 
@@ -318,8 +320,8 @@ class ComputeManager(threading.Thread):
             if mk not in _rhost.memberships.keys():
                 _rhost.memberships[mk] = self.resource.logical_groups[mk]
                 topology_updated = True
-                self.logger.warn("ComputeManager: host (" + _rhost.name +
-                                 ") updated (new membership)")
+                LOG.warning("ComputeManager: host (" + _rhost.name +
+                            ") updated (new membership)")
 
         for mk in _rhost.memberships.keys():
             m = _rhost.memberships[mk]
@@ -328,8 +330,8 @@ class ComputeManager(threading.Thread):
                 if mk not in _host.memberships.keys():
                     del _rhost.memberships[mk]
                     topology_updated = True
-                    self.logger.warn("ComputeManager: host (" + _rhost.name +
-                                     ") updated (delete membership)")
+                    LOG.warning("ComputeManager: host (" + _rhost.name +
+                                ") updated (delete membership)")
 
         return topology_updated
 
@@ -343,7 +345,7 @@ class ComputeManager(threading.Thread):
         if alen != blen:
             topology_updated = True
             msg = "host ({0}) {1} none vms removed"
-            self.logger.warn(msg.format(_rhost.name, str(blen - alen)))
+            LOG.warning(msg.format(_rhost.name, str(blen - alen)))
 
         self.resource.clean_none_vms_from_logical_groups(_rhost)
 
@@ -351,16 +353,16 @@ class ComputeManager(threading.Thread):
             if _rhost.exist_vm_by_uuid(vm_id[2]) is False:
                 _rhost.vm_list.append(vm_id)
                 topology_updated = True
-                self.logger.warn("ComputeManager: host (" + _rhost.name +
-                                 ") updated (new vm placed)")
+                LOG.warning("ComputeManager: host (" + _rhost.name +
+                            ") updated (new vm placed)")
 
         for rvm_id in _rhost.vm_list:
             if _host.exist_vm_by_uuid(rvm_id[2]) is False:
                 self.resource.remove_vm_by_uuid_from_logical_groups(
                     _rhost, rvm_id[2])
                 topology_updated = True
-                self.logger.warn("ComputeManager: host (" + _rhost.name +
-                                 ") updated (vm removed)")
+                LOG.warning("ComputeManager: host (" + _rhost.name +
+                            ") updated (vm removed)")
 
         blen = len(_rhost.vm_list)
         _rhost.vm_list = [
@@ -369,7 +371,7 @@ class ComputeManager(threading.Thread):
         if alen != blen:
             topology_updated = True
             msg = "host ({0}) {1} vms removed"
-            self.logger.warn(msg.format(_rhost.name, str(blen - alen)))
+            LOG.warning(msg.format(_rhost.name, str(blen - alen)))
 
         return topology_updated
 
@@ -377,11 +379,11 @@ class ComputeManager(threading.Thread):
         """Return True if compute set flavors returns success."""
         flavors = {}
 
-        compute = Compute(self.logger)
+        compute = Compute()
 
         status = compute.set_flavors(flavors)
         if status != "success":
-            self.logger.error(status)
+            LOG.error(status)
             return False
 
         self.data_lock.acquire()
@@ -399,8 +401,8 @@ class ComputeManager(threading.Thread):
                 self.resource.flavors[fk] = deepcopy(_flavors[fk])
 
                 self.resource.flavors[fk].last_update = time.time()
-                self.logger.warn("ComputeManager: new flavor (" +
-                                 fk + ":" + _flavors[fk].flavor_id + ") added")
+                LOG.warning("ComputeManager: new flavor (" +
+                            fk + ":" + _flavors[fk].flavor_id + ") added")
                 updated = True
 
         for rfk in self.resource.flavors.keys():
@@ -409,8 +411,8 @@ class ComputeManager(threading.Thread):
                 rf.status = "disabled"
 
                 rf.last_update = time.time()
-                self.logger.warn("ComputeManager: flavor (" + rfk + ":" +
-                                 rf.flavor_id + ") removed")
+                LOG.warning("ComputeManager: flavor (" + rfk + ":" +
+                            rf.flavor_id + ") removed")
                 updated = True
 
         for fk in _flavors.keys():
@@ -419,8 +421,8 @@ class ComputeManager(threading.Thread):
 
             if self._check_flavor_spec_update(f, rf) is True:
                 rf.last_update = time.time()
-                self.logger.warn("ComputeManager: flavor (" + fk + ":" +
-                                 rf.flavor_id + ") spec updated")
+                LOG.warning("ComputeManager: flavor (" + fk + ":" +
+                            rf.flavor_id + ") spec updated")
                 updated = True
 
         return updated

@@ -18,9 +18,13 @@
 import operator
 import time
 
+from oslo_log import log
+
 from valet.engine.optimizer.app_manager.app_topology import AppTopology
 from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.app_manager.application import App
+
+LOG = log.getLogger(__name__)
 
 
 class AppHistory(object):
@@ -40,12 +44,11 @@ class AppHandler(object):
     placement and updating topology info.
     """
 
-    def __init__(self, _resource, _db, _config, _logger):
+    def __init__(self, _resource, _db, _config):
         """Init App Handler Class."""
         self.resource = _resource
         self.db = _db
         self.config = _config
-        self.logger = _logger
 
         """ current app requested, a temporary copy """
         self.apps = {}
@@ -109,7 +112,7 @@ class AppHandler(object):
         """Add app and set or regenerate topology, return updated topology."""
         self.apps.clear()
 
-        app_topology = AppTopology(self.resource, self.logger)
+        app_topology = AppTopology(self.resource)
 
         stack_id = None
         if "stack_id" in _app.keys():
@@ -124,9 +127,7 @@ class AppHandler(object):
             application_name = "none"
 
         action = _app["action"]
-        if action == "ping":
-            self.logger.info("got ping")
-        elif action == "replan" or action == "migrate":
+        if action == "replan" or action == "migrate":
             re_app = self._regenerate_app_topology(stack_id, _app,
                                                    app_topology, action)
             if re_app is None:
@@ -136,14 +137,15 @@ class AppHandler(object):
                 return None
 
             if action == "replan":
-                self.logger.info("got replan: " + stack_id)
+                LOG.info("got replan: " + stack_id)
             elif action == "migrate":
-                self.logger.info("got migration: " + stack_id)
+                LOG.info("got migration: " + stack_id)
 
             app_id = app_topology.set_app_topology(re_app)
 
             if app_id is None:
-                self.logger.error(app_topology.status)
+                LOG.error("Could not set app topology for regererated graph." +
+                          app_topology.status)
                 self.status = app_topology.status
                 self.apps[stack_id] = None
                 return None
@@ -151,12 +153,13 @@ class AppHandler(object):
             app_id = app_topology.set_app_topology(_app)
 
             if len(app_topology.candidate_list_map) > 0:
-                self.logger.info("got ad-hoc placement: " + stack_id)
+                LOG.info("got ad-hoc placement: " + stack_id)
             else:
-                self.logger.info("got placement: " + stack_id)
+                LOG.info("got placement: " + stack_id)
 
             if app_id is None:
-                self.logger.error(app_topology.status)
+                LOG.error("Could not set app topology for app graph" +
+                          app_topology.status)
                 self.status = app_topology.status
                 self.apps[stack_id] = None
                 return None
@@ -216,8 +219,8 @@ class AppHandler(object):
         if self.db is not None:
             for appk, _ in self.apps.iteritems():
                 if self.db.add_app(appk, None) is False:
-                    self.logger.error("AppHandler: error while adding app "
-                                      "info to MUSIC")
+                    LOG.error("AppHandler: error while adding app "
+                              "info to MUSIC")
 
     def get_vm_info(self, _s_uuid, _h_uuid, _host):
         """Return vm_info from database."""
@@ -241,12 +244,10 @@ class AppHandler(object):
 
         old_app = self.db.get_app_info(_stack_id)
         if old_app is None:
-            self.status = "error while getting old_app from MUSIC"
-            self.logger.error(self.status)
+            LOG.error("Error while getting old_app from MUSIC")
             return None
         elif len(old_app) == 0:
-            self.status = "cannot find the old app in MUSIC"
-            self.logger.error(self.status)
+            LOG.error("Cannot find the old app in MUSIC")
             return None
 
         re_app["action"] = "create"
