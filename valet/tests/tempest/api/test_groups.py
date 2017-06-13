@@ -52,7 +52,7 @@ class ValetGroupsTest(base.BaseValetTest):
             fetched_ids.append(group['id'])
         missing_groups = [g for g in group_ids if g not in fetched_ids]
 
-        self.assertEqual([], missing_groups)
+        self.assertEmpty(missing_groups)
 
     @test.idempotent_id('2ab0337e-6472-11e6-b6c6-080027824017')
     def test_create_group(self):
