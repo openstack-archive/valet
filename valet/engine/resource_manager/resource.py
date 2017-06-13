@@ -377,12 +377,12 @@ class Resource(object):
                 self.logger.debug("    vms")
                 debug_msg = "        orch_id = %s uuid = %s"
                 for v in lg.vm_list:
-                    self.logger.debug(debug_msg, v[0], v[2])
-                self.logger.debug("    hosts")
+                    LOG.debug(debug_msg % (v[0], v[2]))
+                LOG.debug("    hosts")
                 for h, v in lg.vms_per_host.iteritems():
-                    self.logger.debug("        host = %s", h)
-                    self.logger.debug("        vms = %s",
-                                      str(len(lg.vms_per_host[h])))
+                    LOG.debug("        host = %s" % h)
+                    LOG.debug("        vms = %s" %
+                              str(len(lg.vms_per_host[h])))
                     host = None
                     if h in self.hosts.keys():
                         host = self.hosts[h]
@@ -509,8 +509,9 @@ class Resource(object):
 
         if host.status != _st:
             host.status = _st
-            self.logger.info(
-                "Resource.update_host_resources: host(%s) status changed", _hn)
+            LOG.warning(
+                "Resource.update_host_resources: host(%s) status changed" %
+                _hn)
             updated = True
 
         # FIXME(GJ): should check cpu, memm and disk here?
@@ -577,8 +578,8 @@ class Resource(object):
         """Remove vm by orchestration id from lgs. Update host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
-                self.logger.warn("logical group (%s) missing while "
-                                 "removing %s", lgk, _h_uuid)
+                LOG.warning("logical group (%s) missing while "
+                            "removing %s" % (lgk, _h_uuid))
                 continue
             lg = self.logical_groups[lgk]
 
@@ -617,8 +618,8 @@ class Resource(object):
         """Remove vm by uuid from lgs and update proper host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
-                self.logger.warn("logical group (%s) missing while "
-                                 "removing %s", lgk, _uuid)
+                LOG.warning("logical group (%s) missing while "
+                            "removing %s" % (lgk, _uuid))
                 continue
             lg = self.logical_groups[lgk]
 

@@ -26,6 +26,7 @@ from valet.common.music import REST
 from valet.engine.conf import init_engine
 
 CONF = cfg.CONF
+LOG = get_logger("ostro_daemon")
 
 
 class HealthCheck(object):
@@ -107,7 +108,7 @@ class HealthCheck(object):
                     engine_id = placement['resources']['id']
                     break
             except Exception as e:
-                logger.warn("HealthCheck exception in read response " + str(e))
+                LOG.warn("HealthCheck exception in read response " + str(e))
 
         return engine_id
 
@@ -126,7 +127,7 @@ class HealthCheck(object):
             }
             self.rest.request(method='delete', path=path, data=data)
         except Exception as e:
-            logger.warn("HealthCheck exception in delete request - " + str(e))
+            LOG.warn("HealthCheck exception in delete request - " + str(e))
 
         try:
             path = base % {
@@ -136,7 +137,7 @@ class HealthCheck(object):
             }
             self.rest.request(method='delete', path=path, data=data)
         except Exception as e:
-            logger.warn("HealthCheck exception in delete response - " + str(e))
+            LOG.warn("HealthCheck exception in delete response - " + str(e))
 
 
 if __name__ == "__main__":
@@ -144,20 +145,19 @@ if __name__ == "__main__":
     respondent_id = None
     code = 0
     init_engine(default_config_files=['/etc/valet/valet.conf'])
-    logger = get_logger("ostro_daemon")
 
     if os.path.exists(CONF.engine.pid):
         respondent_id = HealthCheck().ping()
 
         if respondent_id == CONF.engine.priority:
             code = CONF.engine.priority
-            logger.info("HealthCheck - Alive, "
+            LOG.info("HealthCheck - Alive, "
                         "respondent instance id: {}".format(respondent_id))
         else:
-            logger.warn("HealthCheck - pid file exists, "
+            LOG.warn("HealthCheck - pid file exists, "
                         "engine {} did not respond in a timely manner "
                         "(respondent id {})".format(CONF.engine.priority,
                                                     respondent_id))
     else:
-        logger.info("HealthCheck - no pid file, engine is not running!")
+        LOG.info("HealthCheck - no pid file, engine is not running!")
     sys.exit(code)
