@@ -16,6 +16,7 @@ import traceback
 
 from novaclient import client as nova_client
 from oslo_config import cfg
+from oslo_log import log
 
 from resource_base import Flavor
 from resource_base import Host
@@ -26,6 +27,7 @@ from resource_base import LogicalGroup
 VERSION = 2
 
 CONF = cfg.CONF
+LOG = log.getLogger(__name__)
 
 
 class Compute(object):
@@ -37,9 +39,8 @@ class Compute(object):
     Interacts with nova client to perform these actions.
     """
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Compute init."""
-        self.logger = _logger
         self.nova = None
 
     def set_hosts(self, _hosts, _logical_groups):
@@ -48,22 +49,22 @@ class Compute(object):
 
         status = self._set_availability_zones(_hosts, _logical_groups)
         if status != "success":
-            self.logger.error('_set_availability_zones failed')
+            LOG.error('_set_availability_zones failed')
             return status
 
         status = self._set_aggregates(_hosts, _logical_groups)
         if status != "success":
-            self.logger.error('_set_aggregates failed')
+            LOG.error('_set_aggregates failed')
             return status
 
         status = self._set_placed_vms(_hosts, _logical_groups)
         if status != "success":
-            self.logger.error('_set_placed_vms failed')
+            LOG.error('_set_placed_vms failed')
             return status
 
         status = self._set_resources(_hosts)
         if status != "success":
-            self.logger.error('_set_resources failed')
+            LOG.error('_set_resources failed')
             return status
 
         return "success"
@@ -102,11 +103,11 @@ class Compute(object):
                         _hosts[host.name] = host
 
             except (ValueError, KeyError, TypeError):
-                self.logger.error(traceback.format_exc())
+                LOG.error(traceback.format_exc())
                 return "Error while setting host zones from Nova"
 
         except Exception:
-            self.logger.critical(traceback.format_exc())
+            LOG.critical(traceback.format_exc())
 
         return "success"
 
@@ -134,7 +135,7 @@ class Compute(object):
                     aggregate.vms_per_host[host.name] = []
 
         except (ValueError, KeyError, TypeError):
-            self.logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return "Error while setting host aggregates from Nova"
 
         return "success"
@@ -182,7 +183,7 @@ class Compute(object):
                         _vm_list.append(s['uuid'])
 
         except (ValueError, KeyError, TypeError):
-            self.logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return "Error while getting existing vms"
 
         return "success"
@@ -201,7 +202,7 @@ class Compute(object):
             _vm_detail.append(status)
 
         except (ValueError, KeyError, TypeError):
-            self.logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return "Error while getting vm detail"
 
         return "success"
@@ -226,7 +227,7 @@ class Compute(object):
                     host.disk_available_least = float(hv.disk_available_least)
 
         except (ValueError, KeyError, TypeError):
-            self.logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return "Error while setting host resources from Nova"
 
         return "success"
@@ -287,7 +288,7 @@ class Compute(object):
                 _flavors[flavor.name] = flavor
 
         except (ValueError, KeyError, TypeError):
-            self.logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return "Error while getting flavors"
 
         return "success"
@@ -308,7 +309,7 @@ class Compute(object):
                 break
 
         except (ValueError, KeyError, TypeError):
-            self.logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return "Error while getting flavor extra spec"
 
         return "success"

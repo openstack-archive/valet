@@ -12,15 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Test Search."""
-
-import logging
 import mock
+
 from valet.engine.optimizer.ostro.search import Search
 from valet.tests.base import Base
-
-LOG = logging.getLogger(__name__)
 
 
 class TestSearch(Base):
@@ -30,7 +25,7 @@ class TestSearch(Base):
         """Setup Test Search Class."""
         super(TestSearch, self).setUp()
 
-        self.search = Search(LOG)
+        self.search = Search()
 
     def test_copy_resource_status(self):
         """Test Copy Resource Status."""

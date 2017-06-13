@@ -15,12 +15,16 @@
 import time
 import traceback
 
+from oslo_log import log
+
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
 from valet.engine.resource_manager.resource_base import Datacenter
 from valet.engine.resource_manager.resource_base import Flavor
 from valet.engine.resource_manager.resource_base import Host
 from valet.engine.resource_manager.resource_base import HostGroup
 from valet.engine.resource_manager.resource_base import LogicalGroup
+
+LOG = log.getLogger(__name__)
 
 
 class Resource(object):
@@ -32,12 +36,11 @@ class Resource(object):
     updates to base resource types.
     """
 
-    def __init__(self, _db, _config, _logger):
+    def __init__(self, _db, _config):
         """Init Resource Class."""
         self.db = _db
 
         self.config = _config
-        self.logger = _logger
 
         """ resource data """
         self.datacenter = Datacenter(self.config.datacenter_name)
@@ -64,7 +67,7 @@ class Resource(object):
     def bootstrap_from_db(self, _resource_status):
         """Return True if bootsrap resource from database successful."""
         try:
-            self.logger.info("Resource status from DB = %s", _resource_status)
+            LOG.info("Resource status from DB = %s", _resource_status)
             logical_groups = _resource_status.get("logical_groups")
             if logical_groups:
                 for lgk, lg in logical_groups.iteritems():
@@ -78,7 +81,7 @@ class Resource(object):
                     self.logical_groups[lgk] = logical_group
 
             if len(self.logical_groups) == 0:
-                self.logger.warn("no logical_groups")
+                LOG.warning("no logical_groups")
 
             flavors = _resource_status.get("flavors")
             if flavors:
@@ -94,7 +97,7 @@ class Resource(object):
                     self.flavors[fk] = flavor
 
             if len(self.flavors) == 0:
-                self.logger.error("fail loading flavors")
+                LOG.error("fail loading flavors")
 
             hosts = _resource_status.get("hosts")
             if hosts:
@@ -124,7 +127,7 @@ class Resource(object):
                     self.hosts[hk] = host
 
                 if len(self.hosts) == 0:
-                    self.logger.error("fail loading hosts")
+                    LOG.error("fail loading hosts")
 
             host_groups = _resource_status.get("host_groups")
             if host_groups:
@@ -151,7 +154,7 @@ class Resource(object):
                     self.host_groups[hgk] = host_group
 
                 if len(self.host_groups) == 0:
-                    self.logger.warn("fail loading host_groups")
+                    LOG.warning("fail loading host_groups")
 
             dc = _resource_status.get("datacenter")
             if dc:
@@ -181,7 +184,7 @@ class Resource(object):
                         self.datacenter.resources[ck] = self.hosts[ck]
 
                 if len(self.datacenter.resources) == 0:
-                    self.logger.error("fail loading datacenter")
+                    LOG.error("fail loading datacenter")
 
             hgs = _resource_status.get("host_groups")
             if hgs:
@@ -215,7 +218,7 @@ class Resource(object):
             self._update_compute_avail()
 
         except Exception:
-            self.logger.error("while bootstrap_from_db: ",
+            LOG.error("while bootstrap_from_db: ",
                               traceback.format_exc())
 
         return True
@@ -314,7 +317,7 @@ class Resource(object):
         host_group_updates = {}
         datacenter_update = None
 
-        self.logger.info("check and store resource status")
+        LOG.info("check and store resource status")
 
         for fk, flavor in self.flavors.iteritems():
             if flavor.last_update >= self.curr_db_timestamp:
@@ -366,66 +369,66 @@ class Resource(object):
         return True
 
     def show_current_logical_groups(self):
-        self.logger.debug("--- track logical groups info ---")
+        LOG.debug("--- track logical groups info ---")
         for lgk, lg in self.logical_groups.iteritems():
             if lg.status == "enabled":
-                self.logger.debug("lg name = " + lgk)
-                self.logger.debug("    type = " + lg.group_type)
+                LOG.debug("lg name = " + lgk)
+                LOG.debug("    type = " + lg.group_type)
                 if lg.group_type == "AGGR":
                     for k in lg.metadata.keys():
-                        self.logger.debug("        metadata key = " + k)
-                self.logger.debug("    vms")
+                        LOG.debug("        metadata key = " + k)
+                LOG.debug("    vms")
                 debug_msg = "        orch_id = %s uuid = %s"
                 for v in lg.vm_list:
-                    self.logger.debug(debug_msg, v[0], v[2])
-                self.logger.debug("    hosts")
+                    LOG.debug(debug_msg % (v[0], v[2]))
+                LOG.debug("    hosts")
                 for h, v in lg.vms_per_host.iteritems():
-                    self.logger.debug("        host = %s", h)
-                    self.logger.debug("        vms = %s",
-                                      str(len(lg.vms_per_host[h])))
+                    LOG.debug("        host = %s" % h)
+                    LOG.debug("        vms = %s" %
+                              str(len(lg.vms_per_host[h])))
                     host = None
                     if h in self.hosts.keys():
                         host = self.hosts[h]
                     elif h in self.host_groups.keys():
                         host = self.host_groups[h]
                     else:
-                        self.logger.error("TEST: lg member not exist")
+                        LOG.error("TEST: lg member not exist")
                     if host is not None:
-                        self.logger.debug("        status = " + host.status)
+                        LOG.debug("        status = " + host.status)
                         if lgk not in host.memberships.keys():
-                            self.logger.error("TEST: membership missing")
+                            LOG.error("TEST: membership missing")
 
     def show_current_host_status(self):
-        self.logger.debug("--- track host info ---")
+        LOG.debug("--- track host info ---")
         for hk, h in self.hosts.iteritems():
-            self.logger.debug("host name = " + hk)
-            self.logger.debug("    status = " + h.status + ", " + h.state)
-            self.logger.debug("    vms = " + str(len(h.vm_list)))
-            self.logger.debug("    resources (org, total, avail, used)")
+            LOG.debug("host name = " + hk)
+            LOG.debug("    status = " + h.status + ", " + h.state)
+            LOG.debug("    vms = " + str(len(h.vm_list)))
+            LOG.debug("    resources (org, total, avail, used)")
             cpu_org = str(h.original_vCPUs)
             cpu_tot = str(h.vCPUs)
             cpu_avail = str(h.avail_vCPUs)
             cpu_used = str(h.vCPUs_used)
             msg = "      {0} = {1}, {2}, {3}, {4}"
-            self.logger.debug(
+            LOG.debug(
                 msg.format('cpu', cpu_org, cpu_tot, cpu_avail, cpu_used))
             mem_org = str(h.original_mem_cap)
             mem_tot = str(h.mem_cap)
             mem_avail = str(h.avail_mem_cap)
             mem_used = str(h.free_mem_mb)
-            self.logger.debug(
+            LOG.debug(
                 msg.format('mem', mem_org, mem_tot, mem_avail, mem_used))
             dsk_org = str(h.original_local_disk_cap)
             dsk_tot = str(h.local_disk_cap)
             dsk_avail = str(h.avail_local_disk_cap)
             dsk_used = str(h.free_disk_gb)
-            self.logger.debug(
+            LOG.debug(
                 msg.format('disk', dsk_org, dsk_tot, dsk_avail, dsk_used))
-            self.logger.debug("    memberships")
+            LOG.debug("    memberships")
             for mk in h.memberships.keys():
-                self.logger.debug("        " + mk)
+                LOG.debug("        " + mk)
                 if mk not in self.logical_groups.keys():
-                    self.logger.error("TEST: lg missing")
+                    LOG.error("TEST: lg missing")
 
     def update_rack_resource(self, _host):
         """Update resources for rack (host), then update cluster."""
@@ -509,8 +512,9 @@ class Resource(object):
 
         if host.status != _st:
             host.status = _st
-            self.logger.info(
-                "Resource.update_host_resources: host(%s) status changed", _hn)
+            LOG.warning(
+                "Resource.update_host_resources: host(%s) status changed" %
+                _hn)
             updated = True
 
         # FIXME(GJ): should check cpu, memm and disk here?
@@ -577,8 +581,8 @@ class Resource(object):
         """Remove vm by orchestration id from lgs. Update host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
-                self.logger.warn("logical group (%s) missing while "
-                                 "removing %s", lgk, _h_uuid)
+                LOG.warning("logical group (%s) missing while "
+                            "removing %s" % (lgk, _h_uuid))
                 continue
             lg = self.logical_groups[lgk]
 
@@ -617,8 +621,8 @@ class Resource(object):
         """Remove vm by uuid from lgs and update proper host and lgs."""
         for lgk in _host.memberships.keys():
             if lgk not in self.logical_groups.keys():
-                self.logger.warn("logical group (%s) missing while "
-                                 "removing %s", lgk, _uuid)
+                LOG.warning("logical group (%s) missing while "
+                            "removing %s" % (lgk, _uuid))
                 continue
             lg = self.logical_groups[lgk]
 

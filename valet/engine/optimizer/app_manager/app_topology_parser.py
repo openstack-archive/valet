@@ -24,12 +24,14 @@
     OS::Heat::ResourceGroup
     OS::Heat::ResourceGroup
 """
-
+from oslo_log import log
 import six
 
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
 from valet.engine.optimizer.app_manager.app_topology_base import VGroup
 from valet.engine.optimizer.app_manager.app_topology_base import VM
+
+LOG = log.getLogger(__name__)
 
 
 class Parser(object):
@@ -41,10 +43,8 @@ class Parser(object):
     OS::Heat::Stack OS::Heat::ResourceGroup
     """
 
-    def __init__(self, _high_level_allowed, _logger):
+    def __init__(self, _high_level_allowed):
         """Init Parser Class."""
-        self.logger = _logger
-
         self.high_level_allowed = _high_level_allowed
 
         self.format_version = None
@@ -109,9 +109,9 @@ class Parser(object):
                     if len(r["locations"]) > 0:
                         self.candidate_list_map[rk] = r["locations"]
                 vms[vm.uuid] = vm
-                self.logger.info("vm = " + vm.uuid)
+                LOG.info("vm = " + vm.uuid)
             elif r["type"] == "OS::Cinder::Volume":
-                self.logger.warn("Parser: do nothing for volume at this "
+                LOG.warning("Parser: do nothing for volume at this "
                                  "version")
 
             elif r["type"] == "ATT::Valet::GroupAssignment":
@@ -154,7 +154,7 @@ class Parser(object):
                     return {}, {}
                 vgroups[vgroup.uuid] = vgroup
                 msg = "group = %s, type = %s"
-                self.logger.info(msg % (vgroup.name, vgroup.vgroup_type))
+                LOG.info(msg % (vgroup.name, vgroup.vgroup_type))
 
         if self._merge_diversity_groups(_elements, vgroups, vms) is False:
             return {}, {}

@@ -25,7 +25,7 @@ class TestTopology(Base):
     def setUp(self):
         """Setup TestTopology Test Class."""
         super(TestTopology, self).setUp()
-        self.topo = Topology(Config(), None)
+        self.topo = Topology(Config())
 
     def test_simple_topology(self):
         """Validate simple topology (region, rack, node_type and status)."""

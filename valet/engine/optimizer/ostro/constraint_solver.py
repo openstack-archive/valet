@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from oslo_log import log
 
 from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
 from valet.engine.optimizer.app_manager.app_topology_base import VGroup
@@ -24,20 +25,21 @@ from valet.engine.optimizer.ostro.openstack_filters import CoreFilter
 from valet.engine.optimizer.ostro.openstack_filters import DiskFilter
 from valet.engine.optimizer.ostro.openstack_filters import RamFilter
 
+LOG = log.getLogger(__name__)
+
 
 class ConstraintSolver(object):
     """ConstraintSolver."""
 
-    def __init__(self, _logger):
+    def __init__(self):
         """Initialization."""
         """Instantiate filters to help enforce constraints."""
-        self.logger = _logger
 
-        self.openstack_AZ = AvailabilityZoneFilter(self.logger)
-        self.openstack_AIES = AggregateInstanceExtraSpecsFilter(self.logger)
-        self.openstack_R = RamFilter(self.logger)
-        self.openstack_C = CoreFilter(self.logger)
-        self.openstack_D = DiskFilter(self.logger)
+        self.openstack_AZ = AvailabilityZoneFilter()
+        self.openstack_AIES = AggregateInstanceExtraSpecsFilter()
+        self.openstack_R = RamFilter()
+        self.openstack_C = CoreFilter()
+        self.openstack_D = DiskFilter()
 
         self.status = "success"
 
@@ -57,10 +59,10 @@ class ConstraintSolver(object):
                 candidate_list.append(r)
         if len(candidate_list) == 0:
             self.status = "no candidate for node = " + _n.node.name
-            self.logger.warn(self.status)
+            LOG.warning(self.status)
             return candidate_list
         else:
-            self.logger.debug("ConstraintSolver: num of candidates = " +
+            LOG.debug("ConstraintSolver: num of candidates = " +
                               str(len(candidate_list)))
 
         """Availability zone constraint."""
@@ -72,7 +74,7 @@ class ConstraintSolver(object):
                 if len(candidate_list) == 0:
                     self.status = "violate availability zone constraint for " \
                                   "node = " + _n.node.name
-                    self.logger.error("ConstraintSolver: " + self.status)
+                    LOG.error("ConstraintSolver: " + self.status)
                     return candidate_list
 
         """Host aggregate constraint."""
@@ -82,7 +84,7 @@ class ConstraintSolver(object):
                 if len(candidate_list) == 0:
                     self.status = "violate host aggregate constraint for " \
                                   "node = " + _n.node.name
-                    self.logger.error("ConstraintSolver: " + self.status)
+                    LOG.error("ConstraintSolver: " + self.status)
                     return candidate_list
 
         """CPU capacity constraint."""
@@ -91,7 +93,7 @@ class ConstraintSolver(object):
             if len(candidate_list) == 0:
                 self.status = "violate cpu capacity constraint for " \
                               "node = " + _n.node.name
-                self.logger.error("ConstraintSolver: " + self.status)
+                LOG.error("ConstraintSolver: " + self.status)
                 return candidate_list
 
         """Memory capacity constraint."""
@@ -100,7 +102,7 @@ class ConstraintSolver(object):
             if len(candidate_list) == 0:
                 self.status = "violate memory capacity constraint for " \
                               "node = " + _n.node.name
-                self.logger.error("ConstraintSolver: " + self.status)
+                LOG.error("ConstraintSolver: " + self.status)
                 return candidate_list
 
         """Local disk capacity constraint."""
@@ -109,7 +111,7 @@ class ConstraintSolver(object):
             if len(candidate_list) == 0:
                 self.status = "violate local disk capacity constraint for " \
                               "node = " + _n.node.name
-                self.logger.error("ConstraintSolver: " + self.status)
+                LOG.error("ConstraintSolver: " + self.status)
                 return candidate_list
 
         """ diversity constraint """
@@ -125,7 +127,7 @@ class ConstraintSolver(object):
             if len(candidate_list) == 0:
                 self.status = "violate diversity constraint for " \
                               "node = " + _n.node.name
-                self.logger.error("ConstraintSolver: " + self.status)
+                LOG.error("ConstraintSolver: " + self.status)
                 return candidate_list
             else:
                 self._constrain_diversity(_level, _n, _node_placements,
@@ -133,7 +135,7 @@ class ConstraintSolver(object):
                 if len(candidate_list) == 0:
                     self.status = "violate diversity constraint for " \
                                   "node = " + _n.node.name
-                    self.logger.error("ConstraintSolver: " + self.status)
+                    LOG.error("ConstraintSolver: " + self.status)
                     return candidate_list
 
         """Exclusivity constraint."""
@@ -142,7 +144,7 @@ class ConstraintSolver(object):
         if len(exclusivities) > 1:
             self.status = "violate exclusivity constraint (more than one " \
                           "exclusivity) for node = " + _n.node.name
-            self.logger.error("ConstraintSolver: " + self.status)
+            LOG.error("ConstraintSolver: " + self.status)
             return []
         else:
             if len(exclusivities) == 1:
@@ -153,14 +155,14 @@ class ConstraintSolver(object):
                     if len(candidate_list) == 0:
                         self.status = "violate exclusivity constraint for " \
                                       "node = " + _n.node.name
-                        self.logger.error("ConstraintSolver: " + self.status)
+                        LOG.error("ConstraintSolver: " + self.status)
                         return candidate_list
             else:
                 self._constrain_non_exclusivity(_level, candidate_list)
                 if len(candidate_list) == 0:
                     self.status = "violate non-exclusivity constraint for " \
                                   "node = " + _n.node.name
-                    self.logger.error("ConstraintSolver: " + self.status)
+                    LOG.error("ConstraintSolver: " + self.status)
                     return candidate_list
 
         """Affinity constraint."""
@@ -173,7 +175,7 @@ class ConstraintSolver(object):
                     if len(candidate_list) == 0:
                         self.status = "violate affinity constraint for " \
                                       "node = " + _n.node.name
-                        self.logger.error("ConstraintSolver: " + self.status)
+                        LOG.error("ConstraintSolver: " + self.status)
                         return candidate_list
 
         return candidate_list

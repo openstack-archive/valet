@@ -25,6 +25,8 @@ from valet.common.music import Music
 from valet.engine.listener.oslo_messages import OsloMessage
 import yaml
 
+LOG = get_logger("ostro_listener")
+
 
 class ListenerManager(threading.Thread):
     """Listener Manager Thread Class."""
@@ -35,7 +37,6 @@ class ListenerManager(threading.Thread):
         self.thread_id = _t_id
         self.thread_name = _t_name
         self.config = _config
-        self.listener_logger = get_logger("ostro_listener")
         self.MUSIC = None
 
     def run(self):
@@ -47,7 +48,7 @@ class ListenerManager(threading.Thread):
         credentials = pika.PlainCredentials("guest", "PASSWORD").
         """
         try:
-            self.listener_logger.info("ListenerManager: start " +
+            LOG.info("ListenerManager: start " +
                                       self.thread_name + " ......")
 
             if self.config.events_listener.store:
@@ -58,19 +59,21 @@ class ListenerManager(threading.Thread):
                     'replication_factor': self.config.music.replication_factor,
                     'music_server_retries':
                         self.config.music.music_server_retries,
-                    'logger': self.listener_logger,
+                    'logger': LOG,
                 }
                 engine = Music(**kwargs)
                 engine.create_keyspace(self.config.music.keyspace)
                 self.MUSIC = {'engine': engine,
                               'keyspace': self.config.music.keyspace}
-                self.listener_logger.debug(
-                    'Storing in music on %s, keyspace %s',
-                    self.config.music.hosts, self.config.music.keyspace)
 
-            self.listener_logger.debug('Connecting to %s, with %s',
-                                       self.config.messaging.host,
-                                       self.config.messaging.username)
+                LOG.debug(
+                    'Storing in music on %s, keyspace %s' %
+                    (self.config.music.host, self.config.music.keyspace))
+
+            LOG.debug('Connecting to %s, with %s' %
+                                       (self.config.messaging.host,
+                                        self.config.messaging.username))
+
             credentials = pika.PlainCredentials(self.config.messaging.username,
                                                 self.config.messaging.password)
             parameters = pika.ConnectionParameters(self.config.messaging.host,
@@ -103,7 +106,8 @@ class ListenerManager(threading.Thread):
             # Bind the queue to the selected exchange
             channel.queue_bind(exchange=exchange_name, queue=queue_name,
                                routing_key=binding_key)
-            self.listener_logger.info('Channel is bound,listening on %s '
+
+            LOG.info('Channel is bound,listening on%s '
                                       'exchange %s',
                                       self.config.messaging.host,
                                       self.config.events_listener.exchange)
@@ -111,7 +115,7 @@ class ListenerManager(threading.Thread):
             # Start consuming messages
             channel.basic_consume(self.on_message, queue_name)
         except Exception:
-            self.listener_logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return
 
         try:
@@ -136,13 +140,13 @@ class ListenerManager(threading.Thread):
             else:
                 return
 
-            self.listener_logger.debug(
+            LOG.debug(
                 "\nMessage No: %s\n", method_frame.delivery_tag)
-            self.listener_logger.debug(
+            LOG.debug(
                 json.dumps(message, sort_keys=True, indent=2))
             channel.basic_ack(delivery_tag=method_frame.delivery_tag)
         except Exception:
-            self.listener_logger.error(traceback.format_exc())
+            LOG.error(traceback.format_exc())
             return
 
     def is_message_wanted(self, message):
