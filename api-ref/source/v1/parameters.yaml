@@ -13,8 +13,27 @@ member_id_query:
   in: query
   required: true
   type: string
+plan_id_query:
+  description: |
+    The UUID of a plan
+  in: query
+  required: true
+  type: string
 
 # Parameters in body
+action:
+  description: |
+    The plan update action.  The only valid option is **migrate**, to
+    replan a single resource.
+  in: body
+  required: true
+  type: string
+excluded_hosts:
+  description: |
+    A list of hosts that must **not** be considered when replanning.
+  in: body
+  required: true
+  type: list
 group_description:
   description: |
     Description of a group.
@@ -45,6 +64,63 @@ group_type:
   description: |
     Type of a group.  Currently, the only valid value is ``exclusivity``.
     This parameter is immutable.
+  in: body
+  required: true
+  type: string
+locations:
+  description: |
+    List of placement location candidates.
+  in: body
+  required: false
+  type: list
+placements:
+  description: |
+    Dictionary of planned resource.  Each is keyed by an orchestration UUID.
+    This is a UUID provided by an orchestration engine (e.g. heat-engine)
+    prior to instantiation of a resource.  The dictionary contains two keys,
+
+    - **location**: resource placement
+    - **name**: resource name
+
+  in: body
+  required: true
+  type: string
+plan_id:
+  description: |
+    UUID of the plan.
+  in: body
+  required: true
+  type: string
+plan_name:
+  description: |
+    Name of the plan.
+  in: body
+  required: true
+  type: string
+resources:
+  description: |
+    A dictionary of resources to be planned. Each is keyed by an orchestration
+    UUID. This is a UUID provided by an orchestration engine (e.g. heat-engine)
+    prior to instantiation of a resource.  The dictionary contains three keys,
+
+    - **name**: resource name
+    - **type**: resource type (in HOT format),
+    - **properties**: resource properties (in HOT format)
+
+  in: body
+  required: true
+  type: dictionary
+resources_update:
+  description: |
+    A list of resource IDs.  If the ``action`` is ``migrate``, this is a list
+    of a length one. The lone item is either a physical resource id or an
+    orchestration id.
+  in: body
+  required: true
+  type: list
+stack_id:
+  description: |
+    UUID of the stack.
   in: body
   required: true
   type: string

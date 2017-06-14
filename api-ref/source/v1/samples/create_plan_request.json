@@ -1,0 +1,20 @@
+{
+  "plan_name": "e624474b-fc80-4053-ab5f-45cc1030e692",
+  "resources": {
+    "b71bedad-dd57-4942-a7bd-ab074b72d652": {
+      "properties": {
+        "flavor": "m1.small",
+        "image": "ubuntu12_04",
+        "key_name": "demo",
+        "networks": [
+          {
+            "network": "demo-net"
+          }
+        ]
+      },
+      "type": "OS::Nova::Server",
+      "name": "my_instance"
+    }
+  },
+  "stack_id": "e624474b-fc80-4053-ab5f-45cc1030e692"
+}
