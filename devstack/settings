@@ -1,0 +1,6 @@
+enable_service valet
+export OPENSTACK_PLUGIN_PATH=${OPENSTACK_PLUGIN_PATH:-/opt/stack/valet/plugins/valet_plugins}
+export MUSIC_URL=${MUSIC_URL}
+export MUSIC_FILE=${MUSIC_FILE}
+export CASSANDRA_DEBIAN_MIRROR=${CASSANDRA_DEBIAN_MIRROR:-"deb http://www.apache.org/dist/cassandra/debian 310x main"}
+
