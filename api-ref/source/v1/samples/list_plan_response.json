@@ -1,0 +1,26 @@
+{
+  "plans": [
+    {
+      "stack_id": "e624474b-fc80-4053-ab5f-45cc1030e692",
+      "id": "f1a81397-e4d4-46de-8445-dfadef633beb",
+      "placements": {
+        "b71bedad-dd57-4942-a7bd-ab074b72d652": {
+          "location": "qos101",
+          "name": "my_instance"
+        }
+      },
+      "name": "e624474b-fc80-4053-ab5f-45cc1030e692"
+    },
+    {
+      "stack_id": "8e06301e-7375-465f-9fc7-70fb13763927",
+      "id": "f56391b0-61bb-4e18-b9ca-23c0ff2e4508",
+      "placements": {
+        "8e06301e-7375-465f-9fc7-70fb13763927": {
+          "location": "qos101",
+          "name": "ad_hoc_instance"
+        }
+      },
+      "name": "8e06301e-7375-465f-9fc7-70fb13763927"
+    }
+  ]
+}

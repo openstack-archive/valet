@@ -1,0 +1,5 @@
+{
+  "action": "migrate",
+  "excluded_hosts": ["qos104", "qos106", "qos107"],
+  "resources": ["b71bedad-dd57-4942-a7bd-ab074b72d652"]
+}
