@@ -12,9 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from oslo_log import log
+
 from valet.engine.optimizer.app_manager.app_topology_base import VGroup
 from valet.engine.optimizer.app_manager.app_topology_base import VM
 from valet.engine.optimizer.ostro.search import Search
+
+LOG = log.getLogger(__name__)
 
 
 # FIXME(GJ): make search algorithm pluggable
@@ -22,12 +26,11 @@ from valet.engine.optimizer.ostro.search import Search
 class Optimizer(object):
     """Optimizer."""
 
-    def __init__(self, _resource, _logger):
+    def __init__(self, _resource):
         """Initialization."""
         self.resource = _resource
-        self.logger = _logger
 
-        self.search = Search(self.logger)
+        self.search = Search()
 
         self.status = "success"
 
@@ -80,8 +83,7 @@ class Optimizer(object):
                     elif v.level == "cluster":
                         placement_map[v] = node_placement.cluster_name
 
-                self.logger.debug("    " + v.name + " placed in " +
-                                  placement_map[v])
+                LOG.debug(v.name + " placed in " + placement_map[v])
 
             self._update_resource_status(uuid_map)
 
