@@ -19,6 +19,7 @@ import argparse
 import json
 from oslo_config import cfg
 import requests
+from valet.common import conf as common
 
 CONF = cfg.CONF
 
@@ -204,7 +205,8 @@ def populate_args_request_body(args):
 
 def run(args):
     """Run."""
-    args.host = args.host or CONF.server.hosts[0]
+    common.init_conf("cli.log")
+    args.host = args.host or CONF.server.host
     args.port = args.port or CONF.server.port
     args.timeout = args.timeout or 10
     rest_cmd, cmd_url = cmd_details(args)

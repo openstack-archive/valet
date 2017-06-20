@@ -15,7 +15,11 @@
 
 """Test Config."""
 
+import sys
+from valet.engine.optimizer.ostro_server.configuration import Config
 from valet.tests.base import Base
+
+from oslo_config import cfg
 
 
 class TestConfig(Base):
@@ -24,7 +28,15 @@ class TestConfig(Base):
     def setUp(self):
         """Setup Test Config Testing Class."""
         super(TestConfig, self).setUp()
+        sys.argv = [sys.argv[0]]
 
     def test_unhappy_config_io(self):
         """Test unhappy.cfg I/O and validate I/O error in config status."""
-        pass
+        cfg.CONF.clear()
+        try:
+            config = Config("unhappy.cfg")
+            config_status = config.configure()
+            self.validate_test("I/O error" in config_status)
+
+        except Exception as ex:
+            self.validate_test(isinstance(ex, cfg.ConfigFilesNotFoundError))

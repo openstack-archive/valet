@@ -19,6 +19,7 @@ from common.i18n import _
 
 from valet import api
 from valet.common.conf import get_logger
+from valet.common.conf import init_conf
 
 
 def config_file(file_name=None):
@@ -47,6 +48,7 @@ if __name__ == '__main__':
         # import pecan_mount
         # HTTPD = make_server('', 8090, pecan_mount.tree)
 #         from valet.api.conf import register_conf, set_domain
+        init_conf("wsgi.log")
         api.LOG = get_logger("wsgi")
         HTTPD = make_server(
             '', 8090, deploy(config_file('/var/www/valet/config.py')))

@@ -69,7 +69,7 @@ class ListenerManager(threading.Thread):
 
                 LOG.debug(
                     'Storing in music on %s, keyspace %s' %
-                    (self.config.music.hosts[0], self.config.music.keyspace))
+                    (self.config.music.host, self.config.music.keyspace))
 
             LOG.debug('Connecting to %s, with %s' %
                       (self.config.messaging.host,
