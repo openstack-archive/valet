@@ -1,0 +1,9 @@
+Code-Review+2: Omar Rivera <gomarivera@gmail.com>
+Workflow+1: Omar Rivera <gomarivera@gmail.com>
+Code-Review+1: Cliff Parsons <cliff.parsons@att.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 20 Jun 2017 18:38:10 +0000
+Reviewed-on: https://review.openstack.org/475896
+Project: openstack/valet
+Branch: refs/heads/master
