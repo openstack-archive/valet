@@ -18,13 +18,13 @@ import sys
 import traceback
 
 from oslo_log import log
+from oslo_config import cfg
 
-from valet.common.conf import get_logger
 from valet.engine.optimizer.ostro.ostro import Ostro
-from valet.engine.optimizer.ostro_server.configuration import Config
 from valet.engine.optimizer.ostro_server.daemon import Daemon
 
 LOG = log.getLogger(__name__)
+CONF = cfg.CONF
 
 
 class OstroDaemon(Daemon):
@@ -34,7 +34,7 @@ class OstroDaemon(Daemon):
         """Run the daemon."""
         LOG.info("Valet Engine is launched")
         try:
-            ostro = Ostro(config)
+            ostro = Ostro()
         except Exception:
             LOG.error(traceback.format_exc())
 
@@ -48,42 +48,18 @@ class OstroDaemon(Daemon):
 
         ostro.run_ostro()
 
-
-def verify_dirs(list_of_dirs):
-    """If a directory in the list does not exist, create it."""
-    for d in list_of_dirs:
-        try:
-            if not os.path.exists(d):
-                os.makedirs(d)
-        except OSError:
-            print("Error while verifying: " + d)
-            sys.exit(2)
-
-
 if __name__ == "__main__":
     # Configuration
     try:
-        config = Config()
-        logger = get_logger("ostro_daemon")
-        config_status = config.configure()
-        if config_status != "success":
-            print(config_status)
-            sys.exit(2)
-
-        # Verify directories
-        dirs_list = [config.logging_loc, config.resource_log_loc,
-                     config.app_log_loc, os.path.dirname(config.process)]
-        verify_dirs(dirs_list)
-
         # Start daemon process
-        daemon = OstroDaemon(config.priority, config.process, logger)
+        daemon = OstroDaemon()
 
         exit_code = {
             'start': daemon.start,
             'stop': daemon.stop,
             'restart': daemon.restart,
             'status': daemon.status,
-        }[config.command]()
+        }[CONF.engine.command]()
         exit_code = exit_code or 0
 
     except Exception:
