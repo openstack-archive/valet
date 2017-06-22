@@ -1,33 +1,15 @@
-#
-# Copyright 2014-2017 AT&T Intellectual Property
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#!/bin/python
 
-"""App Handler."""
 
+import json
 import operator
 import time
 
-from oslo_log import log
-
 from valet.engine.optimizer.app_manager.app_topology import AppTopology
-from valet.engine.optimizer.app_manager.app_topology_base import VM
-from valet.engine.optimizer.app_manager.application import App
-
-LOG = log.getLogger(__name__)
 
 
 class AppHistory(object):
+    '''Data container for scheduling decisions.'''
 
     def __init__(self, _key):
         self.decision_key = _key
@@ -37,323 +19,400 @@ class AppHistory(object):
 
 
 class AppHandler(object):
-    """App Handler Class.
+    '''Handler class for all requested applications.'''
 
-    This class handles operations for the management of applications.
-    Functions related to adding apps and adding/removing them from
-    placement and updating topology info.
-    """
-
-    def __init__(self, _resource, _db, _config):
-        """Init App Handler Class."""
+    def __init__(self, _placement_handler, _metadata, _resource, _db, _config, _logger):
+        self.phandler = _placement_handler
         self.resource = _resource
         self.db = _db
-        self.config = _config
 
-        """ current app requested, a temporary copy """
-        self.apps = {}
+        self.metadata = _metadata
+
+        self.config = _config
+        self.logger = _logger
+
+        self.apps = {}   # key= stack_id, value = Contain AppTopology instance
+        self.max_app_cache = 500
+        self.min_app_cache = 100
 
         self.decision_history = {}
         self.max_decision_history = 5000
         self.min_decision_history = 1000
 
-        self.status = "success"
-
-    # NOTE(GJ): do not cache migration decision
     def check_history(self, _app):
+        '''Check if 'create' or 'replan' is determined already.'''
+
         stack_id = _app["stack_id"]
         action = _app["action"]
 
+        decision_key = None
         if action == "create":
             decision_key = stack_id + ":" + action + ":none"
-            if decision_key in self.decision_history.keys():
-                return (decision_key,
-                        self.decision_history[decision_key].result)
-            else:
-                return (decision_key, None)
         elif action == "replan":
-            msg = "%s:%s:%s"
-            decision_key = msg % (stack_id, action, _app["orchestration_id"])
-            if decision_key in self.decision_history.keys():
-                return (decision_key,
-                        self.decision_history[decision_key].result)
-            else:
-                return (decision_key, None)
+            decision_key = stack_id + ":" + action + ":" + _app["resource_id"]
         else:
             return (None, None)
 
-    def put_history(self, _decision_key, _result):
-        decision_key_list = _decision_key.split(":")
-        action = decision_key_list[1]
+        if decision_key in self.decision_history.keys():
+            return (decision_key, self.decision_history[decision_key].result)
+        else:
+            return (decision_key, None)
+
+    def record_history(self, _decision_key, _result):
+        '''Record an app placement decision.'''
+
+        decision_key_element_list = _decision_key.split(":")
+
+        action = decision_key_element_list[1]
         if action == "create" or action == "replan":
+            if len(self.decision_history) > self.max_decision_history:
+                self._flush_decision_history()
             app_history = AppHistory(_decision_key)
             app_history.result = _result
             app_history.timestamp = time.time()
             self.decision_history[_decision_key] = app_history
 
-            if len(self.decision_history) > self.max_decision_history:
-                self._clean_decision_history()
+    def _flush_decision_history(self):
+        '''Unload app placement decisions.'''
 
-    def _clean_decision_history(self):
         count = 0
         num_of_removes = len(self.decision_history) - self.min_decision_history
+
         remove_item_list = []
-        for decision in (sorted(self.decision_history.values(),
-                         key=operator.attrgetter('timestamp'))):
+        for decision in (sorted(self.decision_history.values(), key=operator.attrgetter('timestamp'))):
             remove_item_list.append(decision.decision_key)
             count += 1
             if count == num_of_removes:
                 break
+
         for dk in remove_item_list:
-            if dk in self.decision_history.keys():
-                del self.decision_history[dk]
+            del self.decision_history[dk]
 
-    def add_app(self, _app):
-        """Add app and set or regenerate topology, return updated topology."""
-        self.apps.clear()
+    def _flush_app_cache(self):
+        '''Unload app topologies.'''
 
-        app_topology = AppTopology(self.resource)
+        count = 0
+        num_of_removes = len(self.apps) - self.min_app_cache
 
-        stack_id = None
-        if "stack_id" in _app.keys():
-            stack_id = _app["stack_id"]
-        else:
-            stack_id = "none"
+        remove_item_list = []
+        for app in (sorted(self.apps.values(), key=operator.attrgetter('timestamp_scheduled'))):
+            remove_item_list.append(app.app_id)
+            count += 1
+            if count == num_of_removes:
+                break
 
-        application_name = None
-        if "application_name" in _app.keys():
-            application_name = _app["application_name"]
-        else:
-            application_name = "none"
+        for appk in remove_item_list:
+            del self.apps[appk]
 
-        action = _app["action"]
-        if action == "replan" or action == "migrate":
-            re_app = self._regenerate_app_topology(stack_id, _app,
-                                                   app_topology, action)
-            if re_app is None:
-                self.apps[stack_id] = None
-                msg = "cannot locate the original plan for stack = %s"
-                self.status = msg % stack_id
+    def set_app(self, _app):
+        '''Validate app placement request and extract info for placement decision.'''
+
+        app_topology = AppTopology(self.phandler, self.resource, self.db, self.logger)
+        app_topology.init_app(_app)
+        if app_topology.status != "success":
+            self.logger.error(app_topology.status)
+            return app_topology
+
+        self.logger.info("got '" + app_topology.action + "' for app = " + app_topology.app_id)
+
+        if app_topology.action == "ping":
+            pass
+
+        # For stack-creation or single vm creation (ad-hoc) requests
+        elif app_topology.action == "create":
+            if self._set_vm_flavor_properties(app_topology) is False:
+                self.logger.error(app_topology.status)
+                return app_topology
+
+            if app_topology.set_app_topology_properties(_app) is False:
+                if app_topology.status == "success":
+                    return None
+                else:
+                    self.logger.error(app_topology.status)
+                    return app_topology
+
+            self.logger.debug("TEST: done setting stack properties")
+
+            if app_topology.parse_app_topology() is False:
+                self.logger.error(app_topology.status)
+                return app_topology
+
+            self.logger.debug("TEST: done parsing stack")
+
+        # For migration recommandation request or re-scheduling prior placement due to conflict
+        elif app_topology.action == "replan" or app_topology.action == "migrate":
+            (placements, groups) = self.get_placements(app_topology)
+            if placements is None:
+                return None
+            elif len(placements) == 0:
+                return app_topology
+            app_topology.placements = placements
+            app_topology.groups = groups
+
+            self.logger.debug("TEST: done getting stack")
+
+            if app_topology.set_app_topology_properties(_app) is False:
+                if app_topology.status == "success":
+                    return None
+                else:
+                    self.logger.error(app_topology.status)
+                    return app_topology
+
+            self.logger.debug("TEST: done setting stack properties")
+
+            if app_topology.parse_app_topology() is False:
+                self.logger.error(app_topology.status)
+                return app_topology
+
+            self.logger.debug("TEST: done parsing stack")
+
+        # For the confirmation with physical uuid of scheduling decision match
+        elif app_topology.action == "identify":
+            (placements, groups) = self.get_placements(app_topology)
+            if placements is None:
+                return None
+            elif len(placements) == 0:
+                return app_topology
+            app_topology.placements = placements
+            app_topology.groups = groups
+
+            self.logger.debug("TEST: done getting stack")
+
+        # For stack-update request
+        elif app_topology.action == "update":
+            if self._set_vm_flavor_properties(app_topology) is False:
+                self.logger.error(app_topology.status)
+                return app_topology
+
+            (old_placements, old_groups) = self.get_placements(app_topology)
+            if old_placements is None:
                 return None
 
-            if action == "replan":
-                LOG.info("got replan: " + stack_id)
-            elif action == "migrate":
-                LOG.info("got migration: " + stack_id)
+            if "original_resources" in _app.keys():
+                if len(old_placements) > 0:
+                    self.logger.warn("original stack info already exists")
+                else:
+                    old_placements = _app["original_resources"]
 
-            app_id = app_topology.set_app_topology(re_app)
+            if len(old_placements) == 0:
+                if app_topology.status == "success":
+                    app_topology.status = "failed"
+                return app_topology
 
-            if app_id is None:
-                LOG.error("Could not set app topology for regererated graph." +
-                          app_topology.status)
-                self.status = app_topology.status
-                self.apps[stack_id] = None
-                return None
-        else:
-            app_id = app_topology.set_app_topology(_app)
+            self.logger.debug("TEST: done getting old stack")
 
-            if len(app_topology.candidate_list_map) > 0:
-                LOG.info("got ad-hoc placement: " + stack_id)
-            else:
-                LOG.info("got placement: " + stack_id)
+            for rk, r in old_placements.iteritems():
+                if r["type"] == "OS::Nova::Server":
+                    if "resource_id" in r.keys():
+                        uuid = r["resource_id"]
+                        placement = self.phandler.get_placement(uuid)
+                        if placement is None:
+                            return None
+                        elif placement.uuid == "none":
+                            self.logger.warn("vm (" + rk + ") in original stack missing (deleted?)")
+                            app_topology.delete_placement(rk)
+                            continue
 
-            if app_id is None:
-                LOG.error("Could not set app topology for app graph" +
-                          app_topology.status)
-                self.status = app_topology.status
-                self.apps[stack_id] = None
-                return None
+                        if placement.stack_id is None or placement.stack_id == "none" or \
+                           placement.stack_id != app_topology.app_id:
+                            self.logger.warn("unknown stack in valet record")
+                            self.phandler.update_placement(uuid, stack_id=app_topology.app_id, orch_id=rk)
 
-        new_app = App(stack_id, application_name, action)
-        self.apps[stack_id] = new_app
+                        if self._change_meta(rk, r, app_topology.placements) is True:
+                            self.phandler.update_placement(uuid, state="rebuilding")
+                            self.phandler.set_original_host(uuid)
+
+                        app_topology.update_placement_vm_host(rk, placement.host)
+                    else:
+                        self.logger.warn("vm (" + rk + ") in original stack does not have id")
+
+            if old_groups is not None and len(old_groups) > 0:
+                for gk, g in old_groups.iteritems():
+                    if "host" in g.keys():
+                        app_topology.update_placement_group_host(gk, g["host"])
+
+            self.logger.debug("TEST: done setting stack update")
+
+            if app_topology.set_app_topology_properties(_app) is False:
+                if app_topology.status == "success":
+                    return None
+                else:
+                    self.logger.error(app_topology.status)
+                    return app_topology
+
+            for rk, host_info in app_topology.old_vm_map.iteritems():
+                old = old_placements[rk]
+                vcpus = old["properties"]["vcpus"]
+                mem = old["properties"]["mem"]
+                local_volume = old["properties"]["local_volume"]
+                if host_info[1] != vcpus or host_info[2] != mem or host_info[3] != local_volume:
+                    app_topology.old_vm_map[rk] = (host_info[0], vcpus, mem, local_volume)
+
+            self.logger.debug("TEST: done setting stack properties")
+
+            if app_topology.parse_app_topology() is False:
+                self.logger.error(app_topology.status)
+                return app_topology
+
+            self.logger.debug("TEST: done getting stack")
 
         return app_topology
 
-    def add_placement(self, _placement_map, _app_topology, _timestamp):
-        """Change requested apps to scheduled and place them."""
-        for v in _placement_map.keys():
-            if self.apps[v.app_uuid].status == "requested":
-                self.apps[v.app_uuid].status = "scheduled"
-                self.apps[v.app_uuid].timestamp_scheduled = _timestamp
+    def _set_vm_flavor_properties(self, _app_topology):
+        '''Set flavor's properties.'''
 
-            if isinstance(v, VM):
-                if self.apps[v.app_uuid].request_type == "replan":
-                    if v.uuid in _app_topology.planned_vm_map.keys():
-                        self.apps[v.app_uuid].add_vm(
-                            v, _placement_map[v], "replanned")
-                    else:
-                        self.apps[v.app_uuid].add_vm(
-                            v, _placement_map[v], "scheduled")
-                    if v.uuid == _app_topology.candidate_list_map.keys()[0]:
-                        self.apps[v.app_uuid].add_vm(
-                            v, _placement_map[v], "replanned")
-                else:
-                    self.apps[v.app_uuid].add_vm(
-                        v, _placement_map[v], "scheduled")
-            # NOTE(GJ): do not handle Volume in this version
-            else:
-                if _placement_map[v] in self.resource.hosts.keys():
-                    host = self.resource.hosts[_placement_map[v]]
-                    if v.level == "host":
-                        self.apps[v.app_uuid].add_vgroup(v, host.name)
-                else:
-                    hg = self.resource.host_groups[_placement_map[v]]
-                    if v.level == hg.host_type:
-                        self.apps[v.app_uuid].add_vgroup(v, hg.name)
+        for rk, r in _app_topology.placements.iteritems():
+            if r["type"] == "OS::Nova::Server":
+                flavor = self.resource.get_flavor(r["properties"]["flavor"])
+                if flavor is None:
+                    self.logger.warn("not exist flavor (" + r["properties"]["flavor"] + ") and try to refetch")
 
-        if self._store_app_placements() is False:
-            pass
+                    if not self.metadata.set_flavors():
+                        _app_topology.status = "failed to read flavors from nova"
+                        return False
+                    flavor = self.resource.get_flavor(r["properties"]["flavor"])
+                    if flavor is None:
+                        _app_topology.status = "net exist flavor (" + r["properties"]["flavor"] + ")"
+                        return False
 
-    def _store_app_placements(self):
-        # NOTE(GJ): do not track application history in this version
+                r["properties"]["vcpus"] = flavor.vCPUs
+                r["properties"]["mem"] = flavor.mem_cap
+                r["properties"]["local_volume"] = flavor.disk_cap
 
-        for appk, app in self.apps.iteritems():
-            json_info = app.get_json_info()
-            if self.db.add_app(appk, json_info) is False:
-                return False
+                if len(flavor.extra_specs) > 0:
+                    extra_specs = {}
+                    for mk, mv in flavor.extra_specs.iteritems():
+                        extra_specs[mk] = mv
+                    r["properties"]["extra_specs"] = extra_specs
 
         return True
 
-    def remove_placement(self):
-        """Remove App from placement."""
-        if self.db is not None:
-            for appk, _ in self.apps.iteritems():
-                if self.db.add_app(appk, None) is False:
-                    LOG.error("AppHandler: error while adding app "
-                              "info to MUSIC")
+    def _change_meta(self, _rk, _r, _placements):
+        '''Check if image or flavor is changed in the update request.'''
+        if _rk in _placements.keys():
+            r = _placements[_rk]
+            if r["properties"]["flavor"] != _r["properties"]["flavor"]:
+                if "vcpus" not in r["properties"].keys():
+                    flavor = self.resource.get_flavor(r["properties"]["flavor"])
+                    r["properties"]["vcpus"] = flavor.vCPUs
+                    r["properties"]["mem"] = flavor.mem_cap
+                    r["properties"]["local_volume"] = flavor.disk_cap
+                return True
+            if r["properties"]["image"] != _r["properties"]["image"]:
+                return True
+        return False
 
-    def get_vm_info(self, _s_uuid, _h_uuid, _host):
-        """Return vm_info from database."""
-        vm_info = {}
+    def get_placements(self, _app_topology):
+        '''Get prior stack/app placements info from db or cache.'''
 
-        if _h_uuid is not None and _h_uuid != "none" and \
-           _s_uuid is not None and _s_uuid != "none":
-            vm_info = self.db.get_vm_info(_s_uuid, _h_uuid, _host)
+        (placements, groups) = self.get_stack(_app_topology.app_id)
 
-        return vm_info
+        if placements is None:
+            return (None, None)
+        elif len(placements) == 0:
+            _app_topology.status = "no app/stack record"
+            return ({}, {})
 
-    def update_vm_info(self, _s_uuid, _h_uuid):
-        if _h_uuid and _h_uuid != "none" and _s_uuid and _s_uuid != "none":
-            return self.db.update_vm_info(_s_uuid, _h_uuid)
+        return (placements, groups)
+
+    def get_stack(self, _stack_id):
+        '''Get stack info from db or cache.'''
+
+        placements = {}
+        groups = {}
+
+        if _stack_id in self.apps.keys():
+            placements = self.apps[_stack_id].placements
+            groups = self.apps[_stack_id].groups
+            self.logger.debug("hit stack cache")
+        else:
+            stack = self.db.get_stack(_stack_id)
+            if stack is None:
+                return (None, None)
+            elif len(stack) == 0:
+                return ({}, {})
+            placements = stack["resources"]
+            if "groups" in stack.keys() and stack["groups"] is not None:
+                groups = stack["groups"]
+
+        self.logger.debug("TEST: current placements")
+        self.logger.debug(json.dumps(placements, indent=4))
+        if groups is not None and len(groups) > 0:
+            self.logger.debug("TEST: current groups")
+            self.logger.debug(json.dumps(groups, indent=4))
+
+        return (placements, groups)
+
+    def store_app(self, _app_topology):
+        '''Store and cache app placement results.'''
+
+        if _app_topology.action == "ping":
+            return True
+
+        _app_topology.timestamp_scheduled = self.resource.current_timestamp
+
+        if not _app_topology.store_app():
+            return False
+
+        if len(self.apps) > self.max_app_cache:
+            self._flush_app_cache()
+        self.apps[_app_topology.app_id] = _app_topology
+
+        self.phandler.flush_cache()
 
         return True
 
-    def _regenerate_app_topology(self, _stack_id, _app,
-                                 _app_topology, _action):
-        re_app = {}
+    def update_stack(self, _stack_id, orch_id=None, uuid=None, host=None):
+        '''Update the uuid or host of vm in stack in db and cache.'''
 
-        old_app = self.db.get_app_info(_stack_id)
-        if old_app is None:
-            LOG.error("Error while getting old_app from MUSIC")
-            return None
-        elif len(old_app) == 0:
-            LOG.error("Cannot find the old app in MUSIC")
-            return None
+        (placements, groups) = self.get_stack(_stack_id)
+        if placements is None:
+            return (None, None)
+        elif len(placements) == 0:
+            return ("none", "none")
 
-        re_app["action"] = "create"
-        re_app["stack_id"] = _stack_id
+        placement = None
+        if orch_id is not None:
+            if orch_id in placements.keys():
+                placement = placements[orch_id]
+        elif uuid is not None:
+            for rk, r in placements.iteritems():
+                if "resource_id" in r.keys() and uuid == r["resource_id"]:
+                    placement = r
+                    break
 
-        resources = {}
-        diversity_groups = {}
-        exclusivity_groups = {}
+        if placement is not None:
+            if uuid is not None:
+                placement["resource_id"] = uuid
+            if host is not None:
+                placement["properties"]["host"] = host
 
-        if "VMs" in old_app.keys():
-            for vmk, vm in old_app["VMs"].iteritems():
-                resources[vmk] = {}
-                resources[vmk]["name"] = vm["name"]
-                resources[vmk]["type"] = "OS::Nova::Server"
-                properties = {}
-                properties["flavor"] = vm["flavor"]
-                if vm["availability_zones"] != "none":
-                    properties["availability_zone"] = vm["availability_zones"]
-                resources[vmk]["properties"] = properties
+            if not self.db.update_stack(_stack_id, orch_id=orch_id, uuid=uuid, host=host, time=time.time()):
+                return (None, None)
 
-                for divk, level_name in vm["diversity_groups"].iteritems():
-                    div_id = divk + ":" + level_name
-                    if div_id not in diversity_groups.keys():
-                        diversity_groups[div_id] = []
-                    diversity_groups[div_id].append(vmk)
+            return (placement["resource_id"], placement["properties"]["host"])
+        else:
+            return ("none", "none")
 
-                for exk, level_name in vm["exclusivity_groups"].iteritems():
-                    ex_id = exk + ":" + level_name
-                    if ex_id not in exclusivity_groups.keys():
-                        exclusivity_groups[ex_id] = []
-                    exclusivity_groups[ex_id].append(vmk)
+    def delete_from_stack(self, _stack_id, orch_id=None, uuid=None):
+        '''Delete a placement from stack in db and cache.'''
 
-                if _action == "replan":
-                    if vmk == _app["orchestration_id"]:
-                        _app_topology.candidate_list_map[vmk] = \
-                            _app["locations"]
-                    elif vmk in _app["exclusions"]:
-                        _app_topology.planned_vm_map[vmk] = vm["host"]
-                    if vm["status"] == "replanned":
-                        _app_topology.planned_vm_map[vmk] = vm["host"]
-                elif _action == "migrate":
-                    if vmk == _app["orchestration_id"]:
-                        _app_topology.exclusion_list_map[vmk] = _app[
-                            "excluded_hosts"]
-                        if vm["host"] not in _app["excluded_hosts"]:
-                            _app_topology.exclusion_list_map[vmk].append(
-                                vm["host"])
-                    else:
-                        _app_topology.planned_vm_map[vmk] = vm["host"]
+        if _stack_id in self.apps.keys():
+            app_topology = self.apps[_stack_id]
 
-                _app_topology.old_vm_map[vmk] = (vm["host"], vm["cpus"],
-                                                 vm["mem"], vm["local_volume"])
+            if orch_id is not None:
+                del app_topology.placements[orch_id]
+                app_topology.timestamp_scheduled = time.time()
+            elif uuid is not None:
+                pk = None
+                for rk, r in app_topology.placements.iteritems():
+                    if "resource_id" in r.keys() and uuid == r["resource_id"]:
+                        pk = rk
+                        break
+                if pk is not None:
+                    del app_topology.placements[pk]
+                    app_topology.timestamp_scheduled = time.time()
 
-        if "VGroups" in old_app.keys():
-            for gk, affinity in old_app["VGroups"].iteritems():
-                resources[gk] = {}
-                resources[gk]["type"] = "ATT::Valet::GroupAssignment"
-                properties = {}
-                properties["group_type"] = "affinity"
-                properties["group_name"] = affinity["name"]
-                properties["level"] = affinity["level"]
-                properties["resources"] = []
-                for r in affinity["subvgroup_list"]:
-                    properties["resources"].append(r)
-                resources[gk]["properties"] = properties
-
-                if len(affinity["diversity_groups"]) > 0:
-                    for divk, level_name in \
-                            affinity["diversity_groups"].iteritems():
-                        div_id = divk + ":" + level_name
-                        if div_id not in diversity_groups.keys():
-                            diversity_groups[div_id] = []
-                        diversity_groups[div_id].append(gk)
-
-                if len(affinity["exclusivity_groups"]) > 0:
-                    for exk, level_name in \
-                            affinity["exclusivity_groups"].iteritems():
-                        ex_id = exk + ":" + level_name
-                        if ex_id not in exclusivity_groups.keys():
-                            exclusivity_groups[ex_id] = []
-                        exclusivity_groups[ex_id].append(gk)
-
-        group_type = "ATT::Valet::GroupAssignment"
-
-        for div_id, resource_list in diversity_groups.iteritems():
-            divk_level_name = div_id.split(":")
-            resources[divk_level_name[0]] = {}
-            resources[divk_level_name[0]]["type"] = group_type
-            properties = {}
-            properties["group_type"] = "diversity"
-            properties["group_name"] = divk_level_name[2]
-            properties["level"] = divk_level_name[1]
-            properties["resources"] = resource_list
-            resources[divk_level_name[0]]["properties"] = properties
-
-        for ex_id, resource_list in exclusivity_groups.iteritems():
-            exk_level_name = ex_id.split(":")
-            resources[exk_level_name[0]] = {}
-            resources[exk_level_name[0]]["type"] = group_type
-            properties = {}
-            properties["group_type"] = "exclusivity"
-            properties["group_name"] = exk_level_name[2]
-            properties["level"] = exk_level_name[1]
-            properties["resources"] = resource_list
-            resources[exk_level_name[0]]["properties"] = properties
-
-        re_app["resources"] = resources
-
-        return re_app
+        if not self.db.delete_placement_from_stack(_stack_id, orch_id=orch_id, uuid=uuid, time=time.time()):
+            return False
+        return True
