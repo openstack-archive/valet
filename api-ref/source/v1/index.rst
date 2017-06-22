@@ -8,8 +8,10 @@ This page lists the Valet API operations in the following order:
 
 * `Groups`_
 * `Plans`_
+* `Status`_
 
 .. rest_expand_all::
 
 .. include:: groups.inc
 .. include:: plans.inc
+.. include:: status.inc

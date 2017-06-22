@@ -124,3 +124,9 @@ stack_id:
   in: body
   required: true
   type: string
+status:
+  description: |
+    A dictionary of statuses from each subsystem, keyed by name.
+  in: body
+  required: true
+  type: dictionary

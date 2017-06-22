@@ -92,12 +92,12 @@ Response Example
 .. literalinclude:: ./samples/list_groups_response.json
    :language: json
 
-Show group
-==========
+Show group details
+==================
 
 .. rest_method:: GET /v1/groups/{group_id}
 
-Lists groups.
+Show group details. This operation does not accept a request body.
 
 Response Codes
 --------------
@@ -141,7 +141,7 @@ Update a group
 
 .. rest_method:: PUT /v1/groups/{group_id}
 
-Updates a group.
+Updates a group. Replaces the original description.
 
 Response Codes
 --------------
@@ -192,7 +192,8 @@ Delete group
 
 .. rest_method:: DELETE /v1/groups/{group_id}
 
-Lists groups.
+Delete a group. This operation does not accept a request body and does not
+return a response body.
 
 Response Codes
 --------------
@@ -219,6 +220,8 @@ Add members to group
 ====================
 
 .. rest_method:: PUT /v1/groups/{group_id}/members
+
+Adds a list of group members to any previous list of members.
 
 Response Codes
 --------------
@@ -270,6 +273,9 @@ Verify membership in a group
 
 .. rest_method:: GET /v1/groups/{group_id}/members/{member_id}
 
+This operation does not accept a request body and does not return a response
+body.
+
 Response Codes
 --------------
 
@@ -296,6 +302,9 @@ Delete all members from a group
 
 .. rest_method:: DELETE /v1/groups/{group_id}/members
 
+This operation does not accept a request body and does not return a response
+body.
+
 Response Codes
 --------------
 
@@ -320,6 +329,9 @@ Delete a member from group
 ==========================
 
 .. rest_method:: DELETE /v1/groups/{group_id}/members/{member_id}
+
+This operation does not accept a request body and does not return a response
+body.
 
 Response Codes
 --------------
