@@ -1,0 +1,9 @@
+Code-Review+2: Tin Lam <tin@irrational.io>
+Workflow+1: Omar Rivera <gomarivera@gmail.com>
+Code-Review+1: Deepak <deepak.os31@yahoo.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 22 Jun 2017 15:45:16 +0000
+Reviewed-on: https://review.openstack.org/476545
+Project: openstack/valet
+Branch: refs/heads/master
