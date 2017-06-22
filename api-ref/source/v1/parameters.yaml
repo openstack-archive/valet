@@ -75,9 +75,9 @@ locations:
   type: list
 placements:
   description: |
-    Dictionary of planned resource.  Each is keyed by an orchestration UUID.
+    Dictionary of planned resource. Each is keyed by an orchestration UUID.
     This is a UUID provided by an orchestration engine (e.g. heat-engine)
-    prior to instantiation of a resource.  The dictionary contains two keys,
+    prior to instantiation of a resource. The dictionary contains two keys,
 
     - **location**: resource placement
     - **name**: resource name
@@ -85,6 +85,47 @@ placements:
   in: body
   required: true
   type: string
+placements_id:
+  description: |
+    The UUID of the placement. The UUID of the placement or its associated orchestration UUID.
+  in: body
+  required: true
+  type: UUID
+placements_location:
+  description: |
+    The placement location of the resource.
+  in: body
+  required: true
+  type: string
+placements_name:
+  description: |
+    The name of the resource.
+  in: body
+  required: true
+  type: string
+placements_orchestration_id:
+  description: |
+    The UUID provided by an orchestration engine (e.g., heat-engine) prior to
+    instantiation of the resource.
+  in: body
+  required: true
+  type: UUID
+placements_plan_id:
+  description: |
+    The UUID of the plan.
+placements_reserved:
+  description: |
+    Set to true if the placement was successfully reserved.
+  in: body
+  required: true
+  type: boolean
+placements_resource_id:
+  description: |
+    The physical UUID of the resource. The value is unknown until a placement
+    has been reserved for the first time.
+  in: body
+  required: true
+  type: UUID
 plan_id:
   description: |
     UUID of the plan.
@@ -101,7 +142,7 @@ resources:
   description: |
     A dictionary of resources to be planned. Each is keyed by an orchestration
     UUID. This is a UUID provided by an orchestration engine (e.g. heat-engine)
-    prior to instantiation of a resource.  The dictionary contains three keys,
+    prior to instantiation of a resource. The dictionary contains three keys,
 
     - **name**: resource name
     - **type**: resource type (in HOT format),

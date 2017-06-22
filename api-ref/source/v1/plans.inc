@@ -62,7 +62,7 @@ List active plans
 
 .. rest_method:: GET /v1/plans
 
-Lists all plans.
+Lists all plans. This operation does not accept a request body.
 
 Response Codes
 --------------
@@ -96,7 +96,7 @@ Show plan details
 
 .. rest_method:: GET /v1/plans/{plan_id}
 
-Lists all plans.
+Provides details for plan. This operation does not accept a request body.
 
 Response Codes
 --------------
@@ -190,7 +190,8 @@ Delete a plan
 
 .. rest_method:: DELETE /v1/plans/{plan_id}
 
-Deletes a plan.
+Deletes a plan. This operation does not accept a request body and does not
+return a response body.
 
 Response Codes
 --------------

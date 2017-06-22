@@ -1,0 +1,22 @@
+{
+  "placements": [
+    {
+      "plan_id": "e01ae778-52c8-4e52-9f32-a486584f0e89",
+      "name": "my-instance-1",
+      "orchestration_id": "f8cfab7e-83d0-4a7d-8551-905ea8a43a39",
+      "resource_id": "240b2fe5-2e01-4cfb-982c-67e3f1553386",
+      "location": "qos104",
+      "reserved": true,
+      "id": "55f4aee9-b7df-44d0-85d3-3234c08dbfb4"
+    },
+    {
+      "plan_id": "c8b8e9d9-227f-4652-8a18-523cd37b86c0",
+      "name": "ad_hoc_instance",
+      "orchestration_id": "23ffc206-cb57-4b99-9393-6e01837855bc",
+      "resource_id": null,
+      "location": "qos101",
+      "reserved": false,
+      "id": "dbbc9ae2-3ba2-4409-8765-03cdbfcd0dcb"
+    }
+  ]
+}

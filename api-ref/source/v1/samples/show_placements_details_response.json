@@ -1,0 +1,11 @@
+{
+  "placement": {
+    "plan_id": "a78d1936-0b63-4ce3-9450-832f71ebf160",
+    "name": "my_instance",
+    "orchestration_id": "b71bedad-dd57-4942-a7bd-ab074b72d652",
+    "resource_id": null,
+    "location": "qos105",
+    "reserved": false,
+    "id": "b7116936-5210-448a-b21f-c35f33e9bcc2"
+  }
+}
