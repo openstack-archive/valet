@@ -1,45 +1,21 @@
-Ostro version 2.0.2 Usage Guide
+============
+Valet Engine
+============
 
-USAGE
 
-1: Configure Ostro
+Configuration 
+-------------
 
-Set authentication in "ostro\_server/ostro.auth" file. User must have
-the permission to access OpenStack Nova to let Ostro extract underlying
-cloud infrastructure information.
+From the URL, Valet Engine will get some data from Nova and Keystone.
 
-You must check “ostro\_server/ostro.cfg” to correctly run Ostro. Here,
-explain the configuration parameters found in “ostro.cfg”.
+Logging configuration
+Run the valet-engine::
 
-Configuration consists of 1) system, 2) logging, and 3) management
-parts.
+    valet-engine start
 
-1.1 System configuration - first, you define the base directory in
-“root\_loc”, where Ostro is installed. - “mode” can be either “live” or
-“sim”. “live” means Ostro runs over the real OpenStack site, while “sim”
-means Ostro can be tested over a simulated datacenter. To configure the
-simulated datacenter, you should check “ostro\_server/ostro\_sim.cfg”. -
-“control\_loc” is to set URL where OpenStack controller is deployed.
-From the URL, Ostro will get some data from Nova and Keystone (Cinder
-will be in the next version). - currently, Ostro communicates with
-Keystone and Nova via REST APIs. Those APIs are set in “keystone\_*” and
-“nova\_*”. - “db\_\*” indicates parameters to be used for handling Music
-database such as Cassandra keyspace and table names.
-"replication\_factor" means how many Music instances run. "db\_hosts"
-includes the ips where Music instances run. - “ip” indicates the IP
-address of VM, where this Ostro instance runs. If Ostro instances are
-installed in multiple VMs, you should set “ip” in each configuration.
+To stop::
 
-1.2 Logging configuration You can set up the logging configuration
-including logger name, logging level, and directory. If you set the
-logging level as “debug”, Ostro will leave detailed record. Ostro also
-records two time-series data as text files (i.e., resource\_log and
-app\_log). Due to the large size of these logs, we limit the number of
-log files and the maximum size of each log file in “max\_num\_of\_logs”
-and “max\_log\_size”. When “max\_num\_of\_logs” is 20 and once it
-reaches the 21st log file, Ostro over-writes in the 1st file (i.e.,
-rotate the logging). "max\_main\_log\_size" means the max size of the
-main Ostro log defined in "logger\_name" in the location "logging\_loc".
+    valet-engine stop
 
 1.3 Management configuration - “datacenter\_name” indicates the name of
 site (region), where Ostro takes care of. This will be used as key value
@@ -80,13 +56,10 @@ of the authentication file. Admin must have the permission to access
 OpenStack Nova to let Ostro extract underlying cloud infrastructure
 information.
 
-2:  Start/Stop Ostro daemon
+MUSIC Database
+--------------
 
-Ostro will run as a daemon process. Go to “ostro\_server” directory,
-then start Ostro daemon as follow,
-
-    python ostro_daemon.py start
-
-To stop this daemon process:
-
-    python ostro_daemon.py stop
+“db_*” indicates parameters to be used for handling Music database such as Cassandra keyspace and table names.
+"replication_factor" means how many Music instances run. "db_hosts" includes the ips where Music instances run.
+“ip” indicates the IP address of VM, where this Ostro instance runs.
+If Ostro instances are installed in multiple VMs, you should set “ip” in each configuration.

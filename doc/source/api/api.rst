@@ -1,12 +1,47 @@
-# valet-api
+=========
+Valet API
+=========
 
-Valet gives OpenStack the ability to optimize cloud resources while simultaneously meeting a cloud application's QoS requirements. Valet provides an api service, an optimizer (Ostro), and a set of OpenStack plugins.
+Getting Started
+~~~~~~~~~~~~~~~
 
-This document covers installation of valet-api, the API engine used to interact with Valet.
+All API requests require a valid Keystone token. Use the **Keystone Generate
+Token v2** POST request to generate one. It will be automatically stored in the
+Postman environment and used for future API requests. Once the token expires
+("Authorization Required"), simply generate a new token.
+
+The placement API can be exercised using curl or Postman by importing the file
+``Valet.json.postman_collection``. This document covers installation of valet-api, the API engine used to interact with Valet.
 
 **IMPORTANT**: [Overall Installation of Valet is covered in a separate document](https://github.com/att-comdev/valet/blob/master/doc/valet_os.md).
 
-## Prerequisites
+Before using the collection, create a Postman environment with the following
+settings:
+
+.. list-table::
+    :header-rows: 1
+
+    * - Component
+      - Description
+      - Example
+    * - ``valet``
+      - valet-api endpoint
+      - ``http://controller:8090``
+    * - ``keystone``
+      - keystone-api endpoint
+      - ``http://controller:5000``
+    * - ``tenant_name``
+      - tenant name
+      - ``service``
+    * - ``username``
+      - username
+      - ``valet``
+    * - ``password``
+      - password
+      - password
+
+Prerequisites
+~~~~~~~~~~~~~
 
 Prior to installation:
 
@@ -18,27 +53,14 @@ Prior to installation:
 
 Throughout this document, the following installation-specific items are required. Have values for these prepared and ready before continuing. Suggestions for values are provided in this document where applicable.
 
-| Name | Description | Example |
-|------|-------------|-------|
-| ``$USER`` | User id | ``user1234`` |
-| ``$VENV`` | Python virtual environment path (if any) | ``/etc/valet/venv`` |
-| ``$VALET_API_PATH`` | Local git repository's ``valet_api`` directory | ``/home/user1234/git/valet/valet_api`` |
-| ``$VALET_HOST`` | valet-api hostname | ``localhost`` |
-| ``$VALET_USERNAME`` | OpenStack placement service username | ``valet`` |
-| ``$VALET_PASSWORD`` | OpenStack placement service password | |
-| ``$VALET_TENANT_NAME`` | OpenStack placement service default tenant | ``service`` |
-| ``$KEYSTONE_AUTH_API`` | Keystone Auth API publicurl endpoint | ``http://controller:5000/`` |
-| ``$VALET_CONFIG_PATH`` | Valet configuration directory | ``/var/www/valet`` |
-| ``$APACHE2_CONFIG_PATH`` | apache2 httpd server configuration path | ``/etc/apache2`` |
-| ``$OSLO_MSG_USERNAME`` | Oslo Messaging Service username | ``messaging`` |
-| ``$OSLO_MSG_PASSWORD`` | Oslo Message Service password | |
-| ``$OSLO_MSG_HOST`` | Oslo Messaging Service host | ``controller`` |
-
 Root or sufficient sudo privileges are required for some steps.
 
-### A Note About Python Virtual Environments
+A Note About Python Virtual Environments
+----------------------------------------
 
-It is recommended to install and configure valet-api within a python [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/) (venv), This helps avoid instabilities and conflicts within the default python environment.
+It is recommended to install and configure valet-api within a Python virtual
+environment [2]. This helps avoid instabilities and conflicts within the
+default python environment.
 
 ## Installation
 
@@ -197,55 +219,52 @@ See the ``doc`` directory for placement service.
 
 *IMPORTANT: Do not use ``pecan serve`` to run valet-api in a production environment. A number of production-quality WSGI-compatible environments are available (e.g., apache2 httpd).*
 
-## Configuring apache2 httpd
+Configuring apache2 httpd
 
 This section describes an example WSGI installation using apache2 httpd.
 
-### Prerequisites
+Prerequisites
 
 * apache2 httpd
 * libapache2-mod-wsgi (3.4 at a minimum, 3.5 recommended by the author)
 * A ``valet`` service user account/group on the host where valet-api is installed.
 
-### Configuration
+Configuration
+-------------
 
-Set up directories and ownership:
+Set up directories and ownership::
 
-```bash
-$ sudo mkdir $VALET_CONFIG_PATH
-$ sudo mkdir /var/log/apache2/valet
-$ sudo cp -p $VALET_API_PATH/etc/valet_api/app.wsgi $VALET_API_PATH/etc/valet_api/config.py $VALET_CONFIG_PATH
-$ sudo chown -R valet:valet /var/log/apache2/valet $VALET_CONFIG_PATH
-```
+    sudo mkdir $VALET_CONFIG_PATH
+    sudo mkdir /var/log/apache2/valet
+    sudo cp -p $VALET_API_PATH/etc/valet_api/app.wsgi $VALET_API_PATH/etc/valet_api/config.py $VALET_CONFIG_PATH
+    $ sudo chown -R valet:valet /var/log/apache2/valet $VALET_CONFIG_PATH
 
-Set up valet-api as a site:
+Set up valet-api as a site::
 
-```bash
-$ sudo cd $APACHE2_CONFIG_PATH/sites-available
-$ sudo cp -p $VALET_API_PATH/etc/valet_api/app.apache2 valet.conf
-$ sudo chown root:root valet.conf
-```
+    sudo cd /etc/apache2/sites-available
+    sudo cp -p $VALET_API_PATH/etc/valet_api/app.apache2 valet.conf
+    sudo chown root:root valet.conf
 
-*Note: ``$APACHE2_CONFIG_PATH`` may be ``/opt/apache2`` or ``/etc/apache2`` depending on the installation.*
+If valet-api was installed in a python virtual environment, append
+``python-home=$VENV`` to ``WSGIDaemonProcess`` within ``valet.conf``. Apache
+will then use the correct python environment and libraries.
 
-If valet-api was installed in a python virtual environment, append ``python-home=$VENV`` to ``WSGIDaemonProcess`` within ``valet.conf``. Apache will then use the correct python environment and libraries.
+Enable valet-api, ensure the configuration syntax is valid, and restart::
 
-Enable valet-api, ensure the configuration syntax is valid, and restart:
+    cd $APACHE2_CONFIG_PATH/sites-enabled
+    sudo ln -s ../sites-available/valet.conf .
+    sudo apachectl -t
+    Syntax OK
+    sudo apachectl graceful
 
-```bash
-$ cd $APACHE2_CONFIG_PATH/sites-enabled
-$ sudo ln -s ../sites-available/valet.conf .
-$ sudo apachectl -t
-Syntax OK
-$ sudo apachectl graceful
-```
+Uninstallation
+--------------
 
-## Uninstallation
+Remove previously made configuration file changes, OpenStack user accounts,
+and other settings as needed. Activate a virtual environment (venv) first if
+necessary, then uninstall with::
 
-Activate a virtual environment (venv) first if necessary, then uninstall with:
+    sudo pip uninstall valet-api
 
-```bash
-$ sudo pip uninstall valet-api
-```
-
-Remove previously made configuration file changes, OpenStack user accounts, and other settings as needed.
+References
+----------
