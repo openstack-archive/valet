@@ -73,6 +73,8 @@ ostro-daemon.pid
 .testrepository
 .settings
 .settings/
+covhtml
+cover/*
 
 # Translations
 *.mo
