@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'openstackdocstheme',
 ]
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -100,8 +101,7 @@ modindex_common_prefix = ['valet.']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'default'
+html_theme = 'openstackdocs'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -114,6 +114,10 @@ html_theme = 'default'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
+# using the given strftime format.
+# html_last_updated_fmt = '%b %d, %Y'
+html_last_updated_fmt = '%Y-%m-%d %H:%M'
 
 # -- Options for HTMLHelp output ------------------------------------------
 
@@ -170,6 +174,12 @@ texinfo_documents = [
      author, 'Valet', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+# -- Options for openstackdocstheme -------------------------------------------
+repository_name = 'openstack/valet'
+bug_project = 'valet'
+bug_tag = ''
+
 
 
 
