@@ -35,7 +35,8 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         group_name = data_utils.rand_name('membergroup')
         resp = self.client.create_group(name=group_name,
                                         group_type='exclusivity',
-                                        description='Test Member Group')
+                                        description='Test Member Group',
+                                        level='host')
         group_id = resp['id']
         self.addCleanup(self._delete_group, group_id)
         return group_id

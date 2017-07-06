@@ -41,7 +41,7 @@ class ValetGroupsTest(base.BaseValetTest):
             description = data_utils.rand_name('Description')
             group = self.client.create_group(
                 name=group_name, group_type='exclusivity',
-                description=description)
+                description=description, level='host')
             self.addCleanup(self.client.delete_group, group['id'])
             group_ids.append(group['id'])
 
@@ -61,7 +61,7 @@ class ValetGroupsTest(base.BaseValetTest):
         description = data_utils.rand_name('Description')
         group = self.client.create_group(
             name=group_name, group_type='exclusivity',
-            description=description)
+            description=description, level='host')
         self.addCleanup(self.client.delete_group, group['id'])
 
         self.assertIn('id', group)
@@ -78,7 +78,7 @@ class ValetGroupsTest(base.BaseValetTest):
         description = data_utils.rand_name('Description')
         body = self.client.create_group(
             name=group_name, group_type='exclusivity',
-            description=description)
+            description=description, level='host')
 
         group_id = body.get('id')
 
@@ -100,7 +100,7 @@ class ValetGroupsTest(base.BaseValetTest):
         description = data_utils.rand_name('Description')
         group = self.client.create_group(
             name=group_name, group_type='exclusivity',
-            description=description)
+            description=description, level='host')
 
         self.addCleanup(self.client.delete_group, group['id'])
 
@@ -120,7 +120,7 @@ class ValetGroupsTest(base.BaseValetTest):
         description = data_utils.rand_name('Description')
         group = self.client.create_group(
             name=group_name, group_type='exclusivity',
-            description=description)
+            description=description, level='host')
 
         self.addCleanup(self.client.delete_group, group['id'])
 

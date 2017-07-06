@@ -69,7 +69,7 @@ class ScenarioTestCase(test.BaseTestCase):
         cls.stack_identifier = None
         cls.tries = CONF.valet.TRIES_TO_CREATE
 
-    def run_test(self, logger, stack_name, template_path):
+    def run_test(self, logger, stack_name, template_path, levels, group_types):
         """Scenario.
 
         create new stack
@@ -84,29 +84,31 @@ class ScenarioTestCase(test.BaseTestCase):
 
         self.log.log_info(" ******** Creating Stack ******** ")
         name = data_utils.rand_name(name=stack_name)
-        self.assertEqual(True, self.create_stack(name, env_data, template))
+        self.assertEqual(True, self.create_stack(name, env_data, template,
+                         levels, group_types))
 
         self.log.log_info(" ******** Analyzing Stack ******** ")
         analyzer = Analyzer(self.log, self.stack_identifier, self.heat_client,
                             self.nova_client)
-        self.assertEqual(True, analyzer.check(template))
+        self.assertEqual(True, analyzer.check(template, levels, group_types))
 
         self.log.log_info(" ********** THE END ****************")
 
-    def create_stack(self, stack_name, env_data, template_resources):
-        """Create stack with name/env/resource. Create all groups/instances."""
+    def create_stack(self, stack_name, env_data, template_resources, levels,
+                     group_types):
         try:
             groups = template_resources.groups
+            index = 0
 
             for key in groups:
-                if groups[key].group_type == "exclusivity":
-                    self.log.log_info(" creating valet group ")
-                    grp_name = data_utils.rand_name(
-                        name=groups[key].group_name)
-                    template_resources.template_data = \
-                        template_resources.template_data.replace(
-                            groups[key].group_name, grp_name)
-                    self.create_valet_group(grp_name)
+                grp_name = data_utils.rand_name(name=groups[key].group_name)
+                template_resources.template_data = \
+                    template_resources.template_data.replace(groups[key].
+                                                             group_name,
+                                                             grp_name)
+                self.create_valet_group(grp_name,
+                                        levels[index], group_types[index])
+                ++index
 
             for instance in template_resources.instances:
                 generated_name = data_utils.rand_name(instance.name)
@@ -125,12 +127,12 @@ class ScenarioTestCase(test.BaseTestCase):
             return False
         return True
 
-    def create_valet_group(self, group_name):
-        """Create valet group with name using valet client. Add members."""
+    def create_valet_group(self, group_name, level, group_type):
         try:
             v_group = self.valet_client.create_group(name=group_name,
-                                                     group_type='exclusivity',
-                                                     description="description")
+                                                     description="description",
+                                                     level=level,
+                                                     group_type=group_type)
             group_id = v_group['id']
             tenant_id = self.tenants_client.tenant_id
             self.addCleanup(self._delete_group, group_id)
