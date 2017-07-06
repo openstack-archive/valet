@@ -40,12 +40,12 @@ class ValetClient(rest_client.RestClient):
         self.expected_success(200, resp.status)
         return self._resp_helper(resp, body)
 
-    def create_group(self, name, group_type, description):
-        """Create group with name, type and description."""
+    def create_group(self, name, description, level, group_type):
         params = {
             "name": name,
             "type": group_type,
             "description": description,
+            "level": level
         }
         req_body = json.dumps(params)
         resp, body = self.post('/groups', req_body)

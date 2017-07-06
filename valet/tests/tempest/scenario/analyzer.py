@@ -41,14 +41,15 @@ class Analyzer(object):
         self.instances_on_host = defaultdict(list)
         self.tries = CONF.valet.TRIES_TO_SHOW_SERVER
 
-    def check(self, resources):
-        """Checking if all instances are on the Appropriate hosts and racks."""
+    def check(self, resources, levels, group_types):
+        """Checking if all instances are on the Appropriate hosts and racks """
         self.log.log_info("Starting to check instances location")
         result = True
 
         self.init_servers_list()
         self.init_resources(resources)
-        ins_group = self.init_instances_for_group(resources)
+        ins_group = self.init_instances_for_group(resources,
+                                                  levels, group_types)
 
         try:
             for group_type in ins_group:
@@ -72,18 +73,17 @@ class Analyzer(object):
 
         return result
 
-    def init_instances_for_group(self, resources):
-        """Init instances for a group with the given resources."""
-        self.log.log_info("initializing instances for group")
+    def init_instances_for_group(self, resources, levels, group_types):
+        self.log.log_info("initializing instances for groups")
         ins_group = defaultdict(list)
+        index = 0
 
         for grp in resources.groups.keys():
-            self.group_instance_name[grp] = \
-                resources.groups[grp].group_resources
-            resources.groups[grp].group_resources.append(
-                resources.groups[grp].level)
-            ins_group[resources.groups[grp].group_type].append(
-                resources.groups[grp].group_resources)
+            self.group_instance_name[grp] = resources.groups[grp].group_resources
+            resources.groups[grp].group_resources.append(levels[index])
+            ins_group[group_types[index]].append(
+                    resources.groups[grp].group_resources)
+            ++index
 
         # replacing group for it's instances
         ins_group = self.organize(ins_group)
@@ -224,7 +224,7 @@ class Analyzer(object):
         return ins_group
 
     def get_exclusivity_group_hosts(self):
-        '''Get all hosts that exclusivity group instances are located on '''
+        """Get all hosts that exclusivity group instances are located on """
         servers_list = self.nova_client.list_servers()
         exclusivity_hosts = []
         for serv in servers_list["servers"]:

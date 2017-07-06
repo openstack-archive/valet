@@ -5,7 +5,7 @@ description: Affinity template - all VMs should be deployed on the same host
 parameters:
   instance_image:
     type: string
-  
+
   instance_flavor:
     type: string
 
@@ -22,6 +22,10 @@ resources:
       flavor: { get_param: instance_flavor }
       networks:
       - network: { get_param: network }
+      metadata:
+        valet:
+          groups: [affinity_1]
+
 
   my-instance-2:
     type: OS::Nova::Server
@@ -31,16 +35,9 @@ resources:
       flavor: { get_param: instance_flavor }
       networks:
       - network: { get_param: network }
-
-
-  test-affinity-group3:
-    type: ATT::Valet::GroupAssignment
-    properties:
-      group_type: affinity
-      level: host
-      resources:
-      - {get_resource: my-instance-1}
-      - {get_resource: my-instance-2}
+      metadata:
+        valet:
+          groups: [affinity_1]
 
 outputs:
   instance_name-1:

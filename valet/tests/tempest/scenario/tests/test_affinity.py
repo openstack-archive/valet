@@ -25,5 +25,8 @@ class TestAffinity(ScenarioTestCase):
     def test_affinity(self):
         """Run affinity test."""
         logger = GeneralLogger("test_affinity")
+        levels = ["host"]
+        group_types = ["affinity"]
         self.run_test(logger, "affinity",
-                      "/templates/affinity_basic_2_instances.yml")
+                      "/templates/affinity_basic_2_instances.yml",
+                      levels, group_types)
