@@ -12,34 +12,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import six
 import time
 import traceback
 
 from oslo_log import log
 
-from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
-from valet.engine.resource_manager.resource_base import Datacenter
-from valet.engine.resource_manager.resource_base import Flavor
-from valet.engine.resource_manager.resource_base import Host
-from valet.engine.resource_manager.resource_base import HostGroup
-from valet.engine.resource_manager.resource_base import LogicalGroup
+from valet.engine.optimizer.app_manager.group import LEVEL
+from valet.engine.resource_manager.resources.datacenter import Datacenter
+from valet.engine.resource_manager.resources.flavor import Flavor
+from valet.engine.resource_manager.resources.group import Group
+from valet.engine.resource_manager.resources.host import Host
+from valet.engine.resource_manager.resources.host_group import HostGroup
 
 LOG = log.getLogger(__name__)
 
 
 class Resource(object):
-    """Resource Class.
-
-    This class bootsraps the resources from the database and initializes
-    them using base resources (datacenter, host group, host, logical group).
-    Also manages aggregate status of resources and metadata and handles
-    updates to base resource types.
-    """
+    """Container and Handler to deal with change of datacenter resource status."""
 
     def __init__(self, _db, _config):
         """Init Resource Class."""
         self.db = _db
-
         self.config = _config
 
         """ resource data """
@@ -47,8 +42,7 @@ class Resource(object):
         self.host_groups = {}
         self.hosts = {}
 
-        """ metadata """
-        self.logical_groups = {}
+        self.groups = {}
         self.flavors = {}
 
         self.current_timestamp = 0
@@ -60,28 +54,27 @@ class Resource(object):
         self.CPU_avail = 0
         self.mem_avail = 0
         self.local_disk_avail = 0
-        self.disk_avail = 0
-        self.nw_bandwidth_avail = 0
 
-    # FIXME(GJ): should check invalid return here?
-    def bootstrap_from_db(self, _resource_status):
-        """Return True if bootsrap resource from database successful."""
+    def load_from_db(self, _resource_status):
+        """Load all resource status info from DB."""
+
+        LOG.info("load prior data")
+
         try:
-            LOG.info("Resource status from DB = %s", _resource_status)
-            logical_groups = _resource_status.get("logical_groups")
-            if logical_groups:
-                for lgk, lg in logical_groups.iteritems():
-                    logical_group = LogicalGroup(lgk)
-                    logical_group.group_type = lg.get("group_type")
-                    logical_group.status = lg.get("status")
-                    logical_group.metadata = lg.get("metadata")
-                    logical_group.vm_list = lg.get("vm_list")
-                    logical_group.vms_per_host = lg.get("vms_per_host")
+            groups = _resource_status.get("groups")
+            if groups:
+                for lgk, lg in groups.iteritems():
+                    group = Group(lgk)
+                    group.group_type = lg.get("group_type")
+                    group.status = lg.get("status")
+                    group.metadata = lg.get("metadata")
+                    group.vm_list = lg.get("vm_list")
+                    group.vms_per_host = lg.get("vms_per_host")
 
-                    self.logical_groups[lgk] = logical_group
+                    self.groups[lgk] = group
 
-            if len(self.logical_groups) == 0:
-                LOG.warning("no logical_groups")
+            if len(self.groups) == 0:
+                LOG.warn("no groups in db record")
 
             flavors = _resource_status.get("flavors")
             if flavors:
@@ -97,7 +90,7 @@ class Resource(object):
                     self.flavors[fk] = flavor
 
             if len(self.flavors) == 0:
-                LOG.error("fail loading flavors")
+                LOG.warn("no flavors in db record")
 
             hosts = _resource_status.get("hosts")
             if hosts:
@@ -122,12 +115,12 @@ class Resource(object):
                     host.vm_list = h.get("vm_list")
 
                     for lgk in h["membership_list"]:
-                        host.memberships[lgk] = self.logical_groups[lgk]
+                        host.memberships[lgk] = self.groups[lgk]
 
                     self.hosts[hk] = host
 
                 if len(self.hosts) == 0:
-                    LOG.error("fail loading hosts")
+                    LOG.warn("no hosts in db record")
 
             host_groups = _resource_status.get("host_groups")
             if host_groups:
@@ -149,12 +142,12 @@ class Resource(object):
                     host_group.vm_list = hg.get("vm_list")
 
                     for lgk in hg.get("membership_list"):
-                        host_group.memberships[lgk] = self.logical_groups[lgk]
+                        host_group.memberships[lgk] = self.groups[lgk]
 
                     self.host_groups[hgk] = host_group
 
                 if len(self.host_groups) == 0:
-                    LOG.warning("fail loading host_groups")
+                    LOG.warn("no host_groups (rack)")
 
             dc = _resource_status.get("datacenter")
             if dc:
@@ -175,7 +168,7 @@ class Resource(object):
                 self.datacenter.vm_list = dc.get("vm_list")
 
                 for lgk in dc.get("membership_list"):
-                    self.datacenter.memberships[lgk] = self.logical_groups[lgk]
+                    self.datacenter.memberships[lgk] = self.groups[lgk]
 
                 for ck in dc.get("children"):
                     if ck in self.host_groups.keys():
@@ -184,7 +177,7 @@ class Resource(object):
                         self.datacenter.resources[ck] = self.hosts[ck]
 
                 if len(self.datacenter.resources) == 0:
-                    LOG.error("fail loading datacenter")
+                    LOG.warn("fail loading datacenter")
 
             hgs = _resource_status.get("host_groups")
             if hgs:
@@ -224,9 +217,10 @@ class Resource(object):
         return True
 
     def update_topology(self, store=True):
-        """Update Topology and return True, if store True then store update."""
-        self._update_topology()
+        """Update resource status triggered by placements, events, and batch.
+        """
 
+        self._update_topology()
         self._update_compute_avail()
 
         if store is False:
@@ -235,8 +229,10 @@ class Resource(object):
         return self.store_topology_updates()
 
     def _update_topology(self):
+        """Update host group (rack) and datacenter status."""
+
         updated = False
-        for level in LEVELS:
+        for level in LEVEL:
             for _, host_group in self.host_groups.iteritems():
                 if (host_group.host_type == level and
                         host_group.check_availability()):
@@ -253,6 +249,8 @@ class Resource(object):
             self.resource_updated = True
 
     def _update_host_group_topology(self, _host_group):
+        """Update host group (rack) status."""
+
         _host_group.init_resources()
         del _host_group.vm_list[:]
 
@@ -269,8 +267,8 @@ class Resource(object):
                     host.original_local_disk_cap
                 _host_group.avail_local_disk_cap += host.avail_local_disk_cap
 
-                for vm_id in host.vm_list:
-                    _host_group.vm_list.append(vm_id)
+                for vm_info in host.vm_list:
+                    _host_group.vm_list.append(vm_info)
 
         _host_group.init_memberships()
 
@@ -280,6 +278,8 @@ class Resource(object):
                     _host_group.memberships[mk] = host.memberships[mk]
 
     def _update_datacenter_topology(self):
+        """Update datacenter status."""
+
         self.datacenter.init_resources()
         del self.datacenter.vm_list[:]
         self.datacenter.memberships.clear()
@@ -305,14 +305,20 @@ class Resource(object):
                     self.datacenter.memberships[mk] = resource.memberships[mk]
 
     def _update_compute_avail(self):
+        """Update amount of total available resources."""
         self.CPU_avail = self.datacenter.avail_vCPUs
         self.mem_avail = self.datacenter.avail_mem_cap
         self.local_disk_avail = self.datacenter.avail_local_disk_cap
 
     def store_topology_updates(self):
+        """Store resource status in batch."""
+
+        if not self.resource_updated:
+            return True
+
         updated = False
         flavor_updates = {}
-        logical_group_updates = {}
+        group_updates = {}
         host_updates = {}
         host_group_updates = {}
         datacenter_update = None
@@ -324,9 +330,9 @@ class Resource(object):
                 flavor_updates[fk] = flavor.get_json_info()
                 updated = True
 
-        for lgk, lg in self.logical_groups.iteritems():
+        for lgk, lg in self.groups.iteritems():
             if lg.last_update >= self.curr_db_timestamp:
-                logical_group_updates[lgk] = lg.get_json_info()
+                group_updates[lgk] = lg.get_json_info()
                 updated = True
 
         for hk, host in self.hosts.iteritems():
@@ -343,196 +349,117 @@ class Resource(object):
             datacenter_update = self.datacenter.get_json_info()
             updated = True
 
-        # NOTE(GJ): do not track resource change histroy in this version
-
-        if updated is True:
+        if updated:
             json_logging = {}
             json_logging['timestamp'] = self.curr_db_timestamp
 
             if len(flavor_updates) > 0:
                 json_logging['flavors'] = flavor_updates
-            if len(logical_group_updates) > 0:
-                json_logging['logical_groups'] = logical_group_updates
+
+            if len(group_updates) > 0:
+                json_logging['groups'] = group_updates
+
             if len(host_updates) > 0:
                 json_logging['hosts'] = host_updates
+
             if len(host_group_updates) > 0:
                 json_logging['host_groups'] = host_group_updates
+
             if datacenter_update is not None:
                 json_logging['datacenter'] = datacenter_update
 
-            if not self.db.update_resource_status(
-                    self.datacenter.name, json_logging):
-                return None
+            if not self.db.update_resource_status(self.datacenter.name, json_logging):
+                return False
 
             self.curr_db_timestamp = time.time()
+            self.resource_updated = False
 
         return True
 
-    def show_current_logical_groups(self):
-        LOG.debug("--- track logical groups info ---")
-        for lgk, lg in self.logical_groups.iteritems():
-            if lg.status == "enabled":
-                LOG.debug("lg name = " + lgk)
-                LOG.debug("    type = " + lg.group_type)
-                if lg.group_type == "AGGR":
-                    for k in lg.metadata.keys():
-                        LOG.debug("        metadata key = " + k)
-                LOG.debug("    vms")
-                debug_msg = "        orch_id = %s uuid = %s"
-                for v in lg.vm_list:
-                    LOG.debug(debug_msg % (v[0], v[2]))
-                LOG.debug("    hosts")
-                for h, v in lg.vms_per_host.iteritems():
-                    LOG.debug("        host = %s" % h)
-                    LOG.debug("        vms = %s" %
-                              str(len(lg.vms_per_host[h])))
-                    host = None
-                    if h in self.hosts.keys():
-                        host = self.hosts[h]
-                    elif h in self.host_groups.keys():
-                        host = self.host_groups[h]
-                    else:
-                        LOG.error("TEST: lg member not exist")
-                    if host is not None:
-                        LOG.debug("        status = " + host.status)
-                        if lgk not in host.memberships.keys():
-                            LOG.error("TEST: membership missing")
-
-    def show_current_host_status(self):
-        LOG.debug("--- track host info ---")
-        for hk, h in self.hosts.iteritems():
-            LOG.debug("host name = " + hk)
-            LOG.debug("    status = " + h.status + ", " + h.state)
-            LOG.debug("    vms = " + str(len(h.vm_list)))
-            LOG.debug("    resources (org, total, avail, used)")
-            cpu_org = str(h.original_vCPUs)
-            cpu_tot = str(h.vCPUs)
-            cpu_avail = str(h.avail_vCPUs)
-            cpu_used = str(h.vCPUs_used)
-            msg = "      {0} = {1}, {2}, {3}, {4}"
-            LOG.debug(
-                msg.format('cpu', cpu_org, cpu_tot, cpu_avail, cpu_used))
-            mem_org = str(h.original_mem_cap)
-            mem_tot = str(h.mem_cap)
-            mem_avail = str(h.avail_mem_cap)
-            mem_used = str(h.free_mem_mb)
-            LOG.debug(
-                msg.format('mem', mem_org, mem_tot, mem_avail, mem_used))
-            dsk_org = str(h.original_local_disk_cap)
-            dsk_tot = str(h.local_disk_cap)
-            dsk_avail = str(h.avail_local_disk_cap)
-            dsk_used = str(h.free_disk_gb)
-            LOG.debug(
-                msg.format('disk', dsk_org, dsk_tot, dsk_avail, dsk_used))
-            LOG.debug("    memberships")
-            for mk in h.memberships.keys():
-                LOG.debug("        " + mk)
-                if mk not in self.logical_groups.keys():
-                    LOG.error("TEST: lg missing")
-
     def update_rack_resource(self, _host):
-        """Update resources for rack (host), then update cluster."""
+        """Mark the host update time for batch resource status update."""
         rack = _host.host_group
-
         if rack is not None:
             rack.last_update = time.time()
-
             if isinstance(rack, HostGroup):
                 self.update_cluster_resource(rack)
 
     def update_cluster_resource(self, _rack):
-        """Update cluster rack belonged to, then update datacenter."""
+        """Mark the host update time for batch resource status update."""
         cluster = _rack.parent_resource
-
         if cluster is not None:
             cluster.last_update = time.time()
-
             if isinstance(cluster, HostGroup):
                 self.datacenter.last_update = time.time()
 
-    def get_uuid(self, _h_uuid, _host_name):
-        """Return host uuid."""
+    def get_uuid(self, _orch_id, _host_name):
         host = self.hosts[_host_name]
+        return host.get_uuid(_orch_id)
 
-        return host.get_uuid(_h_uuid)
+    def add_vm_to_host(self, _vm_alloc, _vm_info):
+        """Add vm to host and update the amount of available resource."""
 
-    def add_vm_to_host(self, _host_name, _vm_id, _vcpus, _mem, _ldisk):
-        """Add vm to host and adjust compute resources for host."""
-        host = self.hosts[_host_name]
+        host = self.hosts[_vm_alloc["host"]]
 
-        host.vm_list.append(_vm_id)
+        if host.exist_vm(orch_id=_vm_info["orch_id"], uuid=_vm_info["uuid"]):
+            LOG.warn("vm already exists in the host")
 
-        host.avail_vCPUs -= _vcpus
-        host.avail_mem_cap -= _mem
-        host.avail_local_disk_cap -= _ldisk
+            # host.remove_vm(orch_id=_vm_info["orch_id"],
+            #uuid=_vm_info["uuid"])
+            self.remove_vm_from_host(_vm_alloc, orch_id=_vm_info["orch_id"],
+                                     uuid=_vm_info["uuid"])
 
-        host.vCPUs_used += _vcpus
-        host.free_mem_mb -= _mem
-        host.free_disk_gb -= _ldisk
-        host.disk_available_least -= _ldisk
+        host.vm_list.append(_vm_info)
 
-    def remove_vm_by_h_uuid_from_host(self, _host_name, _h_uuid, _vcpus, _mem,
-                                      _ldisk):
-        """Remove vm from host by h_uuid, adjust compute resources for host."""
-        host = self.hosts[_host_name]
+        host.avail_vCPUs -= _vm_alloc["vcpus"]
+        host.avail_mem_cap -= _vm_alloc["mem"]
+        host.avail_local_disk_cap -= _vm_alloc["local_volume"]
+        host.vCPUs_used += _vm_alloc["vcpus"]
+        host.free_mem_mb -= _vm_alloc["mem"]
+        host.free_disk_gb -= _vm_alloc["local_volume"]
+        host.disk_available_least -= _vm_alloc["local_volume"]
 
-        host.remove_vm_by_h_uuid(_h_uuid)
+        return True
 
-        host.avail_vCPUs += _vcpus
-        host.avail_mem_cap += _mem
-        host.avail_local_disk_cap += _ldisk
+    def remove_vm_from_host(self, _vm_alloc, orch_id=None, uuid=None):
+        """Remove vm from host with orch_id."""
 
-        host.vCPUs_used -= _vcpus
-        host.free_mem_mb += _mem
-        host.free_disk_gb += _ldisk
-        host.disk_available_least += _ldisk
+        host = self.hosts[_vm_alloc["host"]]
 
-    def remove_vm_by_uuid_from_host(self, _host_name, _uuid, _vcpus, _mem,
-                                    _ldisk):
-        """Remove vm from host by uuid, adjust compute resources for host."""
-        host = self.hosts[_host_name]
+        if host.remove_vm(orch_id, uuid) is True:
+            host.avail_vCPUs += _vm_alloc["vcpus"]
+            host.avail_mem_cap += _vm_alloc["mem"]
+            host.avail_local_disk_cap += _vm_alloc["local_volume"]
+            host.vCPUs_used -= _vm_alloc["vcpus"]
+            host.free_mem_mb += _vm_alloc["mem"]
+            host.free_disk_gb += _vm_alloc["local_volume"]
+            host.disk_available_least += _vm_alloc["local_volume"]
+            return True
+        else:
+            LOG.warn("vm to be removed not exist")
+            return False
 
-        host.remove_vm_by_uuid(_uuid)
-
-        host.avail_vCPUs += _vcpus
-        host.avail_mem_cap += _mem
-        host.avail_local_disk_cap += _ldisk
-
-        host.vCPUs_used -= _vcpus
-        host.free_mem_mb += _mem
-        host.free_disk_gb += _ldisk
-        host.disk_available_least += _ldisk
-
-    # called from handle_events
-    def update_host_resources(self, _hn, _st, _vcpus, _vcpus_used, _mem, _fmem,
-                              _ldisk, _fldisk, _avail_least):
-        updated = False
-
+    def update_host_resources(self, _hn, _st):
+        """Check and update compute node status."""
         host = self.hosts[_hn]
-
         if host.status != _st:
             host.status = _st
-            LOG.warning(
-                "Resource.update_host_resources: host(%s) status changed" %
-                _hn)
-            updated = True
-
-        # FIXME(GJ): should check cpu, memm and disk here?
-
-        if updated is True:
-            self.compute_avail_resources(_hn, host)
-
-        return updated
+            LOG.warn("host(" + _hn + ") status changed")
+            return True
+        else:
+            return False
 
     def update_host_time(self, _host_name):
-        """Update last host update time."""
+        """Mark the host update time for batch resource status update."""
         host = self.hosts[_host_name]
-
         host.last_update = time.time()
         self.update_rack_resource(host)
 
-    def add_logical_group(self, _host_name, _lg_name, _lg_type):
-        """Add logical group to host memberships and update host resource."""
+    def add_group(self, _host_name, _lg_name, _lg_type):
+        """Add a group to resource unless the group exists."""
+
+        success = True
+
         host = None
         if _host_name in self.hosts.keys():
             host = self.hosts[_host_name]
@@ -540,96 +467,70 @@ class Resource(object):
             host = self.host_groups[_host_name]
 
         if host is not None:
-            if _lg_name not in self.logical_groups.keys():
-                logical_group = LogicalGroup(_lg_name)
-                logical_group.group_type = _lg_type
-                logical_group.last_update = time.time()
-                self.logical_groups[_lg_name] = logical_group
+            if _lg_name not in self.groups.keys():
+                group = Group(_lg_name)
+                group.group_type = _lg_type
+                group.last_update = time.time()
+                self.groups[_lg_name] = group
+            else:
+                success = False
 
             if _lg_name not in host.memberships.keys():
-                host.memberships[_lg_name] = self.logical_groups[_lg_name]
+                host.memberships[_lg_name] = self.groups[_lg_name]
 
                 if isinstance(host, HostGroup):
                     host.last_update = time.time()
-
                     self.update_cluster_resource(host)
+            else:
+                success = False
+        else:
+            LOG.warn("host not found while adding group")
+            return False
 
-    def add_vm_to_logical_groups(self, _host, _vm_id, _logical_groups_of_vm):
-        """Add vm to logical group and update corresponding lg."""
+        return success
+
+    def add_vm_to_groups(self, _host, _vm_info, _groups_of_vm):
+        """Add new vm into related groups."""
+
         for lgk in _host.memberships.keys():
-            if lgk in _logical_groups_of_vm:
-                lg = self.logical_groups[lgk]
+            if lgk in _groups_of_vm:
+                if lgk in self.groups.keys():
+                    lg = self.groups[lgk]
 
-                if isinstance(_host, Host):
-                    if lg.add_vm_by_h_uuid(_vm_id, _host.name) is True:
-                        lg.last_update = time.time()
-                elif isinstance(_host, HostGroup):
-                    if self._check_group_type(lg.group_type):
-                        if lgk.split(":")[0] == _host.host_type:
-                            if lg.add_vm_by_h_uuid(_vm_id, _host.name) is True:
-                                lg.last_update = time.time()
-
-        if isinstance(_host, Host) and _host.host_group is not None:
-            self.add_vm_to_logical_groups(_host.host_group, _vm_id,
-                                          _logical_groups_of_vm)
-        elif (isinstance(_host, HostGroup) and
-              _host.parent_resource is not None):
-            self.add_vm_to_logical_groups(_host.parent_resource, _vm_id,
-                                          _logical_groups_of_vm)
-
-    def remove_vm_by_h_uuid_from_logical_groups(self, _host, _h_uuid):
-        """Remove vm by orchestration id from lgs. Update host and lgs."""
-        for lgk in _host.memberships.keys():
-            if lgk not in self.logical_groups.keys():
-                LOG.warning("logical group (%s) missing while "
-                            "removing %s" % (lgk, _h_uuid))
-                continue
-            lg = self.logical_groups[lgk]
-
-            if isinstance(_host, Host):
-                # Remove host from lg's membership if the host
-                # has no vms of lg
-                if lg.remove_vm_by_h_uuid(_h_uuid, _host.name) is True:
-                    lg.last_update = time.time()
-
-                # Remove lg from host's membership if lg does not have the host
-                if _host.remove_membership(lg) is True:
-                    _host.last_update = time.time()
-
-            elif isinstance(_host, HostGroup):
-                if self._check_group_type(lg.group_type):
-                    if lgk.split(":")[0] == _host.host_type:
-                        if lg.remove_vm_by_h_uuid(_h_uuid, _host.name):
+                    if isinstance(_host, Host):
+                        if lg.add_vm(_vm_info, _host.name) is True:
                             lg.last_update = time.time()
-
-                        if _host.remove_membership(lg):
-                            _host.last_update = time.time()
-
-            if self._check_group_type(lg.group_type):
-                if len(lg.vm_list) == 0:
-                    del self.logical_groups[lgk]
+                        else:
+                            LOG.warn("vm already exists in group")
+                    elif isinstance(_host, HostGroup):
+                        if lg.group_type == "EX" or \
+                           lg.group_type == "AFF" or lg.group_type == "DIV":
+                            if lgk.split(":")[0] == _host.host_type:
+                                if lg.add_vm(_vm_info, _host.name) is True:
+                                    lg.last_update = time.time()
+                                else:
+                                    LOG.warn("vm already exists in group")
+                else:
+                    LOG.warn("nof found group while adding vm")
 
         if isinstance(_host, Host) and _host.host_group is not None:
-            self.remove_vm_by_h_uuid_from_logical_groups(_host.host_group,
-                                                         _h_uuid)
-        elif (isinstance(_host, HostGroup) and
-              _host.parent_resource is not None):
-            self.remove_vm_by_h_uuid_from_logical_groups(
-                _host.parent_resource, _h_uuid)
+            self.add_vm_to_groups(_host.host_group, _vm_info, _groups_of_vm)
+        elif isinstance(_host, HostGroup) and \
+                _host.parent_resource is not None:
+            self.add_vm_to_groups(_host.parent_resource,
+                                  _vm_info, _groups_of_vm)
 
-    def remove_vm_by_uuid_from_logical_groups(self, _host, _uuid):
-        """Remove vm by uuid from lgs and update proper host and lgs."""
+    def remove_vm_from_groups(self, _host, orch_id=None, uuid=None):
+        """Remove vm from related groups."""
+
         for lgk in _host.memberships.keys():
-            if lgk not in self.logical_groups.keys():
-                LOG.warning("logical group (%s) missing while "
-                            "removing %s" % (lgk, _uuid))
+            if lgk not in self.groups.keys():
                 continue
-            lg = self.logical_groups[lgk]
+            lg = self.groups[lgk]
 
             if isinstance(_host, Host):
-                # Remove host from lg's membership if the host has
-                # no vms of lg
-                if lg.remove_vm_by_uuid(_uuid, _host.name) is True:
+                # Remove host from lg's membership if the host has no vms of lg
+                if lg.remove_vm(_host.name, orch_id, uuid) is True:
                     lg.last_update = time.time()
 
                 # Remove lg from host's membership if lg does not
@@ -640,32 +541,34 @@ class Resource(object):
             elif isinstance(_host, HostGroup):
                 if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
-                        if lg.remove_vm_by_uuid(_uuid, _host.name) is True:
+                        if lg.remove_vm(_host.name, orch_id, uuid) is True:
                             lg.last_update = time.time()
 
                         if _host.remove_membership(lg) is True:
                             _host.last_update = time.time()
 
-            if self._check_group_type(lg.group_type):
-                if len(lg.vm_list) == 0:
-                    del self.logical_groups[lgk]
+            if lg.group_type == "EX" or \
+                    lg.group_type == "AFF" or lg.group_type == "DIV":
+                # FIXME(gjung): del self.groups[lgk] if len(lg.vm_list) == 0?
+                pass
 
         if isinstance(_host, Host) and _host.host_group is not None:
-            self.remove_vm_by_uuid_from_logical_groups(_host.host_group, _uuid)
-        elif (isinstance(_host, HostGroup) and
-              _host.parent_resource is not None):
-            self.remove_vm_by_uuid_from_logical_groups(_host.parent_resource,
-                                                       _uuid)
+            self.remove_vm_from_groups(_host.host_group, orch_id, uuid)
+        elif isinstance(_host, HostGroup) and \
+                _host.parent_resource is not None:
+            self.remove_vm_from_groups(_host.parent_resource, orch_id, uuid)
 
-    def clean_none_vms_from_logical_groups(self, _host):
-        """Clean vms with status none from logical groups."""
+    def remove_vm_from_groups_of_host(self, _host, orch_id=None, uuid=None):
+        """Remove vm from related groups of the host."""
+
         for lgk in _host.memberships.keys():
-            if lgk not in self.logical_groups.keys():
+            if lgk not in self.groups.keys():
+                LOG.warn("group (" + lgk + ") already removed")
                 continue
-            lg = self.logical_groups[lgk]
+            lg = self.groups[lgk]
 
             if isinstance(_host, Host):
-                if lg.clean_none_vms(_host.name) is True:
+                if lg.remove_vm_from_host(_host.name, orch_id, uuid) is True:
                     lg.last_update = time.time()
 
                 if _host.remove_membership(lg) is True:
@@ -674,73 +577,64 @@ class Resource(object):
             elif isinstance(_host, HostGroup):
                 if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
-                        if lg.clean_none_vms(_host.name) is True:
+                        if lg.remove_vm_from_host(_host.name,
+                                                  orch_id, uuid) is True:
                             lg.last_update = time.time()
 
                         if _host.remove_membership(lg) is True:
                             _host.last_update = time.time()
 
-            if self._check_group_type(lg.group_type):
-                if len(lg.vm_list) == 0:
-                    del self.logical_groups[lgk]
-
         if isinstance(_host, Host) and _host.host_group is not None:
-            self.clean_none_vms_from_logical_groups(_host.host_group)
-        elif (isinstance(_host, HostGroup) and
-              _host.parent_resource is not None):
-            self.clean_none_vms_from_logical_groups(_host.parent_resource)
+            self.remove_vm_from_groups_of_host(_host.host_group, orch_id, uuid)
+        elif isinstance(_host, HostGroup) and \
+                _host.parent_resource is not None:
+            self.remove_vm_from_groups_of_host(_host.parent_resource,
+                                               orch_id, uuid)
 
-    def update_uuid_in_logical_groups(self, _h_uuid, _uuid, _host):
-        """Update uuid in lgs and update lg last update time."""
+    def update_uuid_in_groups(self, _orch_id, _uuid, _host):
+        """Update physical uuid."""
+
         for lgk in _host.memberships.keys():
-            lg = self.logical_groups[lgk]
+            lg = self.groups[lgk]
 
             if isinstance(_host, Host):
-                if lg.update_uuid(_h_uuid, _uuid, _host.name) is True:
+                if lg.update_uuid(_orch_id, _uuid, _host.name) is True:
                     lg.last_update = time.time()
             elif isinstance(_host, HostGroup):
                 if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
-                        if lg.update_uuid(_h_uuid, _uuid, _host.name) is True:
+                        if lg.update_uuid(_orch_id, _uuid, _host.name) is True:
                             lg.last_update = time.time()
 
         if isinstance(_host, Host) and _host.host_group is not None:
-            self.update_uuid_in_logical_groups(
-                _h_uuid, _uuid, _host.host_group)
-        elif (isinstance(_host, HostGroup) and
-              _host.parent_resource is not None):
-            self.update_uuid_in_logical_groups(_h_uuid, _uuid,
-                                               _host.parent_resource)
+            self.update_uuid_in_groups(_orch_id, _uuid, _host.host_group)
+        elif isinstance(_host, HostGroup) and \
+                _host.parent_resource is not None:
+            self.update_uuid_in_groups(_orch_id, _uuid, _host.parent_resource)
 
-    def update_h_uuid_in_logical_groups(self, _h_uuid, _uuid, _host):
-        """Update orchestration id in lgs and update lg last update time."""
+    def update_orch_id_in_groups(self, _orch_id, _uuid, _host):
+        """Update orch_id."""
+
         for lgk in _host.memberships.keys():
-            lg = self.logical_groups[lgk]
+            lg = self.groups[lgk]
 
             if isinstance(_host, Host):
-                if lg.update_h_uuid(_h_uuid, _uuid, _host.name):
+                if lg.update_orch_id(_orch_id, _uuid, _host.name) is True:
                     lg.last_update = time.time()
             elif isinstance(_host, HostGroup):
                 if self._check_group_type(lg.group_type):
                     if lgk.split(":")[0] == _host.host_type:
-                        if lg.update_h_uuid(_h_uuid, _uuid, _host.name):
+                        if lg.update_orch_id(_orch_id, _uuid, _host.name) is True:
                             lg.last_update = time.time()
 
         if isinstance(_host, Host) and _host.host_group is not None:
-            self.update_h_uuid_in_logical_groups(_h_uuid, _uuid,
-                                                 _host.host_group)
-        elif (isinstance(_host, HostGroup) and
-              _host.parent_resource is not None):
-            self.update_h_uuid_in_logical_groups(_h_uuid, _uuid,
-                                                 _host.parent_resource)
+            self.update_orch_id_in_groups(_orch_id, _uuid, _host.host_group)
+        elif isinstance(_host, HostGroup) and _host.parent_resource is not None:
+            self.update_orch_id_in_groups(_orch_id, _uuid, _host.parent_resource)
 
     def compute_avail_resources(self, hk, host):
-        """Compute avail resources for host.
+        """Compute the available amount of resources with oversubsription ratios."""
 
-        This function computes ram, cpu and disk allocation ratios for
-        the passed in host. Then uses data to compute avail memory, disk
-        and vCPUs.
-        """
         ram_allocation_ratio_list = []
         cpu_allocation_ratio_list = []
         disk_allocation_ratio_list = []
@@ -804,19 +698,26 @@ class Resource(object):
             disk_allocation_ratio, static_disk_standby_ratio)
 
     def get_flavor(self, _id):
-        """Return flavor according to name passed in."""
+        """Get a flavor info."""
+
+        flavor_id = None
+        if isinstance(_id, six.string_types):
+            flavor_id = _id
+        else:
+            flavor_id = str(_id)
+
         flavor = None
 
-        if _id in self.flavors.keys():
-            flavor = self.flavors[_id]
+        if flavor_id in self.flavors.keys():
+            flavor = self.flavors[flavor_id]
         else:
             for _, f in self.flavors.iteritems():
-                if f.flavor_id == _id:
+                if f.flavor_id == flavor_id:
                     flavor = f
                     break
 
         if flavor is not None:
-            if flavor.status != "enabled":
+            if flavor.status is not "enabled":
                 flavor = None
 
         return flavor
