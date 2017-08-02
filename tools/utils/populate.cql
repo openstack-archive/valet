@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS #VALET_KEYSPACE#.oslo_messages ("timestamp" text PRIM
 
 CREATE TABLE IF NOT EXISTS #VALET_KEYSPACE#.plans (id text PRIMARY KEY, name text, stack_id text);
 
-CREATE TABLE IF NOT EXISTS #VALET_KEYSPACE#.uuid_map (uuid text PRIMARY KEY,  h_uuid text,  s_uuid text);
+CREATE TABLE IF NOT EXISTS #VALET_KEYSPACE#.uuid_map (uuid text PRIMARY KEY,  metadata text);
 
 CREATE TABLE IF NOT EXISTS #VALET_KEYSPACE#.app (stack_id text PRIMARY KEY,  app text);
 
@@ -31,3 +31,5 @@ CREATE INDEX IF NOT EXISTS ON #VALET_KEYSPACE#.placements (plan_id);
 CREATE INDEX IF NOT EXISTS ON #VALET_KEYSPACE#.placements (orchestration_id);
 
 CREATE INDEX IF NOT EXISTS ON #VALET_KEYSPACE#.placements (resource_id);
+
+CREATE INDEX IF NOT EXISTS ON #VALET_KEYSPACE#.groups (name);

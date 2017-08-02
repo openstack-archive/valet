@@ -70,6 +70,7 @@ music_opts = [
     cfg.StrOpt('resource_index_table', default='resource_log_index'),
     cfg.StrOpt('app_index_table', default='app_log_index'),
     cfg.StrOpt('uuid_table', default='uuid_map'),
+    cfg.StrOpt('group_table', default='groups'),
     cfg.IntOpt('music_server_retries', default=3),
 ]
 
