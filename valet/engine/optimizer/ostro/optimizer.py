@@ -14,179 +14,285 @@
 # limitations under the License.
 from oslo_log import log
 
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup
-from valet.engine.optimizer.app_manager.app_topology_base import VM
+from valet.engine.optimizer.app_manager.group import Group
+from valet.engine.optimizer.app_manager.vm import VM
 from valet.engine.optimizer.ostro.search import Search
 
 LOG = log.getLogger(__name__)
 
 
-# FIXME(GJ): make search algorithm pluggable
-# NOTE(GJ): do not deal with Volume placements at this version
 class Optimizer(object):
-    """Optimizer."""
+    """Optimizer to compute the optimal placements."""
 
-    def __init__(self, _resource):
-        """Initialization."""
-        self.resource = _resource
-
+    def __init__(self):
+        self.resource = None
         self.search = Search()
 
-        self.status = "success"
+    def plan(self, _app_topology):
+        """Scheduling placements of given app."""
 
-    def place(self, _app_topology):
-        """Perform a replan, migration, or create operation."""
-        """Return a placement map for VMs, Volumes, and VGroups."""
-        success = False
+        self.resource = _app_topology.resource
 
-        uuid_map = None
-        place_type = None
+        if _app_topology.action != "ping" and \
+           _app_topology.action != "identify":
+            _app_topology.set_weight()
+            _app_topology.set_optimization_priority()
 
-        if len(_app_topology.exclusion_list_map) > 0:
-            place_type = "migration"
-        else:
-            if ((len(_app_topology.old_vm_map) > 0 or
-                    len(_app_topology.planned_vm_map) > 0) and
-                    len(_app_topology.candidate_list_map) > 0):
-                place_type = "replan"
+        if _app_topology.action == "create":
+            if self.search.plan(_app_topology) is True:
+                LOG.debug("done search")
+
+                if len(_app_topology.candidate_list_map) > 0:  # ad-hoc
+                    self._update_placement_states(_app_topology)
+                    LOG.debug("done update states")
+
+                if _app_topology.status == "success":
+                    self._update_placement_hosts(_app_topology)
+                    LOG.debug("done update hosts")
+
+                    self._update_resource_status(_app_topology)
+                    LOG.debug("done update resource status")
             else:
-                place_type = "create"
+                if _app_topology.status == "success":
+                    _app_topology.status = "failed"
 
-        if place_type == "migration":
-            vm_id = _app_topology.exclusion_list_map.keys()[0]
-            candidate_host_list = []
-            for hk in self.resource.hosts.keys():
-                if hk not in _app_topology.exclusion_list_map[vm_id]:
-                    candidate_host_list.append(hk)
-            _app_topology.candidate_list_map[vm_id] = candidate_host_list
+        elif _app_topology.action == "update":
+            if self.search.re_plan(_app_topology) is True:
+                LOG.debug("done search")
 
-        if place_type == "replan" or place_type == "migration":
-            success = self.search.re_place_nodes(_app_topology, self.resource)
-            if success is True:
-                if len(_app_topology.old_vm_map) > 0:
-                    uuid_map = self._delete_old_vms(_app_topology.old_vm_map)
-                    self.resource.update_topology(store=False)
-        else:
-            success = self.search.place_nodes(_app_topology, self.resource)
+                self._update_placement_states(_app_topology)
+                if _app_topology.status == "success":
+                    LOG.debug("done update states")
 
-        if success is True:
-            placement_map = {}
-            for v in self.search.node_placements.keys():
-                node_placement = self.search.node_placements[v]
-                if isinstance(v, VM):
-                    placement_map[v] = node_placement.host_name
-                elif isinstance(v, VGroup):
-                    if v.level == "host":
-                        placement_map[v] = node_placement.host_name
-                    elif v.level == "rack":
-                        placement_map[v] = node_placement.rack_name
-                    elif v.level == "cluster":
-                        placement_map[v] = node_placement.cluster_name
+                    self._update_placement_hosts(_app_topology)
+                    LOG.debug("done update hosts")
 
-                LOG.debug(v.name + " placed in " + placement_map[v])
+                    self._delete_old_placements(_app_topology.old_vm_map)
+                    self._update_resource_status(_app_topology)
+                    LOG.debug("done update resource status")
+            else:
+                if _app_topology.status == "success":
+                    _app_topology.status = "failed"
 
-            self._update_resource_status(uuid_map)
+        elif _app_topology.action == "replan":
+            orch_id = _app_topology.id_map.keys()[0]
+            host_name = _app_topology.get_placement_host(orch_id)
 
-            return placement_map
+            if host_name != "none" and \
+               host_name in _app_topology.candidate_list_map[orch_id]:
+                LOG.warn("vm is already placed in one of candidate hosts")
 
-        else:
-            self.status = self.search.status
-            return None
+                if not _app_topology.update_placement_state(orch_id,
+                                                            host=host_name):
+                    LOG.error(_app_topology.status)
+                else:
+                    LOG.debug("done update state")
 
-    def _delete_old_vms(self, _old_vm_map):
-        uuid_map = {}
+                    uuid = _app_topology.get_placement_uuid(orch_id)
 
-        for h_uuid, info in _old_vm_map.iteritems():
-            uuid = self.resource.get_uuid(h_uuid, info[0])
-            if uuid is not None:
-                uuid_map[h_uuid] = uuid
+                    host = self.resource.hosts[host_name]
+                    if not host.exist_vm(uuid=uuid):
+                        self._update_uuid(orch_id, uuid, host_name)
+                        LOG.debug("done update uuid in host")
 
-            self.resource.remove_vm_by_h_uuid_from_host(
-                info[0], h_uuid, info[1], info[2], info[3])
-            self.resource.update_host_time(info[0])
+            elif self.search.re_plan(_app_topology) is True:
+                LOG.debug("done search")
 
-            host = self.resource.hosts[info[0]]
-            self.resource.remove_vm_by_h_uuid_from_logical_groups(host, h_uuid)
+                self._update_placement_states(_app_topology)
+                if _app_topology.status == "success":
+                    LOG.debug("done update states")
 
-        return uuid_map
+                    self._update_placement_hosts(_app_topology)
+                    LOG.debug("done update hosts")
 
-    def _update_resource_status(self, _uuid_map):
+                    self._delete_old_placements(_app_topology.old_vm_map)
+                    self._update_resource_status(_app_topology)
+                    LOG.debug("done update resource status")
+            else:
+                # FIXME(gjung): if 'replan' fails, remove all pending vms?
+
+                if _app_topology.status == "success":
+                    _app_topology.status = "failed"
+
+        elif _app_topology.action == "identify":
+            if not _app_topology.update_placement_state(_app_topology.id_map.keys()[0]):
+                LOG.error(_app_topology.status)
+            else:
+                LOG.debug("done update state")
+
+                orch_id = _app_topology.id_map.keys()[0]
+                uuid = _app_topology.get_placement_uuid(orch_id)
+                host_name = _app_topology.get_placement_host(orch_id)
+                self._update_uuid(orch_id, uuid, host_name)
+                LOG.debug("done update uuid in host")
+
+        elif _app_topology.action == "migrate":
+            if self.search.re_plan(_app_topology) is True:
+                self._update_placement_states(_app_topology)
+                if _app_topology.status == "success":
+                    self._update_placement_hosts(_app_topology)
+                    self._delete_old_placements(_app_topology.old_vm_map)
+                    self._update_resource_status(_app_topology)
+            else:
+                if _app_topology.status == "success":
+                    _app_topology.status = "failed"
+
+    def _update_placement_states(self, _app_topology):
+        """Update state of each placement."""
+        for v, p in self.search.node_placements.iteritems():
+            if isinstance(v, VM):
+                if not _app_topology.update_placement_state(v.orch_id,
+                                                            host=p.host_name):
+                    LOG.error(_app_topology.status)
+                    break
+
+    def _update_placement_hosts(self, _app_topology):
+        """Update stack with assigned hosts."""
+
+        for v, p in self.search.node_placements.iteritems():
+            if isinstance(v, VM):
+                host = p.host_name
+                _app_topology.update_placement_vm_host(v.orch_id, host)
+                LOG.debug(" vm: " + v.orch_id + " placed in " + host)
+            elif isinstance(v, Group):
+                host = None
+                if v.level == "host":
+                    host = p.host_name
+                elif v.level == "rack":
+                    host = p.rack_name
+                elif v.level == "cluster":
+                    host = p.cluster_name
+                _app_topology.update_placement_group_host(v.orch_id, host)
+                LOG.debug(" affinity: " + v.orch_id + " placed in " + host)
+
+    def _delete_old_placements(self, _old_placements):
+        """Delete old placements from host and groups."""
+
+        for _v_id, vm_alloc in _old_placements.iteritems():
+            self.resource.remove_vm_from_host(vm_alloc, orch_id=_v_id,
+                                              uuid=_v_id)
+            self.resource.update_host_time(vm_alloc["host"])
+
+            host = self.resource.hosts[vm_alloc["host"]]
+            self.resource.remove_vm_from_groups(host, orch_id=_v_id,
+                                                uuid=_v_id)
+
+        self.resource.update_topology(store=False)
+
+    def _update_resource_status(self, _app_topology):
+        """Update resource status based on placements."""
+
         for v, np in self.search.node_placements.iteritems():
-            uuid = "none"
-            if _uuid_map is not None:
-                if v.uuid in _uuid_map.keys():
-                    uuid = _uuid_map[v.uuid]
+            if isinstance(v, VM):
+                vm_info = {}
+                vm_info["stack_id"] = _app_topology.app_id
+                vm_info["orch_id"] = v.orch_id
+                vm_info["uuid"] = _app_topology.get_placement_uuid(v.orch_id)
+                vm_info["name"] = v.name
 
-            self.resource.add_vm_to_host(np.host_name,
-                                         (v.uuid, v.name, uuid),
-                                         v.vCPUs, v.mem, v.local_volume_size)
+                vm_alloc = {}
+                vm_alloc["host"] = np.host_name
+                vm_alloc["vcpus"] = v.vCPUs
+                vm_alloc["mem"] = v.mem
+                vm_alloc["local_volume"] = v.local_volume_size
 
-            self._update_logical_grouping(
-                v, self.search.avail_hosts[np.host_name], uuid)
+                if self.resource.add_vm_to_host(vm_alloc, vm_info) is True:
+                    self.resource.update_host_time(np.host_name)
 
-            self.resource.update_host_time(np.host_name)
+                self._update_grouping(v,
+                                      self.search.avail_hosts[np.host_name],
+                                      vm_info)
 
-    def _update_logical_grouping(self, _v, _avail_host, _uuid):
-        for lgk, lg in _avail_host.host_memberships.iteritems():
-            if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                    lg.group_type == "DIV":
+        self.resource.update_topology(store=False)
+
+    def _update_grouping(self, _v, _host, _vm_info):
+        """Update group status in resource."""
+
+        for lgk, lg in _host.host_memberships.iteritems():
+            if lg.group_type == "EX" or \
+               lg.group_type == "AFF" or \
+               lg.group_type == "DIV":
                 lg_name = lgk.split(":")
                 if lg_name[0] == "host" and lg_name[1] != "any":
-                    self.resource.add_logical_group(_avail_host.host_name,
-                                                    lgk, lg.group_type)
+                    self.resource.add_group(_host.host_name,
+                                            lgk, lg.group_type)
 
-        if _avail_host.rack_name != "any":
-            for lgk, lg in _avail_host.rack_memberships.iteritems():
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                        lg.group_type == "DIV":
+        if _host.rack_name != "any":
+            for lgk, lg in _host.rack_memberships.iteritems():
+                if lg.group_type == "EX" or \
+                   lg.group_type == "AFF" or \
+                   lg.group_type == "DIV":
                     lg_name = lgk.split(":")
                     if lg_name[0] == "rack" and lg_name[1] != "any":
-                        self.resource.add_logical_group(_avail_host.rack_name,
-                                                        lgk, lg.group_type)
+                        self.resource.add_group(_host.rack_name,
+                                                lgk, lg.group_type)
 
-        if _avail_host.cluster_name != "any":
-            for lgk, lg in _avail_host.cluster_memberships.iteritems():
-                if lg.group_type == "EX" or lg.group_type == "AFF" or \
-                        lg.group_type == "DIV":
+        if _host.cluster_name != "any":
+            for lgk, lg in _host.cluster_memberships.iteritems():
+                if lg.group_type == "EX" or \
+                   lg.group_type == "AFF" or \
+                   lg.group_type == "DIV":
                     lg_name = lgk.split(":")
                     if lg_name[0] == "cluster" and lg_name[1] != "any":
-                        self.resource.add_logical_group(
-                            _avail_host.cluster_name, lgk, lg.group_type)
+                        self.resource.add_group(_host.cluster_name,
+                                                lgk, lg.group_type)
 
-        vm_logical_groups = []
-        self._collect_logical_groups_of_vm(_v, vm_logical_groups)
+        vm_groups = []
+        self._collect_groups_of_vm(_v, vm_groups)
 
-        host = self.resource.hosts[_avail_host.host_name]
-        self.resource.add_vm_to_logical_groups(
-            host, (_v.uuid, _v.name, _uuid), vm_logical_groups)
+        host = self.resource.hosts[_host.host_name]
+        self.resource.add_vm_to_groups(host, _vm_info, vm_groups)
 
-    def _collect_logical_groups_of_vm(self, _v, _vm_logical_groups):
+    def _collect_groups_of_vm(self, _v, _vm_groups):
+        """Collect all groups of the vm of its parent (affinity)."""
+
         if isinstance(_v, VM):
             for es in _v.extra_specs_list:
                 if "host_aggregates" in es.keys():
                     lg_list = es["host_aggregates"]
                     for lgk in lg_list:
-                        if lgk not in _vm_logical_groups:
-                            _vm_logical_groups.append(lgk)
+                        if lgk not in _vm_groups:
+                            _vm_groups.append(lgk)
 
             if _v.availability_zone is not None:
                 az = _v.availability_zone.split(":")[0]
-                if az not in _vm_logical_groups:
-                    _vm_logical_groups.append(az)
+                if az not in _vm_groups:
+                    _vm_groups.append(az)
 
-        for _, level in _v.exclusivity_groups.iteritems():
-            if level not in _vm_logical_groups:
-                _vm_logical_groups.append(level)
+        for _, g in _v.exclusivity_groups.iteritems():
+            if g not in _vm_groups:
+                _vm_groups.append(g)
 
-        for _, level in _v.diversity_groups.iteritems():
-            if level not in _vm_logical_groups:
-                _vm_logical_groups.append(level)
+        for _, g in _v.diversity_groups.iteritems():
+            if g not in _vm_groups:
+                _vm_groups.append(g)
 
-        if isinstance(_v, VGroup):
+        if isinstance(_v, Group):
             name = _v.level + ":" + _v.name
-            if name not in _vm_logical_groups:
-                _vm_logical_groups.append(name)
+            if name not in _vm_groups:
+                _vm_groups.append(name)
 
-        if _v.survgroup is not None:
-            self._collect_logical_groups_of_vm(
-                _v.survgroup, _vm_logical_groups)
+        if _v.surgroup is not None:
+            self._collect_groups_of_vm(_v.surgroup, _vm_groups)
+
+    def _update_uuid(self, _orch_id, _uuid, _host_name):
+        """Update physical uuid of placement in host."""
+
+        host = self.resource.hosts[_host_name]
+        if host.update_uuid(_orch_id, _uuid) is True:
+            self.resource.update_host_time(_host_name)
+        else:
+            LOG.warn("fail to update uuid in host = " + host.name)
+
+        self.resource.update_uuid_in_groups(_orch_id, _uuid, host)
+
+        self.resource.update_topology(store=False)
+
+    def _delete_placement_in_host(self, _orch_id, _vm_alloc):
+        self.resource.remove_vm_from_host(_vm_alloc, orch_id=_orch_id)
+        self.resource.update_host_time(_vm_alloc["host"])
+
+        host = self.resource.hosts[_vm_alloc["host"]]
+        self.resource.remove_vm_from_groups(host, orch_id=_orch_id)
+
+        self.resource.update_topology(store=False)

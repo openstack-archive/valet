@@ -12,35 +12,46 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from valet.engine.optimizer.app_manager.app_topology_base import LEVELS
-from valet.engine.optimizer.app_manager.app_topology_base import VGroup
+
+
+class GroupResource(object):
+    """Container for all groups."""
+
+    def __init__(self):
+        self.name = None
+        self.group_type = "AGGR"
+
+        self.metadata = {}
+
+        self.num_of_placed_vms = 0
+        # key = host (host or rack), value = num_of_placed_vms
+        self.num_of_placed_vms_per_host = {}
 
 
 class Resource(object):
     """Resource."""
 
     def __init__(self):
-        """Initialization."""
-        # level of placement
-        self.level = None
-
         self.host_name = None
-        self.host_memberships = {}  # all mapped logical groups to host
-        self.host_vCPUs = 0  # original total vCPUs before overcommit
-        self.host_avail_vCPUs = 0  # remaining vCPUs after overcommit
-        self.host_mem = 0  # original total mem cap before overcommit
-        self.host_avail_mem = 0  # remaining mem cap after
-
+        # all mapped groups to host
+        self.host_memberships = {}
+        # original total vCPUs before overcommit
+        self.host_vCPUs = 0
+        # remaining vCPUs after overcommit
+        self.host_avail_vCPUs = 0
+        # original total mem cap before overcommit
+        self.host_mem = 0
+        # remaining mem cap after
+        self.host_avail_mem = 0
         # original total local disk cap before overcommit
         self.host_local_disk = 0
-
         # remaining local disk cap after overcommit
         self.host_avail_local_disk = 0
-
         # the number of vms currently placed in this host
         self.host_num_of_placed_vms = 0
 
-        self.rack_name = None               # where this host is located
+        # where this host is located
+        self.rack_name = None
         self.rack_memberships = {}
         self.rack_vCPUs = 0
         self.rack_avail_vCPUs = 0
@@ -62,7 +73,11 @@ class Resource(object):
         self.cluster_avail_local_disk = 0
         self.cluster_num_of_placed_vms = 0
 
-        self.sort_base = 0                  # order to place
+        # level of placement
+        self.level = None
+
+        # order to place
+        self.sort_base = 0
 
     def get_common_placement(self, _resource):
         """Get common placement level."""
@@ -106,6 +121,27 @@ class Resource(object):
             memberships = self.rack_memberships
         elif _level == "host":
             memberships = self.host_memberships
+
+        return memberships
+
+    def get_all_memberships(self, _level):
+        memberships = {}
+
+        if _level == "cluster":
+            for mk, m in self.cluster_memberships.iteritems():
+                memberships[mk] = m
+            for mk, m in self.rack_memberships.iteritems():
+                memberships[mk] = m
+            for mk, m in self.host_memberships.iteritems():
+                memberships[mk] = m
+        elif _level == "rack":
+            for mk, m in self.rack_memberships.iteritems():
+                memberships[mk] = m
+            for mk, m in self.host_memberships.iteritems():
+                memberships[mk] = m
+        elif _level == "host":
+            for mk, m in self.host_memberships.iteritems():
+                memberships[mk] = m
 
         return memberships
 
@@ -209,53 +245,3 @@ class Resource(object):
             avail_mem = self.host_avail_mem
 
         return (mem, avail_mem)
-
-
-class LogicalGroupResource(object):
-    """LogicalGroupResource."""
-
-    def __init__(self):
-        """Initialization."""
-        self.name = None
-        self.group_type = "AGGR"
-
-        self.metadata = {}
-
-        self.num_of_placed_vms = 0
-
-        # key = host (i.e., id of host or rack), value = num_of_placed_vms
-        self.num_of_placed_vms_per_host = {}
-
-
-class Node(object):
-    """Node."""
-
-    def __init__(self):
-        self.node = None                    # VM or VGroup
-        self.sort_base = -1
-
-    def get_common_diversity(self, _diversity_groups):
-        """Return the common level of the given diversity groups."""
-        common_level = "ANY"
-
-        for dk in self.node.diversity_groups.keys():
-            if dk in _diversity_groups.keys():
-                level = self.node.diversity_groups[dk].split(":")[0]
-                if common_level != "ANY":
-                    if LEVELS.index(level) > LEVELS.index(common_level):
-                        common_level = level
-                else:
-                    common_level = level
-
-        return common_level
-
-    def get_affinity_id(self):
-        """Return the affinity id."""
-        aff_id = None
-
-        if isinstance(self.node, VGroup) and \
-                self.node.vgroup_type == "AFF" and \
-                self.node.name != "any":
-            aff_id = self.node.level + ":" + self.node.name
-
-        return aff_id
