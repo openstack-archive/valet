@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2017 AT&T Intellectual Property
+# Copyright (c) 2014-2017 AT&T Intellectual Property
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""i18n library."""
+"""Common Validation Helpers"""
 
-import gettext
+import uuid
 
-# TODO(jdandrea): Use oslo_i18n.TranslatorFactory
-_ = gettext.gettext
+
+def is_valid_uuid4(uuid_string):
+    """Ensure uuid_string is v4 compliant."""
+
+    try:
+        val = uuid.UUID(uuid_string, version=4)
+    except ValueError:
+        return False
+    return str(val) == uuid_string or val.hex == uuid_string

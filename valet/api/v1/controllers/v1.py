@@ -24,6 +24,7 @@ from valet.api.v1.controllers import error
 from valet.api.v1.controllers.groups import GroupsController
 from valet.api.v1.controllers.placements import PlacementsController
 from valet.api.v1.controllers.plans import PlansController
+from valet.api.v1.controllers.resources import ResourcesController
 from valet.api.v1.controllers.status import StatusController
 
 
@@ -33,6 +34,7 @@ class V1Controller(SecureController):
     groups = GroupsController()
     placements = PlacementsController()
     plans = PlansController()
+    resources = ResourcesController()
     status = StatusController()
 
     # Update this whenever a new endpoint is made.

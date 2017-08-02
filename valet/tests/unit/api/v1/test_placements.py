@@ -14,14 +14,36 @@
 # limitations under the License.
 import mock
 
-from valet.api.db.models.music.placements import Placement
+from valet.api.common import ostro_helper
 from valet.api.db.models.music.plans import Plan
 from valet.api.db.models.music import Query
 from valet.api.db.models.music import Results
 import valet.api.v1.controllers.placements as placements
+from valet.api.v1.controllers.placements import Placement
 from valet.api.v1.controllers.placements import PlacementsController
 from valet.api.v1.controllers.placements import PlacementsItemController
 from valet.tests.unit.api.v1.api_base import ApiBase
+
+
+def fake_filter_by(self, **kwargs):
+    """Fake filter for Music queries.
+
+    FIXME(jdandrea): Find a way to get rid of this. It's here
+    in order to get some of the tests working, but there ought
+    to be a better way that doesn't introduce more surface area.
+    """
+    if 'id' in kwargs:
+        return Results([Plan("plan_name", "stack_id", _insert=False)])
+    elif 'plan_id' in kwargs:
+        # FIXME(jdandrea) this is duplicated in
+        # init_PlacementsItemController (and there shouldn't be a
+        # separate init; that pattern blurs/confuses things IMO)
+        return Results([
+            Placement("placement_name", "test_orchestration_id",
+                      plan=Plan("plan_name", "stack_id", _insert=False),
+                      location="test_location", _insert=False)])
+    else:
+        return Results([])
 
 
 class TestPlacements(ApiBase):
@@ -103,30 +125,48 @@ class TestPlacements(ApiBase):
         self.validate_test("plan_name" in response['placement'].plan.name)
         self.validate_test("stack_id" in response['placement'].plan.stack_id)
 
-    @mock.patch.object(placements, 'error', ApiBase.mock_error)
-    @mock.patch.object(Query, 'filter_by', mock.MagicMock)
-    @mock.patch.object(placements, 'update_placements')
-    def test_index_post(self, mock_plcment):
-        """Test index_post for placements, validate from response status."""
+    @mock.patch.object(ostro_helper, '_log')
+    @mock.patch.object(ostro_helper.Ostro, '_send')
+    @mock.patch.object(Query, 'filter_by')
+    def test_index_post_with_locations(self, mock_filter,
+                                       mock_send, mock_logging):
         kwargs = {'resource_id': "resource_id", 'locations': ["test_location"]}
+        mock_filter.return_value = Results([
+            Plan("plan_name", "stack_id", _insert=False)])
+        mock_send.return_value = '{"status":{"type":"ok"}}'
         self.placements_item_controller.index_post(**kwargs)
         self.validate_test(placements.response.status == 201)
 
-        with mock.patch('valet.api.v1.controllers.placements.Ostro') \
-                as mock_ostro:
-            kwargs = {'resource_id': "resource_id", 'locations': [""]}
-            self.placements_item_controller.index_post(**kwargs)
-            self.validate_test("Ostro error:" in ApiBase.response)
+    @mock.patch('valet.api.db.models.music.Query.filter_by',
+                fake_filter_by)
+    @mock.patch.object(placements, 'error', ApiBase.mock_error)
+    @mock.patch.object(ostro_helper, '_log')
+    @mock.patch.object(ostro_helper.Ostro, '_send')
+    def test_index_post_with_engine_error(self, mock_send, mock_logging):
+        kwargs = {'resource_id': "resource_id", 'locations': [""]}
+        mock_send.return_value = \
+            '{"status":{"type":"error","message":"error"},' \
+            '"resources":{"iterkeys":[]}}'
+        self.placements_item_controller.index_post(**kwargs)
+        self.validate_test("Ostro error:" in ApiBase.response)
 
-            mock_plcment.return_value = None
+    @mock.patch('valet.api.db.models.music.Query.filter_by',
+                fake_filter_by)
+    @mock.patch.object(ostro_helper, '_log')
+    @mock.patch.object(ostro_helper.Ostro, '_send')
+    @mock.patch.object(placements, 'update_placements')
+    def test_index_post_with_placement_update(self, mock_update,
+                                              mock_send, mock_logging):
+        kwargs = {'resource_id': "resource_id", 'locations': [""]}
+        mock_update.return_value = None
 
-            status_type = mock.MagicMock()
-            status_type.response = {"status": {"type": "ok"},
-                                    "resources": {"iterkeys": []}}
-            mock_ostro.return_value = status_type
+        # FIXME(jdandrea): Why was "iterkeys" used here as a resource??
+        # That's a Python iterator reference, not a reasonable resource key.
+        mock_send.return_value = \
+            '{"status":{"type":"ok"},"resources":{"iterkeys":[]}}'
 
-            self.placements_item_controller.index_post(**kwargs)
-            self.validate_test(placements.response.status == 201)
+        self.placements_item_controller.index_post(**kwargs)
+        self.validate_test(placements.response.status == 201)
 
     def test_index_delete(self):
         """Test placements_item_controller index_delete method."""

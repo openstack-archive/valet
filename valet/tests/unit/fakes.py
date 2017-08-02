@@ -13,9 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""i18n library."""
+import uuid
 
-import gettext
+from valet.api.db.models import music as models
 
-# TODO(jdandrea): Use oslo_i18n.TranslatorFactory
-_ = gettext.gettext
+
+def group(name="mock_group", description="mock group", type="affinity",
+          level="host", members='["test_tenant_id"]'):
+    """Boilerplate for creating a group"""
+    group = models.groups.Group(name=name, description=description, type=type,
+                                level=level, members=members, _insert=False)
+    group.id = str(uuid.uuid4())
+    return group
