@@ -13,23 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
-import unittest
+import uuid
 
-from valet.engine.optimizer.ostro.search import Search
-from valet.tests.base import Base
+from valet.api.db.models import music as models
 
 
-class TestSearch(Base):
-    """Unit tests for valet.engine.optimizer.ostro.search."""
-
-    def setUp(self):
-        """Setup Test Search Class."""
-        super(TestSearch, self).setUp()
-
-        self.search = Search()
-
-    @unittest.skip("Method was removed")
-    def test_copy_resource_status(self):
-        """Test Copy Resource Status."""
-        self.search.copy_resource_status(mock.MagicMock())
+def group(name="mock_group", description="mock group", type="affinity",
+          level="host", members='["test_tenant_id"]'):
+    """Boilerplate for creating a group"""
+    group = models.Group(name=name, description=description, type=type,
+                         level=level, members=members, _insert=False)
+    group.id = str(uuid.uuid4())
+    return group
