@@ -24,7 +24,7 @@ from valet.engine.optimizer.ostro.constraint_solver import ConstraintSolver
 from valet.engine.optimizer.ostro.search_base import LogicalGroupResource
 from valet.engine.optimizer.ostro.search_base import Node
 from valet.engine.optimizer.ostro.search_base import Resource
-from valet.engine.resource_manager.resource_base import Datacenter
+from valet.engine.resource_manager.resources.datacenter import Datacenter
 
 LOG = log.getLogger(__name__)
 
