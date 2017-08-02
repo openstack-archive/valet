@@ -73,16 +73,15 @@ def match(value, req):
 
 
 def aggregate_metadata_get_by_host(_level, _host, _key=None):
-    """Return a dict of metadata for a specific host."""
-    """Base dict on a metadata key. If the key is not provided,
-    return a dict of all metadata.
+    """Returns a dict of all metadata based on a metadata key for a specific
+    host. If the key is not provided, returns a dict of all metadata.
     """
 
     metadatas = {}
 
-    logical_groups = _host.get_memberships(_level)
+    groups = _host.get_memberships(_level)
 
-    for lgk, lg in logical_groups.iteritems():
+    for lgk, lg in groups.iteritems():
         if lg.group_type == "AGGR":
             if _key is None or _key in lg.metadata:
                 metadata = collections.defaultdict(set)
@@ -99,8 +98,8 @@ def availability_zone_get_by_host(_level, _host):
     """Return a list of availability zones for a specific host."""
     availability_zone_list = []
 
-    logical_groups = _host.get_memberships(_level)
-    for lgk, lg in logical_groups.iteritems():
+    groups = _host.get_memberships(_level)
+    for lgk, lg in groups.iteritems():
         if lg.group_type == "AZ":
             availability_zone_list.append(lgk)
 
