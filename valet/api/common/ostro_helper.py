@@ -13,34 +13,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Ostro helper library."""
+"""Ostro helper library"""
 
+import copy
 import json
+import time
+import uuid
 
 from pecan import conf
-import time
 
-import uuid
 from valet.api.common.i18n import _
-from valet.api.db.models.music.groups import Group
-from valet.api.db.models.music.ostro import PlacementRequest
-from valet.api.db.models.music.ostro import PlacementResult
+from valet.api.common import validation
+from valet.api.db.models import Group
+from valet.api.db.models import PlacementRequest
+from valet.api.db.models import PlacementResult
 from valet.api.db.models import Query
 from valet.api import LOG
 
+SERVER = 'OS::Nova::Server'
 SERVICEABLE_RESOURCES = [
-    'OS::Nova::Server'
+    SERVER,
 ]
-GROUP_ASSIGNMENT = 'ATT::Valet::GroupAssignment'
-GROUP_TYPE = 'group_type'
-GROUP_NAME = 'group_name'
-AFFINITY = 'affinity'
-DIVERSITY = 'diversity'
-EXCLUSIVITY = 'exclusivity'
+METADATA = 'metadata'
+GROUP_ASSIGNMENT = 'OS::Valet::GroupAssignment'
+GROUP_ID = 'group'
+_GROUP_TYPES = (
+    AFFINITY, DIVERSITY, EXCLUSIVITY,
+) = (
+    'affinity', 'diversity', 'exclusivity',
+)
 
 
 def _log(text, title="Ostro"):
-    """Log helper."""
+    """Log helper"""
     log_text = "%s: %s" % (title, text)
     LOG.debug(log_text)
 
@@ -49,6 +54,7 @@ class Ostro(object):
     """Ostro optimization engine helper class."""
 
     args = None
+    asynchronous = False
     request = None
     response = None
     error_uri = None
@@ -60,70 +66,46 @@ class Ostro(object):
     # Interval in seconds to poll for placement.
     interval = None
 
+    # valet-engine response types
+    _STATUS = (
+        STATUS_OK, STATUS_ERROR,
+    ) = (
+        'ok', 'error',
+    )
+
     @classmethod
-    def _build_error(cls, message):
-        """Build an Ostro-style error message."""
+    def _build_error(cls, message=None):
+        """Build an Ostro-style error response"""
         if not message:
             message = _("Unknown error")
-        error = {
+        return cls._build_response(cls.STATUS_ERROR, message)
+
+    @classmethod
+    def _build_ok(cls, message):
+        """Build an Ostro-style ok response"""
+        if not message:
+            message = _("Unknown message")
+        return cls._build_response(cls.STATUS_OK, message)
+
+    @classmethod
+    def _build_response(cls, status=None, message=None):
+        """Build an Ostro-style response"""
+        if status not in (cls._STATUS):
+            status = cls.STATUS_ERROR
+        if not message:
+            message = _("Unknown")
+        response = {
             'status': {
-                'type': 'error',
+                'type': status,
                 'message': message,
             }
         }
-        return error
-
-    @classmethod
-    def _build_uuid_map(cls, resources):
-        """Build a dict mapping names to UUIDs."""
-        mapping = {}
-        for key in resources.iterkeys():
-            if 'name' in resources[key]:
-                name = resources[key]['name']
-                mapping[name] = key
-        return mapping
-
-    @classmethod
-    def _sanitize_resources(cls, resources):
-        """Ensure lowercase keys at the top level of each resource."""
-        for res in resources.itervalues():
-            for key in list(res.keys()):
-                if not key.islower():
-                    res[key.lower()] = res.pop(key)
-        return resources
+        return response
 
     def __init__(self):
-        """Initializer."""
+        """Initializer"""
         self.tries = conf.music.get('tries', 1000)
         self.interval = conf.music.get('interval', 0.1)
-
-    def _map_names_to_uuids(self, mapping, data):
-        """Map resource names to their UUID equivalents."""
-        if isinstance(data, dict):
-            for key in data.iterkeys():
-                if key != 'name':
-                    data[key] = self._map_names_to_uuids(mapping, data[key])
-        elif isinstance(data, list):
-            for key, value in enumerate(data):
-                data[key] = self._map_names_to_uuids(mapping, value)
-        elif isinstance(data, basestring) and data in mapping:
-            return mapping[data]
-        return data
-
-    def _prepare_resources(self, resources):
-        """Pre-digest resource data for use by Ostro.
-
-        Maps Heat resource names to Orchestration UUIDs.
-        Ensures exclusivity groups exist and have tenant_id as a member.
-        """
-        mapping = self._build_uuid_map(resources)
-        ostro_resources = self._map_names_to_uuids(mapping, resources)
-        self._sanitize_resources(ostro_resources)
-
-        verify_error = self._verify_groups(ostro_resources, self.tenant_id)
-        if isinstance(verify_error, dict):
-            return verify_error
-        return {'resources': ostro_resources}
 
     # TODO(JD): This really belongs in valet-engine once it exists.
     def _send(self, stack_id, request):
@@ -132,9 +114,16 @@ class Ostro(object):
         PlacementRequest(stack_id=stack_id, request=request)
         result_query = Query(PlacementResult)
 
-        for __ in range(self.tries, 0, -1):  # pylint: disable=W0612
+        if self.asynchronous:
+            message = _("Asynchronous request sent")
+            LOG.info(_("{} for stack_id = {}").format(message, stack_id))
+            response = self._build_ok(message)
+            return json.dumps(response)
+
+        for __ in range(self.tries, 0, -1):
             # Take a breather in between checks.
-            # TODO(JD): This is a blocking operation at the moment.
+            # FIXME(jdandrea): This is blocking. Use futurist...
+            # or oslo.message. Hint hint. :)
             time.sleep(self.interval)
 
             result = result_query.filter_by(stack_id=stack_id).first()
@@ -144,123 +133,179 @@ class Ostro(object):
                 return placement
 
         self.error_uri = '/errors/server_error'
-        message = "Timed out waiting for a response."
-
-        LOG.error(message + " for stack_id = " + stack_id)
-
+        message = _("Timed out waiting for a response")
+        LOG.error(_("{} for stack_id = {}").format(message, stack_id))
         response = self._build_error(message)
         return json.dumps(response)
 
-    def _verify_groups(self, resources, tenant_id):
-        """Verify group settings.
-
-        Returns an error status dict if the group type is invalid, if a
-        group name is used when the type is affinity or diversity, if a
-        nonexistant exclusivity group is found, or if the tenant
-        is not a group member. Returns None if ok.
-        """
-        message = None
-        for res in resources.itervalues():
-            res_type = res.get('type')
-            if res_type == GROUP_ASSIGNMENT:
-                properties = res.get('properties')
-                group_type = properties.get(GROUP_TYPE, '').lower()
-                group_name = properties.get(GROUP_NAME, '').lower()
-                if group_type == AFFINITY or \
-                   group_type == DIVERSITY:
-                    if group_name:
-                        self.error_uri = '/errors/conflict'
-                        message = _("%s must not be used when"
-                                    " {0} is '{1}'.").format(GROUP_NAME,
-                                                             GROUP_TYPE,
-                                                             group_type)
-                        break
-                elif group_type == EXCLUSIVITY:
-                    message = self._verify_exclusivity(group_name, tenant_id)
-                else:
-                    self.error_uri = '/errors/invalid'
-                    message = _("{0} '{1}' is invalid.").format(GROUP_TYPE,
-                                                                group_type)
-                    break
-        if message:
-            return self._build_error(message)
-
-    def _verify_exclusivity(self, group_name, tenant_id):
-        return_message = None
-        if not group_name:
-            self.error_uri = '/errors/invalid'
-            return _("%s must be used when {0} is '{1}'.").format(GROUP_NAME,
-                                                                  GROUP_TYPE,
-                                                                  EXCLUSIVITY)
-
-        group = Group.query.filter_by(name=group_name).first()
-
+    def _resolve_group(self, group_id):
+        """Resolve a group by ID or name"""
+        if validation.is_valid_uuid4(group_id):
+            group = Group.query.filter_by(id=group_id).first()
+        else:
+            group = Group.query.filter_by(name=group_id).first()
         if not group:
             self.error_uri = '/errors/not_found'
-            return_message = "%s '%s' not found" % (GROUP_NAME, group_name)
-        elif group and tenant_id not in group.members:
+            message = _("Group '{}' not found").format(group_id)
+            return (None, message)
+
+        if not group.name or not group.type or not group.level:
+            self.error_uri = '/errors/invalid'
+            message = _("Group name, type, and level "
+                        "must all be specified.")
+            return (None, message)
+
+        if group.type not in _GROUP_TYPES:
+            self.error_uri = '/errors/invalid'
+            message = _("Unknown group type '{}'.").format(
+                group.type)
+            return (None, message)
+        elif len(group.members) > 0 and \
+            self.tenant_id not in group.members:
             self.error_uri = '/errors/conflict'
-            return_message = _("Tenant ID %s not a member of "
-                               "{0} '{1}' ({2})").format(self.tenant_id,
-                                                         GROUP_NAME,
-                                                         group.name,
-                                                         group.id)
-        return return_message
+            message = _("ID {} not a member of "
+                        "group {} ({})").format(
+                self.tenant_id, group.name, group.id)
+            return (None, message)
 
-    def build_request(self, **kwargs):
-        """Build an Ostro request.
+        return (group, None)
 
-        If False is returned then the response attribute contains
-        status as to the error.
+    def _prepare_resources(self, resources):
+        """Pre-digests resource data for use by Ostro.
+
+        Maps Heat resource names to Orchestration UUIDs.
+        Removes opaque metadata from resources.
+        Ensures group assignments refer to valid groups.
+        Ensures groups have tenant_id as a member.
         """
-        # TODO(JD): Refactor this into create and update methods?
-        self.args = kwargs.get('args')
-        self.tenant_id = kwargs.get('tenant_id')
-        self.response = None
-        self.error_uri = None
 
-        resources = self.args['resources']
-        if 'resources_update' in self.args:
-            action = 'update'
-            resources_update = self.args['resources_update']
-        else:
-            action = 'create'
-            resources_update = None
+        # We're going to mess with the resources, so make a copy.
+        res_copy = copy.deepcopy(resources)
+        groups = {}
+        message = None
 
-        # If we get any status in the response, it's an error. Bail.
-        self.response = self._prepare_resources(resources)
-        if 'status' in self.response:
-            return False
+        for res in res_copy.itervalues():
+            if METADATA in res:
+                # Discard valet-api-specific metadata.
+                res.pop(METADATA)
+            res_type = res.get('type')
 
-        self.request = {
-            "action": action,
-            "resources": self.response['resources'],
-            "stack_id": self.args['stack_id'],
+            # If OS::Nova::Server has valet metadata, use it
+            # to propagate group assignments to the engine.
+            if res_type == SERVER:
+                properties = res.get('properties')
+                metadata = properties.get(METADATA, {})
+                valet_metadata = metadata.get('valet', {})
+                group_assignments = valet_metadata.get('groups', [])
+
+                # Resolve all the groups and normalize the IDs.
+                normalized_ids = []
+                for group_id in group_assignments:
+                    (group, message) = self._resolve_group(group_id)
+                    if message:
+                        return self._build_error(message)
+
+                    # Normalize each group id
+                    normalized_ids.append(group.id)
+
+                    groups[group.id] = {
+                        "name": group.name,
+                        "type": group.type,
+                        "level": group.level,
+                    }
+
+                # Update all the IDs with normalized values if we have 'em.
+                if normalized_ids and valet_metadata:
+                    valet_metadata['groups'] = normalized_ids
+
+            # OS::Valet::GroupAssignment has been pre-empted.
+            # We're opting to leave the existing/working logic as-is.
+            # Propagate group assignment resources to the engine.
+            if res_type == GROUP_ASSIGNMENT:
+                properties = res.get('properties')
+                group_id = properties.get(GROUP_ID)
+                if not group_id:
+                    self.error_uri = '/errors/invalid'
+                    message = _("Property 'group' must be specified.")
+                    break
+
+                (group, message) = self._resolve_group(group_id)
+                if message:
+                    return self._build_error(message)
+
+                # Normalize the group id
+                properties[GROUP_ID] = group.id
+
+                groups[group.id] = {
+                    "name": group.name,
+                    "type": group.type,
+                    "level": group.level,
+                }
+
+        if message:
+            return self._build_error(message)
+        prepared_resources = {
+            "resources": res_copy,
+            "groups": groups,
         }
-
-        # Only add locations if we have it (no need for an empty object)
-        locations = self.args.get('locations')
-        if locations:
-            self.request['locations'] = locations
-
-        if resources_update:
-            # If we get any status in the response, it's an error. Bail.
-            self.response = self._prepare_resources(resources_update)
-            if 'status' in self.response:
-                return False
-            self.request['resources_update'] = self.response['resources']
-
-        return True
+        return prepared_resources
 
     def is_request_serviceable(self):
-        """Return true if request has at least one serviceable resource."""
-        # TODO(JD): Ostro should return no placements vs throw an error.
+        """Returns true if request has at least one serviceable resources."""
+        # TODO(jdandrea): Ostro should return no placements vs throw an error.
         resources = self.request.get('resources', {})
         for res in resources.itervalues():
             res_type = res.get('type')
             if res_type and res_type in SERVICEABLE_RESOURCES:
                 return True
         return False
+
+    # FIXME(jdandrea): Change name to create_or_update
+    def build_request(self, **kwargs):
+        """Create or update a set of placements.
+
+        If False is returned, response attribute contains error info.
+        """
+
+        self.args = kwargs.get('args')
+        self.tenant_id = kwargs.get('tenant_id')
+        self.response = None
+        self.error_uri = None
+
+        request = {
+            "action": kwargs.get('action', 'create'),
+            "stack_id": self.args.get('stack_id'),
+            "tenant_id": self.tenant_id,
+            "groups": {},  # Start with an empty dict to aid updates
+        }
+
+        # If we're updating, original_resources arg will have original info.
+        # Get this info first.
+        original_resources = self.args.get('original_resources')
+        if original_resources:
+            self.response = self._prepare_resources(original_resources)
+            if 'status' in self.response:
+                return False
+            request['original_resources'] = self.response['resources']
+            if 'groups' in self.response:
+                request['groups'] = self.response['groups']
+
+        # resources arg must always have new/updated info.
+        resources = self.args.get('resources')
+        self.response = self._prepare_resources(resources)
+        if 'status' in self.response:
+            return False
+        request['resources'] = self.response['resources']
+        if 'groups' in self.response:
+            # Update groups dict with new/updated group info.
+            request['groups'].update(self.response['groups'])
+
+        locations = self.args.get('locations')
+        if locations:
+            request['locations'] = locations
+
+        self.request = request
+        return True
 
     def ping(self):
         """Send a ping request and obtain a response."""
@@ -282,8 +327,22 @@ class Ostro(object):
             "action": "replan",
             "stack_id": self.args['stack_id'],
             "locations": self.args['locations'],
+            "resource_id": self.args['resource_id'],
             "orchestration_id": self.args['orchestration_id'],
             "exclusions": self.args['exclusions'],
+        }
+
+    def identify(self, **kwargs):
+        """Identify a placement for an existing resource."""
+        self.args = kwargs.get('args')
+        self.response = None
+        self.error_uri = None
+        self.asynchronous = True
+        self.request = {
+            "action": "identify",
+            "stack_id": self.args['stack_id'],
+            "orchestration_id": self.args['orchestration_id'],
+            "resource_id": self.args['uuid'],
         }
 
     def migrate(self, **kwargs):
@@ -294,6 +353,7 @@ class Ostro(object):
         self.request = {
             "action": "migrate",
             "stack_id": self.args['stack_id'],
+            "tenant_id": self.args['tenant_id'],
             "excluded_hosts": self.args['excluded_hosts'],
             "orchestration_id": self.args['orchestration_id'],
         }

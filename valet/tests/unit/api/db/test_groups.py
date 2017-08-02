@@ -35,7 +35,8 @@ class TestGroups(ApiBase):
         """Init a test group object and return."""
         mock_insert.return_value = None
         members = ["me", "you"]
-        return Group("test_name", "test_description", "test_type", members)
+        return Group("test_name", "test_description", "test_type",
+                     "test_level", members)
 
     def test__repr__(self):
         """Validate test name in group repr."""
