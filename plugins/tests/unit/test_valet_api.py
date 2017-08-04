@@ -13,21 +13,21 @@
 
 import mock
 
-from valet_plugins.common.valet_api import requests
-from valet_plugins.common.valet_api import ValetAPIWrapper
-from valet_plugins.tests.base import Base
+from plugins.common.valet_api import requests
+from plugins.common.valet_api import ValetAPI
+from plugins.tests.base import Base
 
 
 class TestValetApi(Base):
 
     def setUp(self):
         super(TestValetApi, self).setUp()
-        self.valet_api_wrapper = self.init_ValetAPIWrapper()
+        self.valet_api = self.init_ValetAPI()
 
-    @mock.patch.object(ValetAPIWrapper, "_register_opts")
-    def init_ValetAPIWrapper(self, mock_api):
+    @mock.patch.object(ValetAPI, "_register_opts")
+    def init_ValetAPI(self, mock_api):
         mock_api.return_value = None
-        return ValetAPIWrapper()
+        return ValetAPI()
 
     @mock.patch.object(requests, 'request')
     def test_plans_create(self, mock_request):
