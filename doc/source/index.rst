@@ -5,6 +5,7 @@ Welcome to Valet's documentation!
    :maxdepth: 1
 
    contributing
+   heat
 
 Indices and tables
 ==================
