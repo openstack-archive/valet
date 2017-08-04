@@ -1,198 +1,318 @@
 #
-#  Licensed under the Apache License, Version 2.0 (the "License"); you may
-#  not use this file except in compliance with the License. You may obtain
-#  a copy of the License at
+# Copyright (c) 2014-2017 AT&T Intellectual Property
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  License for the specific language governing permissions and limitations
-#  under the License.
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+"""Valet API Wrapper"""
 
-'''Valet API Wrapper'''
+# TODO(jdandrea): Factor out and refashion into python-valetclient.
 
-from heat.common.i18n import _
 import json
+import sys
 
 from oslo_config import cfg
 from oslo_log import log as logging
-
 import requests
-import sys
+
+from valet_plugins import exceptions
+from valet_plugins.i18n import _
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-def _exception(exc, exc_info, req):
-    '''Handle an exception'''
-    response = None
-    try:
-        if req is not None:
-            response = json.loads(req.text)
-    except Exception as e:
-        # FIXME(GJ): if Valet returns error
-        LOG.error("Exception is: %s, body is: %s" % (e, req.text))
-        return None
+class ValetAPI(object):
+    """Valet Python API
 
-    if response and 'error' in response:
-        # FIXME(GJ): if Valet returns error
-        error = response.get('error')
-        msg = "%(explanation)s (valet-api: %(message)s)" % {
-            'explanation': response.get('explanation',
-                                        _('No remediation available')),
-            'message': error.get('message', _('Unknown error'))
-        }
-        LOG.error("Response with error: " + msg)
-        return "error"
-    else:
-        # TODO(JD): Re-evaluate if this clause is necessary.
-        exc_class, exc, traceback = exc_info  # pylint: disable=W0612
-        msg = (_("%(exc)s for %(method)s %(url)s with body %(body)s") %
-               {'exc': exc, 'method': exc.request.method,
-                'url': exc.request.url, 'body': exc.request.body})
-        LOG.error("Response is none: " + msg)
-        return "error"
-
-
-# TODO(JD): Improve exception reporting back up to heat
-class ValetAPIError(Exception):
-    '''Valet API Error'''
-    pass
-
-
-class ValetAPIWrapper(object):
-    '''Valet API Wrapper'''
+    self.auth_token can be set once in advance,
+    or sent as auth_token with each request.
+    """
 
     def __init__(self):
-        '''Initializer'''
-        self.headers = {'Content-Type': 'application/json'}
-        self.opt_group_str = 'valet'
-        self.opt_name_str = 'url'
-        self.opt_conn_timeout = 'connect_timeout'
-        self.opt_read_timeout = 'read_timeout'
+        """Initializer"""
+        self._auth_token = None
         self._register_opts()
 
-    def _api_endpoint(self):
-        '''Returns API endpoint'''
+    @property
+    def auth_token(self):
+        """Auth Token Property/Getter"""
+        return self._auth_token
+
+    @auth_token.setter
+    def auth_token(self, value):
+        """Auth Token Setter"""
+        self._auth_token = value
+
+    @auth_token.deleter
+    def auth_token(self):
+        """Auth Token Deleter"""
+        del self._auth_token
+
+    def _exception(self, exc_info, response):
+        """Build exception/message and raise it.
+
+        Exceptions are of type ValetOpenStackPluginException.
+
+        exc_info must be sys.exc_info() tuple
+        response must be of type requests.models.Response
+        """
+
+        msg = None
+        exception = exceptions.UnknownError
+
         try:
-            opt = getattr(cfg.CONF, self.opt_group_str)
-            endpoint = opt[self.opt_name_str]
-            if endpoint:
-                return endpoint
+            response_dict = response.json()
+            error = response_dict.get('error', {})
+            msg = "{} (valet-api: {})".format(
+                response_dict.get('explanation', 'Unknown remediation'),
+                error.get('message', 'Unknown error'))
+            if response.status_code == 404:
+                exception = exceptions.NotFoundError
             else:
-                # FIXME: Possibly not wanted (misplaced-bare-raise)
-                raise  # pylint: disable=E0704
-        except Exception:
-            raise  # exception.Error(_('API Endpoint not defined.'))
-
-    def _get_timeout(self):
-        '''Returns Valet plugin API request timeout.
-
-        Returns the timeout values tuple (conn_timeout, read_timeout)
-        '''
-        read_timeout = 600
-        try:
-            opt = getattr(cfg.CONF, self.opt_group_str)
-            # conn_timeout = opt[self.opt_conn_timeout]
-            read_timeout = opt[self.opt_read_timeout]
-        except Exception:
-            pass
-        # Timeout accepts tupple on 'requests' version 2.4.0 and above -
-        # adding *connect* timeouts
-        # return conn_timeout, read_timeout
-        return read_timeout
+                exception = exceptions.PythonAPIError
+        except (AttributeError, ValueError):
+            # Plan B: Pick apart exc_info (HTTPError)
+            exc_class, exc, traceback = exc_info
+            if hasattr(exc.response, 'request'):
+                fmt = "Original Exception: {} for {} {} with body {}"
+                msg = fmt.format(
+                    exc, exc.response.request.method,
+                    exc.response.request.url, exc.response.request.body)
+            else:
+                msg = "Original Exception: {}".format(exc)
+            # TODO(jdandrea): Is this *truly* an "HTTP Error?"
+            exception = exceptions.HTTPError
+        raise exception(msg)
 
     def _register_opts(self):
-        '''Register options'''
+        """Register oslo.config options"""
         opts = []
-        option = cfg.StrOpt(
-            self.opt_name_str, default=None, help=_('Valet API endpoint'))
+        option = cfg.StrOpt('url', default=None,
+                            help=_('API endpoint url'))
         opts.append(option)
-        option = cfg.IntOpt(
-            self.opt_conn_timeout, default=3,
-            help=_('Valet Plugin Connect Timeout'))
+        option = cfg.IntOpt('read_timeout', default=5,
+                            help=_('API read timeout in seconds'))
         opts.append(option)
-        option = cfg.IntOpt(
-            self.opt_read_timeout, default=5,
-            help=_('Valet Plugin Read Timeout'))
+        option = cfg.IntOpt('retries', default=3,
+                            help=_('API request retries'))
         opts.append(option)
 
-        opt_group = cfg.OptGroup(self.opt_group_str)
-        cfg.CONF.register_group(opt_group)
-        cfg.CONF.register_opts(opts, group=opt_group)
+        opt_group = cfg.OptGroup('valet')
+        CONF.register_group(opt_group)
+        CONF.register_opts(opts, group=opt_group)
 
-    # TODO(JD): Keep stack param for now. We may need it again.
-    def plans_create(self, stack, plan, auth_token=None):
-        '''Create a plan'''
+    def _request(self, method='get', content_type='application/json',
+                 path='', headers=None, data=None, params=None):
+        """Performs HTTP request.
+
+        Returns a response dict or raises an exception.
+        """
+        if method not in ('post', 'get', 'put', 'delete'):
+            method = 'get'
+        method_fn = getattr(requests, method)
+
+        full_headers = {
+            'Accept': content_type,
+            'Content-Type': content_type,
+        }
+        if headers:
+            full_headers.update(headers)
+        if not full_headers.get('X-Auth-Token') and self.auth_token:
+            full_headers['X-Auth-Token'] = self.auth_token
+        full_url = '{}/{}'.format(CONF.valet.url, path.lstrip('/'))
+
+        # Prepare the request args
+        try:
+            data_str = json.dumps(data) if data else None
+        except (TypeError, ValueError):
+            data_str = data
+        kwargs = {
+            'data': data_str,
+            'params': params,
+            'headers': full_headers,
+            'timeout': CONF.valet.read_timeout,
+        }
+
+        LOG.debug("Request: {} {}".format(method.upper(), full_url))
+        if data:
+            LOG.debug("Request Body: {}".format(json.dumps(data)))
+
+        retries = CONF.valet.retries
         response = None
-        try:
-            req = None
-            timeout = self._get_timeout()
-            url = self._api_endpoint() + '/plans/'
-            payload = json.dumps(plan)
-            self.headers['X-Auth-Token'] = auth_token
-            req = requests.post(
-                url, data=payload, headers=self.headers, timeout=timeout)
-            req.raise_for_status()
-            response = json.loads(req.text)
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError) as exc:
-            return _exception(exc, sys.exc_info(), req)
-        except Exception as e:
-            LOG.error("Exception (at plans_create) is: %s" % e)
-            return None
-        return response
+        response_dict = {}
 
-    # TODO(JD): Keep stack param for now. We may need it again.
-    def plans_delete(self, stack, auth_token=None):  # pylint: disable=W0613
-        '''Delete a plan'''
-        try:
-            req = None
-            timeout = self._get_timeout()
-            url = self._api_endpoint() + '/plans/' + stack.id
-            self.headers['X-Auth-Token'] = auth_token
-            req = requests.delete(url, headers=self.headers, timeout=timeout)
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError) as exc:
-            return _exception(exc, sys.exc_info(), req)
-        except Exception as e:
-            LOG.error("Exception (plans_delete) is: %s" % e)
-            return None
-        # Delete does not return a response body.
+        # Use exc_info to wrap exceptions from internally used libraries.
+        # Callers are on a need-to-know basis, and they don't need to know.
+        exc_info = None
 
-    def placement(self, orch_id, res_id, hosts=None, auth_token=None):
-        '''Reserve previously made placement.'''
-        try:
-            req = None
-            payload = None
-            timeout = self._get_timeout()
-            url = self._api_endpoint() + '/placements/' + orch_id
-            self.headers['X-Auth-Token'] = auth_token
-            if hosts:
-                kwargs = {
-                    "locations": hosts,
-                    "resource_id": res_id
-                }
-                payload = json.dumps(kwargs)
-                req = requests.post(
-                    url, data=payload, headers=self.headers, timeout=timeout)
-            else:
-                req = requests.get(url, headers=self.headers, timeout=timeout)
+        # FIXME(jdandrea): Retrying is questionable; it masks bigger issues.
+        for attempt in range(retries):
+            if attempt > 0:
+                LOG.warn(("Retry #{}/{}").format(attempt + 1, retries))
+            try:
+                response = method_fn(full_url, **kwargs)
+                if not response.ok:
+                    LOG.debug("Response Status: {} {}".format(
+                        response.status_code, response.reason))
+                try:
+                    # This load/unload tidies up the unicode stuffs
+                    response_dict = response.json()
+                    LOG.debug("Response JSON: {}".format(
+                        json.dumps(response_dict)))
+                except ValueError:
+                    LOG.debug("Response Body: {}".format(response.text))
+                response.raise_for_status()
+                break  # Don't retry, we're done.
+            except requests.exceptions.HTTPError as exc:
+                # Just grab the exception info. Don't retry.
+                exc_info = sys.exc_info()
+                break
+            except requests.exceptions.RequestException as exc:
+                # Grab exception info, log the error, and try again.
+                exc_info = sys.exc_info()
+                LOG.error(exc.message)
 
-            # TODO(JD): Raise an exception IFF the scheduler can handle it
-            # req.raise_for_status()
+        if exc_info:
+            # Response.__bool__ returns false if status is not ok. Ruh roh!
+            # That means we must check the object type vs treating as a bool.
+            # More info: https://github.com/kennethreitz/requests/issues/2002
+            if isinstance(response, requests.models.Response) \
+                    and not response.ok:
+                LOG.debug("Status {} {}; attempts: {}; url: {}".format(
+                    response.status_code, response.reason,
+                    attempt + 1, full_url))
+            self._exception(exc_info, response)
+        return response_dict
 
-            response = json.loads(req.text)
-        except (requests.exceptions.HTTPError, requests.exceptions.Timeout,
-                requests.exceptions.ConnectionError) as exc:
-            return _exception(exc, sys.exc_info(), req)
-        except Exception as e:  # pylint: disable=W0702
-            LOG.error("Exception (placement) is: %s" % e)
-            # FIXME: Find which exceptions we should really handle here.
-            response = None
+    def groups_create(self, group, auth_token=None):
+        """Create a group"""
+        kwargs = {
+            "method": "post",
+            "path": "/groups",
+            "headers": {"X-Auth-Token": auth_token},
+            "data": group,
+        }
+        return self._request(**kwargs)
 
-        return response
+    def groups_get(self, group_id, auth_token=None):
+        """Get a group"""
+        kwargs = {
+            "method": "get",
+            "path": "/groups/{}".format(group_id),
+            "headers": {"X-Auth-Token": auth_token},
+        }
+        return self._request(**kwargs)
+
+    def groups_update(self, group_id, group, auth_token=None):
+        """Update a group"""
+        kwargs = {
+            "method": "put",
+            "path": "/groups/{}".format(group_id),
+            "headers": {"X-Auth-Token": auth_token},
+            "data": group,
+        }
+        return self._request(**kwargs)
+
+    def groups_delete(self, group_id, auth_token=None):
+        """Delete a group"""
+        kwargs = {
+            "method": "delete",
+            "path": "/groups/{}".format(group_id),
+            "headers": {"X-Auth-Token": auth_token},
+        }
+        return self._request(**kwargs)
+
+    def groups_members_update(self, group_id, members, auth_token=None):
+        """Update a group with new members"""
+        kwargs = {
+            "method": "put",
+            "path": "/groups/{}/members".format(group_id),
+            "headers": {"X-Auth-Token": auth_token},
+            "data": {'members': members},
+        }
+        return self._request(**kwargs)
+
+    def groups_member_delete(self, group_id, member_id, auth_token=None):
+        """Delete one member from a group"""
+        kwargs = {
+            "method": "delete",
+            "path": "/groups/{}/members/{}".format(group_id, member_id),
+            "headers": {"X-Auth-Token": auth_token},
+        }
+        return self._request(**kwargs)
+
+    def groups_members_delete(self, group_id, auth_token=None):
+        """Delete all members from a group"""
+        kwargs = {
+            "method": "delete",
+            "path": "/groups/{}/members".format(group_id),
+            "headers": {"X-Auth-Token": auth_token},
+        }
+        return self._request(**kwargs)
+
+    def plans_create(self, stack, plan, auth_token=None):
+        """Create a plan"""
+        kwargs = {
+            "method": "post",
+            "path": "/plans",
+            "headers": {"X-Auth-Token": auth_token},
+            "data": plan,
+        }
+        return self._request(**kwargs)
+
+    def plans_update(self, stack, plan, auth_token=None):
+        """Update a plan"""
+        kwargs = {
+            "method": "put",
+            "path": "/plans/{}".format(stack.id),
+            "headers": {"X-Auth-Token": auth_token},
+            "data": plan,
+        }
+        return self._request(**kwargs)
+
+    def plans_delete(self, stack, auth_token=None):
+        """Delete a plan"""
+        kwargs = {
+            "method": "delete",
+            "path": "/plans/{}".format(stack.id),
+            "headers": {"X-Auth-Token": auth_token},
+        }
+        return self._request(**kwargs)
+
+    def placement(self, orch_id, res_id,
+                  action='reserve', hosts=None, auth_token=None):
+        """Reserve previously made placement or force a replan.
+
+        action can be reserve or replan.
+        """
+        kwargs = {
+            "path": "/placements/{}".format(orch_id),
+            "headers": {"X-Auth-Token": auth_token},
+        }
+        if hosts:
+            kwargs['method'] = 'post'
+            kwargs['data'] = {
+                "action": action,
+                "locations": hosts,
+                "resource_id": res_id,
+            }
+        return self._request(**kwargs)
+
+    def placements_search(self, query={}, auth_token=None):
+        """Search Placements"""
+        kwargs = {
+            "path": "/placements",
+            "headers": {"X-Auth-Token": auth_token},
+            "params": query,
+        }
+        return self._request(**kwargs)
