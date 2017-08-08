@@ -14,58 +14,54 @@
 # limitations under the License.
 
 """Test Topology."""
+from oslo_log import log
 
-from valet.engine.resource_manager.topology import Topology
+from valet.engine.resource_manager.naming import Naming
 from valet.tests.base import Base
 
+LOG = log.getLogger(__name__)
 
-class TestTopology(Base):
-    """Unit Tests for valet.engine.resource_manager.topology."""
+
+class TestNaming(Base):
+    """Unit Tests for valet.engine.resource_manager.naming."""
 
     def setUp(self):
-        """Setup TestTopology Test Class."""
-        super(TestTopology, self).setUp()
-        self.topo = Topology(Config())
+        """Setup TestNaming Test Class."""
+        super(TestNaming, self).setUp()
+        self.topo = Naming(Config(), LOG)
 
     def test_simple_topology(self):
         """Validate simple topology (region, rack, node_type and status)."""
-        (region, rack, node_type, status) = \
+        (full_rack_name, status) = \
             self.topo._set_layout_by_name("pdk15r05c001")
 
-        self.validate_test(region == "pdk15")
-        self.validate_test(rack == "pdk15r05")
-        self.validate_test(node_type in "a,c,u,f,o,p,s")
+        self.validate_test(full_rack_name == "pdk15r05")
         self.validate_test(status == "success")
 
     def test_domain_topology(self):
         """Test Domain Topology."""
-        (region, rack, node_type, status) = \
+        (full_rack_name, status) = \
             self.topo._set_layout_by_name("ihk01r01c001.emea.att.com")
 
-        self.validate_test(region == "ihk01")
-        self.validate_test(rack == "ihk01r01")
-        self.validate_test(node_type in "a,c,u,f,o,p,s")
+        self.validate_test(full_rack_name == "ihk01r01")
         self.validate_test(status == "success")
 
     def test_unhappy_topology_r(self):
         """Test unhappy topology, region/rack/node none, invalid status 0."""
-        (region, rack, node_type, status) = \
+        (full_rack_name, status) = \
             self.topo._set_layout_by_name("pdk1505c001")
-        self.validate_test(region == "none")
-        self.validate_test(rack == "none")
-        self.validate_test(node_type is None)
-        self.validate_test(status == "invalid number of "
-                                     "identification fields = 0")
+
+        self.validate_test(full_rack_name == "none")
+        self.validate_test(status == "invalid rack_char = c. "
+                                     "missing rack_char = r")
 
     def test_unhappy_topology_c(self):
         """Test unhappy topology with values none and 1 invalid status."""
-        (region, rack, node_type, status) = \
+        (full_rack_name, status) = \
             self.topo._set_layout_by_name("pdk15r05001")
-        self.validate_test(region == "none")
-        self.validate_test(rack == "none")
-        self.validate_test(node_type is None)
-        self.validate_test(status == "invalid number of "
-                                     "identification fields = 1")
+        self.validate_test(full_rack_name == "none")
+        self.validate_test(status == "incorrect format of rack "
+                                     "name = ")
 
 # TODO(UNKNOWN): add validation to topology for region
 

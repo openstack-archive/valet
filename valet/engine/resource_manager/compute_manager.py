@@ -15,27 +15,22 @@
 
 """Compute Manager."""
 
-from copy import deepcopy
 import threading
 import time
 
 from oslo_log import log
 
-from valet.engine.resource_manager.compute import Compute
-from valet.engine.resource_manager.resource_base import Host
+# from valet.engine.optimizer.simulator.compute_sim import ComputeSim
+from valet.engine.resource_manager.nova_compute import NovaCompute
+from valet.engine.resource_manager.resources.host import Host
 
 LOG = log.getLogger(__name__)
 
 
 class ComputeManager(threading.Thread):
-    """Compute Manager Class.
+    """Resource Manager to maintain compute host resources."""
 
-    Threaded class to setup and manage compute for resources, hosts,
-    flavors, etc. Calls many functions from Resource.
-    """
-
-    def __init__(self, _t_id, _t_name, _rsc, _data_lock, _config):
-        """Init Compute Manager."""
+    def __init__(self, _t_id, _t_name, _resource, _data_lock, _config):
         threading.Thread.__init__(self)
 
         self.thread_id = _t_id
@@ -43,231 +38,150 @@ class ComputeManager(threading.Thread):
         self.data_lock = _data_lock
         self.end_of_process = False
 
-        self.resource = _rsc
+        self.phandler = None
+        self.ahandler = None
+        self.resource = _resource
 
         self.config = _config
 
-        self.admin_token = None
-        self.project_token = None
-
         self.update_batch_wait = self.config.update_batch_wait
 
-    def run(self):
-        """Start Compute Manager thread to run setup."""
-        LOG.info("ComputeManager: start " + self.thread_name +
-                 " ......")
+    def set_handlers(self, _placement_handler, _app_handler):
+        """Set handlers."""
+        self.phandler = _placement_handler
+        self.ahandler = _app_handler
 
+    def run(self):
+        """Keep checking for timing for this batch job."""
+
+        LOG.info("start " + self.thread_name + " ......")
+
+        period_end = 0
         if self.config.compute_trigger_freq > 0:
             period_end = time.time() + self.config.compute_trigger_freq
 
-            while self.end_of_process is False:
-                time.sleep(60)
-                curr_ts = time.time()
-                if curr_ts > period_end:
-                    # Give some time (batch_wait) to update resource status via
-                    # message bus. Otherwise, late update will be cleaned up.
-                    time_diff = curr_ts - self.resource.current_timestamp
-                    if time_diff > self.update_batch_wait:
-                        self._run()
-                        period_end = (curr_ts +
-                                      self.config.compute_trigger_freq)
+        while self.end_of_process is False:
+            time.sleep(60)
 
-        # NOTE(GJ): do not timer based batch
-        LOG.info("exit compute_manager " + self.thread_name)
+            curr_ts = time.time()
+            if curr_ts > period_end:
+                # Give some time (batch_wait) to sync resource status via
+                # message bus
+                if ((curr_ts - self.resource.current_timestamp) >
+                   self.update_batch_wait):
+                    self._run()
+
+                    period_end = time.time() + self.config.compute_trigger_freq
+
+        LOG.info("exit " + self.thread_name)
 
     def _run(self):
-        LOG.info("ComputeManager: --- start compute_nodes "
-                 "status update ---")
-
-        triggered_host_updates = self.set_hosts()
-        if triggered_host_updates is not True:
-            LOG.warning("fail to set hosts from nova")
-        triggered_flavor_updates = self.set_flavors()
-        if triggered_flavor_updates is not True:
-            LOG.warning("fail to set flavor from nova")
-
-        LOG.info("ComputeManager: --- done compute_nodes "
-                 "status update ---")
-
-        return True
+        """Run this batch job."""
+        if self.set_hosts() is not True:
+            LOG.warn("fail to set hosts from nova")
 
     def set_hosts(self):
-        """Return True if hosts set, compute avail resources, checks update."""
+        """Check any inconsistency and perform garbage collection if necessary.
+
+        """
+
+        LOG.info("set compute hosts")
+
         hosts = {}
-        logical_groups = {}
 
-        compute = Compute()
-
-        status = compute.set_hosts(hosts, logical_groups)
-        if status != "success":
+        # compute = ComputeSim(self.config)
+        compute = NovaCompute()
+        if compute.set_hosts(hosts) != "success":
             return False
 
-        self._compute_avail_host_resources(hosts)
+        for hk, host in hosts.iteritems():
+            self.resource.compute_avail_resources(hk, host)
 
         self.data_lock.acquire()
-        lg_updated = self._check_logical_group_update(logical_groups)
-        host_updated = self._check_host_update(hosts)
-
-        if lg_updated is True or host_updated is True:
+        if self._check_host_update(hosts, compute.vm_locations) is True:
             self.resource.update_topology(store=False)
         self.data_lock.release()
 
         return True
 
-    def _compute_avail_host_resources(self, _hosts):
-        for hk, host in _hosts.iteritems():
-            self.resource.compute_avail_resources(hk, host)
+    def _check_host_update(self, _hosts, _vm_locations):
+        """Check the inconsistency of hosts."""
 
-    def _check_logical_group_update(self, _logical_groups):
-        updated = False
-
-        for lk in _logical_groups.keys():
-            if lk not in self.resource.logical_groups.keys():
-                self.resource.logical_groups[lk] = deepcopy(
-                    _logical_groups[lk])
-
-                self.resource.logical_groups[lk].last_update = time.time()
-                LOG.warning("ComputeManager: new logical group (" +
-                            lk + ") added")
-                updated = True
-
-        for rlk in self.resource.logical_groups.keys():
-            rl = self.resource.logical_groups[rlk]
-            if rl.group_type != "EX" and rl.group_type != "AFF" and \
-                    rl.group_type != "DIV":
-                if rlk not in _logical_groups.keys():
-                    self.resource.logical_groups[rlk].status = "disabled"
-
-                    self.resource.logical_groups[rlk].last_update = time.time()
-                    LOG.warning("ComputeManager: logical group (" +
-                                rlk + ") removed")
-                    updated = True
-
-        for lk in _logical_groups.keys():
-            lg = _logical_groups[lk]
-            rlg = self.resource.logical_groups[lk]
-            if lg.group_type != "EX" and lg.group_type != "AFF" and \
-                    lg.group_type != "DIV":
-                if self._check_logical_group_metadata_update(lg, rlg) is True:
-
-                    rlg.last_update = time.time()
-                    LOG.warning("ComputeManager: logical group (" +
-                                lk + ") updated")
-                    updated = True
-
-        return updated
-
-    def _check_logical_group_metadata_update(self, _lg, _rlg):
-        updated = False
-
-        if _lg.status != _rlg.status:
-            _rlg.status = _lg.status
-            updated = True
-
-        for mdk in _lg.metadata.keys():
-            if mdk not in _rlg.metadata.keys():
-                _rlg.metadata[mdk] = _lg.metadata[mdk]
-                updated = True
-
-        for rmdk in _rlg.metadata.keys():
-            if rmdk not in _lg.metadata.keys():
-                del _rlg.metadata[rmdk]
-                updated = True
-
-        for hk in _lg.vms_per_host.keys():
-            if hk not in _rlg.vms_per_host.keys():
-                _rlg.vms_per_host[hk] = deepcopy(_lg.vms_per_host[hk])
-                updated = True
-
-        for rhk in _rlg.vms_per_host.keys():
-            if rhk not in _lg.vms_per_host.keys():
-                del _rlg.vms_per_host[rhk]
-                updated = True
-
-        return updated
-
-    def _check_host_update(self, _hosts):
         updated = False
 
         for hk in _hosts.keys():
             if hk not in self.resource.hosts.keys():
                 new_host = Host(hk)
                 self.resource.hosts[new_host.name] = new_host
-
-                new_host.last_update = time.time()
-                LOG.warning("ComputeManager: new host (" +
-                            new_host.name + ") added")
+                self.resource.update_host_time(new_host.name)
+                LOG.info("new host (" + new_host.name + ") added")
                 updated = True
 
         for rhk, rhost in self.resource.hosts.iteritems():
             if rhk not in _hosts.keys():
                 if "nova" in rhost.tag:
                     rhost.tag.remove("nova")
-
-                    rhost.last_update = time.time()
-                    LOG.warning("ComputeManager: host (" +
-                                rhost.name + ") disabled")
+                    self.resource.update_host_time(rhk)
+                    LOG.info("host (" + rhost.name + ") disabled")
                     updated = True
 
         for hk in _hosts.keys():
             host = _hosts[hk]
             rhost = self.resource.hosts[hk]
             if self._check_host_config_update(host, rhost) is True:
-                rhost.last_update = time.time()
+                self.resource.update_host_time(hk)
                 updated = True
 
-        for hk, h in self.resource.hosts.iteritems():
-            if h.clean_memberships() is True:
-                h.last_update = time.time()
-                LOG.warning("ComputeManager: host (" + h.name +
-                            ") updated (delete EX/AFF/DIV membership)")
-                updated = True
-
-        for hk, host in self.resource.hosts.iteritems():
-            if host.last_update >= self.resource.current_timestamp:
-                self.resource.update_rack_resource(host)
+        inconsistent_hosts = self._check_placements(_hosts, _vm_locations)
+        if inconsistent_hosts is None:
+            return False
+        elif len(inconsistent_hosts) > 0:
+            for hk, h in inconsistent_hosts.iteritems():
+                if hk in _hosts.keys() and hk in self.resource.hosts.keys():
+                    self.resource.update_host_time(hk)
+            updated = True
 
         return updated
 
     def _check_host_config_update(self, _host, _rhost):
-        topology_updated = False
+        """Check host configuration consistency."""
+
+        config_updated = False
 
         if self._check_host_status(_host, _rhost) is True:
-            topology_updated = True
-        if self._check_host_resources(_host, _rhost) is True:
-            topology_updated = True
-        if self._check_host_memberships(_host, _rhost) is True:
-            topology_updated = True
-        if self._check_host_vms(_host, _rhost) is True:
-            topology_updated = True
+            config_updated = True
 
-        return topology_updated
+        if self._check_host_resources(_host, _rhost) is True:
+            config_updated = True
+
+        return config_updated
 
     def _check_host_status(self, _host, _rhost):
-        topology_updated = False
+        """Check host status consistency."""
+
+        status_updated = False
 
         if "nova" not in _rhost.tag:
             _rhost.tag.append("nova")
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (tag added)")
+            LOG.info("host (" + _rhost.name + ") updated (tag added)")
+            status_updated = True
 
         if _host.status != _rhost.status:
             _rhost.status = _host.status
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (status changed)")
+            LOG.info("host (" + _rhost.name + ") updated (status changed)")
+            status_updated = True
 
         if _host.state != _rhost.state:
             _rhost.state = _host.state
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (state changed)")
+            LOG.info("host (" + _rhost.name + ") updated (state changed)")
+            status_updated = True
 
-        return topology_updated
+        return status_updated
 
     def _check_host_resources(self, _host, _rhost):
-        topology_updated = False
+        """Check the resource amount consistency."""
+
+        resource_updated = False
 
         if _host.vCPUs != _rhost.vCPUs or \
            _host.original_vCPUs != _rhost.original_vCPUs or \
@@ -275,9 +189,8 @@ class ComputeManager(threading.Thread):
             _rhost.vCPUs = _host.vCPUs
             _rhost.original_vCPUs = _host.original_vCPUs
             _rhost.avail_vCPUs = _host.avail_vCPUs
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (CPU updated)")
+            LOG.info("host (" + _rhost.name + ") updated (CPU updated)")
+            resource_updated = True
 
         if _host.mem_cap != _rhost.mem_cap or \
            _host.original_mem_cap != _rhost.original_mem_cap or \
@@ -285,9 +198,8 @@ class ComputeManager(threading.Thread):
             _rhost.mem_cap = _host.mem_cap
             _rhost.original_mem_cap = _host.original_mem_cap
             _rhost.avail_mem_cap = _host.avail_mem_cap
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (mem updated)")
+            LOG.info("host (" + _rhost.name + ") updated (mem updated)")
+            resource_updated = True
 
         if _host.local_disk_cap != _rhost.local_disk_cap or \
            _host.original_local_disk_cap != _rhost.original_local_disk_cap or \
@@ -295,9 +207,9 @@ class ComputeManager(threading.Thread):
             _rhost.local_disk_cap = _host.local_disk_cap
             _rhost.original_local_disk_cap = _host.original_local_disk_cap
             _rhost.avail_local_disk_cap = _host.avail_local_disk_cap
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (local disk space updated)")
+            LOG.info("host (" + _rhost.name +
+                     ") updated (local disk space updated)")
+            resource_updated = True
 
         if _host.vCPUs_used != _rhost.vCPUs_used or \
            _host.free_mem_mb != _rhost.free_mem_mb or \
@@ -307,148 +219,178 @@ class ComputeManager(threading.Thread):
             _rhost.free_mem_mb = _host.free_mem_mb
             _rhost.free_disk_gb = _host.free_disk_gb
             _rhost.disk_available_least = _host.disk_available_least
-            topology_updated = True
-            LOG.warning("ComputeManager: host (" + _rhost.name +
-                        ") updated (other resource numbers)")
+            LOG.info("host (" + _rhost.name +
+                     ") updated (other resource numbers)")
+            resource_updated = True
 
-        return topology_updated
+        return resource_updated
 
-    def _check_host_memberships(self, _host, _rhost):
-        topology_updated = False
+    def _check_placements(self, _hosts, _vm_locations):
+        """Check the consistency of vm placements with nova."""
 
-        for mk in _host.memberships.keys():
-            if mk not in _rhost.memberships.keys():
-                _rhost.memberships[mk] = self.resource.logical_groups[mk]
-                topology_updated = True
-                LOG.warning("ComputeManager: host (" + _rhost.name +
-                            ") updated (new membership)")
+        inconsistent_hosts = {}
+        curr_time = time.time()
 
-        for mk in _rhost.memberships.keys():
-            m = _rhost.memberships[mk]
-            if m.group_type != "EX" and m.group_type != "AFF" and \
-                    m.group_type != "DIV":
-                if mk not in _host.memberships.keys():
-                    del _rhost.memberships[mk]
-                    topology_updated = True
-                    LOG.warning("ComputeManager: host (" + _rhost.name +
-                                ") updated (delete membership)")
+        for vk, hk in _vm_locations.iteritems():
+            placement = self.phandler.get_placement(vk)
+            if placement is None:
+                return None
 
-        return topology_updated
+            elif placement.uuid == "none":
+                LOG.info("unknown vm found in nova")
 
-    def _check_host_vms(self, _host, _rhost):
-        topology_updated = False
+                vm_info = _hosts[hk].get_vm_info(uuid=vk)
 
-        # Clean up VMs
-        blen = len(_rhost.vm_list)
-        _rhost.vm_list = [v for v in _rhost.vm_list if v[2] != "none"]
-        alen = len(_rhost.vm_list)
-        if alen != blen:
-            topology_updated = True
-            msg = "host ({0}) {1} none vms removed"
-            LOG.warning(msg.format(_rhost.name, str(blen - alen)))
+                p = self.phandler.insert_placement(vk, vm_info["stack_id"], hk,
+                                                   vm_info["orch_id"],
+                                                   "created")
+                if p is None:
+                    return None
+                self.phandler.set_unverified(p.uuid)
 
-        self.resource.clean_none_vms_from_logical_groups(_rhost)
+                LOG.info("host (" + hk + ") updated (new unknown vm added)")
 
-        for vm_id in _host.vm_list:
-            if _rhost.exist_vm_by_uuid(vm_id[2]) is False:
-                _rhost.vm_list.append(vm_id)
-                topology_updated = True
-                LOG.warning("ComputeManager: host (" + _rhost.name +
-                            ") updated (new vm placed)")
+                rhost = self.resource.hosts[hk]
+                if rhost.exist_vm(uuid=vk):
+                    rhost.remove_vm(uuid=vk)
 
-        for rvm_id in _rhost.vm_list:
-            if _host.exist_vm_by_uuid(rvm_id[2]) is False:
-                self.resource.remove_vm_by_uuid_from_logical_groups(
-                    _rhost, rvm_id[2])
-                topology_updated = True
-                LOG.warning("ComputeManager: host (" + _rhost.name +
-                            ") updated (vm removed)")
+                rhost.vm_list.append(vm_info)
+                inconsistent_hosts[hk] = rhost
 
-        blen = len(_rhost.vm_list)
-        _rhost.vm_list = [
-            v for v in _rhost.vm_list if _host.exist_vm_by_uuid(v[2]) is True]
-        alen = len(_rhost.vm_list)
-        if alen != blen:
-            topology_updated = True
-            msg = "host ({0}) {1} vms removed"
-            LOG.warning(msg.format(_rhost.name, str(blen - alen)))
+                # FIXME(gjung): add to corresponding groups with verification?
+                #     currently, do this at bootstrap time and requested.
 
-        return topology_updated
+            else:
+                if hk != placement.host:
+                    LOG.warn("PANIC: placed in different host")
 
-    def set_flavors(self):
-        """Return True if compute set flavors returns success."""
-        flavors = {}
+                    vm_info = _hosts[hk].get_vm_info(uuid=vk)
+                    vm_info["stack_id"] = placement.stack_id
+                    vm_info["orch_id"] = placement.orch_id
 
-        compute = Compute()
+                    rhost = self.resource.hosts[hk]
+                    if rhost.exist_vm(uuid=vk):
+                        rhost.remove_vm(uuid=vk)
 
-        status = compute.set_flavors(flavors)
-        if status != "success":
-            LOG.error(status)
-            return False
+                    rhost.vm_list.append(vm_info)
+                    inconsistent_hosts[hk] = rhost
 
-        self.data_lock.acquire()
-        if self._check_flavor_update(flavors) is True:
-            self.resource.update_topology(store=False)
-        self.data_lock.release()
+                    LOG.warn("host (" + rhost.name + ") updated (vm added)")
 
-        return True
+                    # FIXME(gjung): add to corresponding groups with
+                    # verification?
 
-    def _check_flavor_update(self, _flavors):
-        updated = False
+                    if placement.host in self.resource.hosts.keys():
+                        old_rhost = self.resource.hosts[placement.host]
+                        if old_rhost.remove_vm(uuid=vk) is True:
+                            LOG.warn("host (" + old_rhost.name +
+                                     ") updated (vm removed)")
 
-        for fk in _flavors.keys():
-            if fk not in self.resource.flavors.keys():
-                self.resource.flavors[fk] = deepcopy(_flavors[fk])
+                            inconsistent_hosts[placement.host] = old_rhost
 
-                self.resource.flavors[fk].last_update = time.time()
-                LOG.warning("ComputeManager: new flavor (" +
-                            fk + ":" + _flavors[fk].flavor_id + ") added")
-                updated = True
+                        self.resource.remove_vm_from_groups_of_host(old_rhost,
+                                                                    uuid=vk)
 
-        for rfk in self.resource.flavors.keys():
-            rf = self.resource.flavors[rfk]
-            if rfk not in _flavors.keys():
-                rf.status = "disabled"
+                    placement.host = hk
+                    placement.status = "none"
+                    placement.timestamp = curr_time
+                    if not self.phandler.store_placement(vk, placement):
+                        return None
 
-                rf.last_update = time.time()
-                LOG.warning("ComputeManager: flavor (" + rfk + ":" +
-                            rf.flavor_id + ") removed")
-                updated = True
+                    if (placement.stack_id is not None or
+                       placement.stack_id != "none"):
+                        (vid, hk) = self.ahandler.update_stack(
+                            placement.stack_id, uuid=vk, host=hk)
+                        if vid is None:
+                            return None
 
-        for fk in _flavors.keys():
-            f = _flavors[fk]
-            rf = self.resource.flavors[fk]
+                new_state = None
+                if placement.state is None or placement.state == "none":
+                    new_state = "created"
 
-            if self._check_flavor_spec_update(f, rf) is True:
-                rf.last_update = time.time()
-                LOG.warning("ComputeManager: flavor (" + fk + ":" +
-                            rf.flavor_id + ") spec updated")
-                updated = True
+                if placement.state not in ("created", "rebuilt", "migrated"):
+                    LOG.warn("vm is incomplete state = " + placement.state)
 
-        return updated
+                    if (placement.state == "planned" or
+                       placement.state == "building"):
+                        new_state = "created"
+                    elif (placement.state == "rebuilding" or
+                          placement.state == "rebuild"):
+                        new_state = "rebuilt"
+                    elif (placement.state == "migrating" or
+                          placement.state == "migrate"):
+                        new_state = "migrated"
 
-    def _check_flavor_spec_update(self, _f, _rf):
-        spec_updated = False
+                if new_state is not None:
+                    placement.state = new_state
+                    placement.timestamp = curr_time
+                    if not self.phandler.store_placement(vk, placement):
+                        return None
 
-        if _f.status != _rf.status:
-            _rf.status = _f.status
-            spec_updated = True
+        for rk, rhost in self.resource.hosts.iteritems():
+            deletion_list = []
 
-        if _f.vCPUs != _rf.vCPUs or _f.mem_cap != _rf.mem_cap or \
-                _f.disk_cap != _rf.disk_cap:
-            _rf.vCPUs = _f.vCPUs
-            _rf.mem_cap = _f.mem_cap
-            _rf.disk_cap = _f.disk_cap
-            spec_updated = True
+            for vm_info in rhost.vm_list:
+                if vm_info["uuid"] is None or vm_info["uuid"] == "none":
+                    LOG.warn("host (" + rhost.name + ") pending vm removed")
 
-        for sk in _f.extra_specs.keys():
-            if sk not in _rf.extra_specs.keys():
-                _rf.extra_specs[sk] = _f.extra_specs[sk]
-                spec_updated = True
+                    deletion_list.append(vm_info)
 
-        for rsk in _rf.extra_specs.keys():
-            if rsk not in _f.extra_specs.keys():
-                del _rf.extra_specs[rsk]
-                spec_updated = True
+                    if (vm_info["stack_id"] is not None and
+                       vm_info["stack_id"] != "none"):
+                        if not self.ahandler.delete_from_stack(
+                           vm_info["stack_id"], orch_id=vm_info["orch_id"]):
+                            return None
 
-        return spec_updated
+                else:
+                    placement = self.phandler.get_placement(vm_info["uuid"])
+                    if placement is None:
+                        return None
+
+                    if vm_info["uuid"] not in _vm_locations.keys():
+                        LOG.warn("vm is mising with state = " +
+                                 placement.state)
+
+                        deletion_list.append(vm_info)
+
+                        if (placement.stack_id is not None and
+                           placement.stack_id != "none"):
+                            if not self.ahandler.delete_from_stack(
+                               placement.stack_id, uuid=vm_info["uuid"]):
+                                return None
+
+                        if not self.phandler.delete_placement(vm_info["uuid"]):
+                            return None
+
+                    elif _vm_locations[vm_info["uuid"]] != rk:
+                        LOG.warn("placed in different host")
+
+                        if rhost.remove_vm(uuid=vm_info["uuid"]) is True:
+                            LOG.warn("host (" + rk + ") updated (vm removed)")
+
+                            inconsistent_hosts[rk] = rhost
+
+                            self.resource.remove_vm_from_groups_of_host(
+                                rhost, uuid=vm_info["uuid"])
+
+                            # FIXME(gjung): placement.status?
+
+            if len(deletion_list) > 0:
+                LOG.warn("host (" + rhost.name + ") updated (vms removed)")
+
+                inconsistent_hosts[rk] = rhost
+
+                for vm_info in deletion_list:
+                    if (vm_info["orch_id"] is not None and
+                       vm_info["orch_id"] != "none"):
+                        rhost.remove_vm(orch_id=vm_info["orch_id"])
+                        self.resource.remove_vm_from_groups(
+                            rhost, orch_id=vm_info["orch_id"])
+                    else:
+                        if not rhost.remove_vm(uuid=vm_info["uuid"]):
+                            LOG.warn("fail to remove vm from host")
+
+                        self.resource.remove_vm_from_groups(
+                            rhost, uuid=vm_info["uuid"])
+
+        return inconsistent_hosts
