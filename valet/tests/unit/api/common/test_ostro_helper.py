@@ -16,170 +16,291 @@
 """Test Ostro Helper."""
 
 import mock
-import valet.api.common.ostro_helper as helper
-from valet.api.common.ostro_helper import Ostro
-from valet.tests.unit.api.v1.api_base import ApiBase
+
+from valet.api.common import ostro_helper
+from valet.api.db.models import music as models
+from valet.tests.unit.api.v1 import api_base
+from valet.tests.unit import fakes
 
 
-class TestOstroHelper(ApiBase):
-    """Test Ostro (Engine) Helper Class."""
-
+class TestOstroHelper(api_base.ApiBase):
     def setUp(self):
         """Setup Test Ostro and call init Ostro."""
         super(TestOstroHelper, self).setUp()
 
-        self.ostro = self.init_Ostro()
+        self.engine = self.init_engine()
+        self.groups = []
 
-    @mock.patch.object(helper, 'conf')
-    def init_Ostro(self, mock_conf):
-        """Init Engine(Ostro) and return."""
-        mock_conf.ostro = {}
-        mock_conf.ostro["tries"] = 10
-        mock_conf.ostro["interval"] = 1
+        kwargs = {
+            'description': 'test',
+            'members': ['test_tenant_id'],
+        }
+        for group_type in ('affinity', 'diversity', 'exclusivity'):
+            kwargs['type'] = group_type
+            for group_level in ('host', 'rack'):
+                # Build names like host_affinity, rack_diversity, etc.
+                kwargs['name'] = "{}_{}".format(group_level, group_type)
+                kwargs['level'] = group_level
+                group = models.groups.Group(**kwargs)
+                self.groups.append(group)
 
-        return Ostro()
+    @mock.patch.object(ostro_helper, 'conf')
+    def init_engine(self, mock_conf):
+        mock_conf.music = {}
+        mock_conf.music["tries"] = 10
+        mock_conf.music["interval"] = 1
 
-    def test_build_request(self):
-        """Test Build Request in Engine API using many different kwargs."""
-        kwargs = {'tenant_id': 'test_tenant_id',
-                  'args': {'stack_id': 'test_stack_id',
-                           'plan_name': 'test_plan_name',
-                           'resources': {'test_resource': {
-                               'Type': 'ATT::Valet::GroupAssignment',
-                                       'Properties': {
-                                           'resources': ['my-instance-1',
-                                                         'my-instance-2'],
-                                           'group_type': 'affinity',
-                                           'level': 'host'},
-                                       'name': 'test-affinity-group3'}}}}
-        self.validate_test(self.ostro.build_request(**kwargs))
+        return ostro_helper.Ostro()
 
-        kwargs = {'tenant_id': 'test_tenant_id',
-                  'args': {'stack_id': 'test_stack_id',
-                           'plan_name': 'test_plan_name',
-                           'resources': {'test_resource': {
-                               'Type': 'ATT::Valet::GroupAssignment',
-                                       'Properties': {
-                                           'resources': ['my-instance-1',
-                                                         'my-instance-2'],
-                                           'group_type': 'affinity',
-                                           'group_name': "test_group_name",
-                                           'level': 'host'},
-                                       'name': 'test-affinity-group3'}}}}
-        self.validate_test(not self.ostro.build_request(**kwargs))
-        self.validate_test("conflict" in self.ostro.error_uri)
+    def build_request_kwargs(self):
+        """Boilerplate for the build_request tests"""
+        # TODO(jdandrea): Sample Data should be co-located elsewhere
+        base_kwargs = {
+            'tenant_id': 'test_tenant_id',
+            'args': {
+                'stack_id': 'test_stack_id',
+                'plan_name': 'test_plan_name',
+                'timeout': '60 sec',
+                'resources': {
+                    "test_server": {
+                        'type': 'OS::Nova::Server',
+                        'properties': {
+                            'key_name': 'ssh_key',
+                            'image': 'ubuntu_server',
+                            'name': 'my_server',
+                            'flavor': 'm1.small',
+                            'metadata': {
+                                'valet': {
+                                    'groups': [
+                                        'host_affinity'
+                                    ]
+                                }
+                            },
+                            'networks': [
+                                {
+                                    'network': 'private'
+                                }
+                            ]
+                        },
+                        'name': 'my_instance',
+                    },
+                    'test_group_assignment': {
+                        'type': 'OS::Valet::GroupAssignment',
+                        'properties': {
+                            'group': 'host_affinity',
+                            'resources': ['my-instance-1', 'my-instance-2'],
+                        },
+                        'name': 'test_name',
+                    }
+                }
+            }
+        }
+        return base_kwargs
 
-        kwargs = {'tenant_id': 'test_tenant_id',
-                  'args': {'stack_id': 'test_stack_id',
-                           'plan_name': 'test_plan_name',
-                           'resources': {'test_resource': {
-                               'Type': 'ATT::Valet::GroupAssignment',
-                                       'Properties': {
-                                           'resources': ['my-instance-1',
-                                                         'my-instance-2'],
-                                           'group_type': 'exclusivity',
-                                           'level': 'host'},
-                                       'name': 'test-affinity-group3'}}}}
-        self.validate_test(not self.ostro.build_request(**kwargs))
-        self.validate_test("invalid" in self.ostro.error_uri)
+    # TODO(jdandrea): Turn these build_request tests into scenarios?
 
-        kwargs = {'tenant_id': 'test_tenant_id',
-                  'args': {'stack_id': 'test_stack_id',
-                           'plan_name': 'test_plan_name',
-                           'resources': {'test_resource': {
-                               'Type': 'ATT::Valet::GroupAssignment',
-                                       'Properties': {
-                                           'resources': ['my-instance-1',
-                                                         'my-instance-2'],
-                                           'group_type': 'exclusivity',
-                                           'group_name': "test_group_name",
-                                           'level': 'host'},
-                                       'name': 'test-affinity-group3'}}}}
-        self.validate_test(not self.ostro.build_request(**kwargs))
-        self.validate_test("not_found" in self.ostro.error_uri)
+    # The next five build_request methods exercise OS::Nova::Server metadata
 
-        kwargs = {'tenant_id': 'test_tenant_id',
-                  'args': {'stack_id': 'test_stack_id',
-                           'plan_name': 'test_plan_name',
-                           'timeout': '60 sec',
-                           'resources': {
-                               'ca039d18-1976-4e13-b083-edb12b806e25': {
-                                   'Type': 'ATT::Valet::GroupAssignment',
-                                           'Properties': {
-                                               'resources': ['my-instance-1',
-                                                             'my-instance-2'],
-                                               'group_type': 'non_type',
-                                               'group_name': "test_group_name",
-                                               'level': 'host'},
-                                           'name': 'test-affinity-group3'}}}}
-        self.validate_test(not self.ostro.build_request(**kwargs))
-        self.validate_test("invalid" in self.ostro.error_uri)
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_affinity_using_metadata(self, mock_results):
+        mock_results.return_value = fakes.group(type="affinity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_server'][
+            'properties']['metadata']['valet']['groups'][0] = "host_affinity"
+        request = self.engine.build_request(**kwargs)
+        self.assertTrue(request)
 
-    @mock.patch.object(helper, 'uuid')
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_diversity_using_metadata(self, mock_results):
+        mock_results.return_value = fakes.group(type="diversity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_server'][
+            'properties']['metadata']['valet']['groups'][0] = \
+            "host_diversity"
+        request = self.engine.build_request(**kwargs)
+        self.assertTrue(request)
+
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_exclusivity_using_metadata(self, mock_results):
+        mock_results.return_value = \
+            fakes.group(name="host_exclusivity", type="exclusivity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_server'][
+            'properties']['metadata']['valet']['groups'][0] = \
+            "host_exclusivity"
+        request = self.engine.build_request(**kwargs)
+        self.assertTrue(request)
+
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_exclusivity_wrong_tenant_using_metadata(
+            self, mock_results):
+        mock_results.return_value = \
+            fakes.group(name="host_exclusivity", type="exclusivity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_server'][
+            'properties']['metadata']['valet']['groups'][0] = \
+            "host_exclusivity"
+        kwargs['tenant_id'] = "bogus_tenant"
+        request = self.engine.build_request(**kwargs)
+        self.assertFalse(request)
+        self.assertIn('conflict', self.engine.error_uri)
+
+    def test_build_request_nonexistant_group_using_metadata(self):
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_server'][
+            'properties']['metadata']['valet']['groups'][0] = "bogus_name"
+        request = self.engine.build_request(**kwargs)
+        self.assertFalse(request)
+        self.assertIn('not_found', self.engine.error_uri)
+
+    # The next five build_request methods exercise OS::Valet::GroupAssignment
+
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_affinity(self, mock_results):
+        mock_results.return_value = fakes.group(type="affinity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_group_assignment'][
+            'properties']['group'] = "host_affinity"
+        request = self.engine.build_request(**kwargs)
+        self.assertTrue(request)
+
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_diversity(self, mock_results):
+        mock_results.return_value = fakes.group(type="diversity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_group_assignment'][
+            'properties']['group'] = "host_diversity"
+        request = self.engine.build_request(**kwargs)
+        self.assertTrue(request)
+
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_exclusivity(self, mock_results):
+        mock_results.return_value = \
+            fakes.group(name="host_exclusivity", type="exclusivity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_group_assignment'][
+            'properties']['group'] = "host_exclusivity"
+        request = self.engine.build_request(**kwargs)
+        self.assertTrue(request)
+
+    @mock.patch.object(models.Results, 'first')
+    def test_build_request_host_exclusivity_wrong_tenant(self, mock_results):
+        mock_results.return_value = \
+            fakes.group(name="host_exclusivity", type="exclusivity")
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_group_assignment'][
+            'properties']['group'] = "host_exclusivity"
+        kwargs['tenant_id'] = "bogus_tenant"
+        request = self.engine.build_request(**kwargs)
+        self.assertFalse(request)
+        self.assertIn('conflict', self.engine.error_uri)
+
+    def test_build_request_nonexistant_group(self):
+        kwargs = self.build_request_kwargs()
+        kwargs['args']['resources']['test_group_assignment'][
+            'properties']['group'] = "bogus_name"
+        request = self.engine.build_request(**kwargs)
+        self.assertFalse(request)
+        self.assertIn('not_found', self.engine.error_uri)
+
+    @mock.patch.object(ostro_helper, 'uuid')
     def test_ping(self, mock_uuid):
         """Validate engine ping by checking engine request equality."""
         mock_uuid.uuid4.return_value = "test_stack_id"
-        self.ostro.ping()
+        self.engine.ping()
 
-        self.validate_test(self.ostro.request['stack_id'] == "test_stack_id")
+        self.assertTrue(self.engine.request['stack_id'] == "test_stack_id")
 
     def test_is_request_serviceable(self):
-        """Validate if engine request serviceable."""
-        self.ostro.request = {
-            'resources': {"bla": {'type': "OS::Nova::Server"}}}
-        self.validate_test(self.ostro.is_request_serviceable())
+        self.engine.request = {
+            'resources': {
+                "bla": {
+                    'type': "OS::Nova::Server",
+                }
+            }
+        }
+        self.assertTrue(self.engine.is_request_serviceable())
 
-        self.ostro.request = {}
-        self.validate_test(not self.ostro.is_request_serviceable())
+        self.engine.request = {}
+        self.assertFalse(self.engine.is_request_serviceable())
 
     def test_replan(self):
-        """Validate engine replan."""
-        kwargs = {'args': {'stack_id': 'test_stack_id',
-                           'locations': 'test_locations',
-                           'orchestration_id': 'test_orchestration_id',
-                           'exclusions': 'test_exclusions'}}
-        self.ostro.replan(**kwargs)
+        kwargs = {
+            'args': {
+                'stack_id': 'test_stack_id',
+                'locations': 'test_locations',
+                'orchestration_id': 'test_orchestration_id',
+                'exclusions': 'test_exclusions',
+                'resource_id': 'test_resource_id',
+            }
+        }
+        self.engine.replan(**kwargs)
 
-        self.validate_test(self.ostro.request['stack_id'] == "test_stack_id")
-        self.validate_test(self.ostro.request['locations'] == "test_locations")
+        self.assertTrue(self.engine.request['stack_id'] == "test_stack_id")
+        self.assertTrue(self.engine.request['locations'] == "test_locations")
+        self.assertTrue(
+            self.engine.request['orchestration_id'] ==
+            "test_orchestration_id")
+        self.assertTrue(
+            self.engine.request['exclusions'] == "test_exclusions")
 
-        self.validate_test(
-            self.ostro.request['orchestration_id'] == "test_orchestration_id")
-
-        self.validate_test(
-            self.ostro.request['exclusions'] == "test_exclusions")
+    def test_identify(self):
+        kwargs = {
+            'args': {
+                'stack_id': 'test_stack_id',
+                'orchestration_id': 'test_orchestration_id',
+                'uuid': 'test_uuid',
+            }
+        }
+        self.engine.identify(**kwargs)
+        self.assertEqual(self.engine.request['stack_id'], "test_stack_id")
+        self.assertEqual(self.engine.request['orchestration_id'],
+                         "test_orchestration_id")
+        self.assertEqual(self.engine.request['resource_id'], "test_uuid")
+        self.assertTrue(self.engine.asynchronous)
 
     def test_migrate(self):
-        """Validate engine migrate."""
-        kwargs = {'args': {'stack_id': 'test_stack_id',
-                           'excluded_hosts': 'test_excluded_hosts',
-                           'orchestration_id': 'test_orchestration_id'}}
-        self.ostro.migrate(**kwargs)
+        kwargs = {
+            'args': {
+                'stack_id': 'test_stack_id',
+                'tenant_id': 'test_tenant_id',
+                'excluded_hosts': 'test_excluded_hosts',
+                'orchestration_id': 'test_orchestration_id',
+            }
+        }
+        self.engine.migrate(**kwargs)
 
-        self.validate_test(self.ostro.request['stack_id'] == "test_stack_id")
+        self.assertTrue(self.engine.request['stack_id'] == "test_stack_id")
+        self.assertTrue(
+            self.engine.request['excluded_hosts'] == "test_excluded_hosts")
+        self.assertTrue(
+            self.engine.request['orchestration_id'] ==
+            "test_orchestration_id")
 
-        self.validate_test(
-            self.ostro.request['excluded_hosts'] == "test_excluded_hosts")
-
-        self.validate_test(
-            self.ostro.request['orchestration_id'] == "test_orchestration_id")
-
-    @mock.patch.object(helper, 'uuid')
+    @mock.patch.object(ostro_helper, 'uuid')
     def test_query(self, mock_uuid):
         """Validate test query by validating several engine requests."""
         mock_uuid.uuid4.return_value = "test_stack_id"
-        kwargs = {'args': {'type': 'test_type',
-                           'parameters': 'test_parameters'}}
-        self.ostro.query(**kwargs)
+        kwargs = {
+            'args': {
+                'type': 'test_type',
+                'parameters': 'test_parameters',
+            }
+        }
+        self.engine.query(**kwargs)
 
-        self.validate_test(self.ostro.request['stack_id'] == "test_stack_id")
-        self.validate_test(self.ostro.request['type'] == "test_type")
+        self.assertTrue(self.engine.request['stack_id'] == "test_stack_id")
+        self.assertTrue(self.engine.request['type'] == "test_type")
+        self.assertTrue(
+            self.engine.request['parameters'] == "test_parameters")
 
-        self.validate_test(
-            self.ostro.request['parameters'] == "test_parameters")
-
-    def test_send(self):
-        """Validate test send by checking engine server error."""
-        self.ostro.args = {'stack_id': 'test_stack_id'}
-        self.ostro.send()
-        self.validate_test("server_error" in self.ostro.error_uri)
+    @mock.patch.object(ostro_helper, '_log')
+    @mock.patch.object(ostro_helper.Ostro, '_send')
+    @mock.patch.object(models.ostro, 'PlacementRequest')
+    @mock.patch.object(models, 'Query')
+    def test_send(self, mock_query, mock_request, mock_send, mock_logger):
+        mock_send.return_value = '{"status":{"type":"ok"}}'
+        self.engine.args = {'stack_id': 'test_stack_id'}
+        self.engine.request = {}
+        self.engine.send()
+        self.assertIsNone(self.engine.error_uri)

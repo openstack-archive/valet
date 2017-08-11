@@ -15,6 +15,8 @@
 
 """Placement Model."""
 
+import json
+
 from valet.api.db.models.music import Base
 from valet.api.db.models.music import Query
 
@@ -29,6 +31,7 @@ class Placement(Base):
     orchestration_id = None
     resource_id = None
     location = None
+    metadata = None
     plan_id = None
     plan = None
 
@@ -43,6 +46,7 @@ class Placement(Base):
             'location': 'text',
             'reserved': 'boolean',
             'plan_id': 'text',
+            'metadata': 'text',
             'PRIMARY KEY': '(id)',
         }
         return schema
@@ -64,12 +68,14 @@ class Placement(Base):
             'resource_id': self.resource_id,
             'location': self.location,
             'reserved': self.reserved,
+            'metadata': json.dumps(self.metadata),
             'plan_id': self.plan_id,
         }
 
     def __init__(self, name, orchestration_id, resource_id=None, plan=None,
-                 plan_id=None, location=None, reserved=False, _insert=True):
-        """Initializer."""
+                 plan_id=None, location=None, reserved=False, metadata=None,
+                 _insert=True):
+        """Initializer"""
         super(Placement, self).__init__()
         self.name = name
         self.orchestration_id = orchestration_id
@@ -81,7 +87,10 @@ class Placement(Base):
         self.location = location
         self.reserved = reserved
         if _insert:
+            self.metadata = metadata
             self.insert()
+        else:
+            self.metadata = json.loads(metadata or "{}")
 
     def __repr__(self):
         """Object representation."""
@@ -96,5 +105,6 @@ class Placement(Base):
         json_['resource_id'] = self.resource_id
         json_['location'] = self.location
         json_['reserved'] = self.reserved
+        json_['metadata'] = self.metadata
         json_['plan_id'] = self.plan.id
         return json_
