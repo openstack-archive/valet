@@ -1,0 +1,53 @@
+heat_template_version: 2015-04-30
+
+description: Create oam port
+
+parameters:
+
+  avail-zone1:
+    type: string
+    description: 'availability zone 1'
+
+  name1:
+    type: string
+    description: 'name of the instance 1'
+
+  flavor1:
+    type: string
+    description: 'name of the flavor 1'
+
+  image1:
+    type: string
+    description: 'name of the image 1'
+
+  internal_port1:
+    type: string
+    description: 'internal port 1'
+
+  oam_port1:
+    type: string
+    description: 'oam port 1'
+
+  group1:
+    type: string
+    description: 'name of the group 1'
+
+  group2:
+    type: string
+    description: 'name of the group 2'
+
+resources:
+
+  oam_server:
+    type: OS::Nova::Server
+    properties:
+      availability_zone: { get_param: avail-zone1 }
+      name: { get_param: name1 }
+      flavor: { get_param: flavor1 }
+      image: { get_param: image1 }
+      networks:
+        - port:  { get_param: internal_port1 }
+        - port:  { get_param: oam_port1 }
+      metadata:
+        valet:
+          groups: [ get_param: group1, get_param: group2 ]
