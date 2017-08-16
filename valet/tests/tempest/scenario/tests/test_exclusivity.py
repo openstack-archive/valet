@@ -25,5 +25,8 @@ class TestExclusivity(ScenarioTestCase):
     def test_exclusivity(self):
         """Test Exclusivity."""
         logger = GeneralLogger("test_exclusivity")
+        levels = ["host"]
+        group_types = ["exclusivity"]
         self.run_test(logger, "exclusivity",
-                      "/templates/exclusivity_basic_2_instances.yml")
+                      "/templates/exclusivity_basic_2_instances.yml",
+                      levels, group_types)

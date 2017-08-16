@@ -5,7 +5,7 @@ description: Diversity template - all VMs should be deployed on different hosts
 parameters:
   instance_image:
     type: string
-  
+
   instance_flavor:
     type: string
 
@@ -22,6 +22,9 @@ resources:
       flavor: { get_param: instance_flavor }
       networks:
       - network: { get_param: network }
+      metadata:
+        valet:
+          groups: [diversity_1]
 
   my-instance-2:
     type: OS::Nova::Server
@@ -31,19 +34,12 @@ resources:
       flavor: { get_param: instance_flavor }
       networks:
       - network: { get_param: network }
+      metadata:
+        valet:
+          groups: [diversity_1]
 
-
-  test-diversity-group:
-    type: ATT::Valet::GroupAssignment
-    properties:
-      group_type: diversity 
-      level: host
-      resources:
-      - {get_resource: my-instance-1}
-      - {get_resource: my-instance-2}
-  
 outputs:
   instance_name-1:
     value: { get_attr: [my-instance-1, name] }
   instance_name-2:
-    value: { get_attr: [my-instance-2, name] } 
+    value: { get_attr: [my-instance-2, name] }

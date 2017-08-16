@@ -1,11 +1,11 @@
 heat_template_version: 2015-04-30
 
-description: Simple template 
+description: Simple template
 
 parameters:
   instance_image:
     type: string
-  
+
   instance_flavor:
     type: string
 
@@ -21,6 +21,9 @@ resources:
       flavor: { get_param: instance_flavor }
       networks:
       - network: { get_param: network }
+      metadata:
+        valet:
+          groups: [exclusivity_1]
 
   my-instance-2:
     type: OS::Nova::Server
@@ -30,14 +33,6 @@ resources:
       flavor: { get_param: instance_flavor }
       networks:
       - network: { get_param: network }
-
-
-  test-exclusivity-group:
-    type: ATT::Valet::GroupAssignment
-    properties:
-      group_type: exclusivity
-      group_name: template_group
-      level: host
-      resources:
-      - {get_resource: my-instance-1}
-      - {get_resource: my-instance-2}
+      metadata:
+        valet:
+          groups: [exclusivity_1]

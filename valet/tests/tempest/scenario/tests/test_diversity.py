@@ -25,5 +25,8 @@ class TestDiversity(ScenarioTestCase):
     def test_diversity(self):
         """Run Test diversity."""
         logger = GeneralLogger("test_diversity")
+        levels = ["host"]
+        group_types = ["diversity"]
         self.run_test(logger, "diversity",
-                      "/templates/diversity_basic_2_instances.yml")
+                      "/templates/diversity_basic_2_instances.yml",
+                      levels, group_types)
