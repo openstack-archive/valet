@@ -16,13 +16,15 @@
 """Base."""
 
 import mock
+
 from oslo_config import fixture as fixture_config
-from oslotest.base import BaseTestCase
+from oslotest import base
+
 from valet import api
 from valet.tests.functional.valet_validator.common import init
 
 
-class Base(BaseTestCase):
+class Base(base.BaseTestCase):
     """Test case base class for all unit tests."""
 
     def __init__(self, *args, **kwds):
