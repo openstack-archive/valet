@@ -1,0 +1,43 @@
+Source: aic-valet-core
+Section: python
+Priority: optional
+Maintainer: valet <valet@intl.att.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 1.0.0
+XS-Python-Version: >= 2.7
+Homepage: https://valet.research.att.com
+
+Package: aic-valet-core
+Architecture: any
+Depends:
+ apache2,
+ libapache2-mod-wsgi,
+ python-dev,
+ python-keystoneauth,
+ python-keystoneauth1,
+ python-keystoneclient,
+ python-notario,
+ python-novaclient,
+ python-oslo.config,
+ python-oslo.context,
+ python-oslo.i18n,
+ python-oslo.log,
+ python-oslo.messaging,
+ python-oslo.middleware,
+ python-oslo.serialization,
+ python-oslo.utils,
+ python-pbr (>=1.8),
+ python-pecan,
+ python-pecan-notario,
+ python-pika,
+ python-positional,
+ python-simplejson,
+ python-six,
+ python-tz
+Description: Valet OpenStack service application
+
+Package: aic-valet-openstack-plugins
+Architecture: any
+Depends: python-nova, python-heat
+Description: Valet plugins for the OpenStack scheduler and orchestration services
+
