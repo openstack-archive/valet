@@ -1,0 +1,4 @@
+#!/bin/sh
+
+ln -s /usr/lib/python2.7/dist-packages/valet/valet/plugins/nova/valet_filter.py /usr/lib/python2.7/dist-packages/nova/scheduler/filters/valet_filter.py
+
