@@ -45,4 +45,11 @@ opt_valet = \
         cfg.IntOpt('TRIES_TO_CREATE', default=5),
         cfg.IntOpt('PAUSE', default=5),
         cfg.IntOpt('TRIES_TO_SHOW_SERVER', default=10),
+        cfg.IntOpt('build_interval',
+                   default=1,
+                   help='Time in seconds between valet availability checks.'),
+        cfg.IntOpt('build_timeout',
+                   default=300,
+                   help='Timeout in seconds to wait for a valet operation to '
+                        'be succesfull.'),
     ]

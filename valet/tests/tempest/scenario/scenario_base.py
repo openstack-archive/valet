@@ -20,8 +20,9 @@ import traceback
 
 from heatclient.common import template_utils
 from tempest import config
+from tempest.lib.common.utils import data_utils
+from tempest.services import orchestration
 from tempest import test
-from tempest_lib.common.utils import data_utils
 
 from valet.tests.tempest.scenario.analyzer import Analyzer
 from valet.tests.tempest.scenario.general_logger import GeneralLogger
@@ -60,12 +61,19 @@ class ScenarioTestCase(test.BaseTestCase):
     def setup_clients(cls):
         """Setup clients (valet)."""
         super(ScenarioTestCase, cls).setup_clients()
-        cls.heat_client = cls.os.orchestration_client
+        # NOTE: The orchestration is not initialized in Tempest
+        # by default anymore.
+        params = config.service_client_config('orchestration')
+        cls.heat_client = orchestration.OrchestrationClient(
+            cls.os_primary.auth_provider, **params)
         cls.nova_client = cls.os.servers_client
         cls.tenants_client = cls.os.identity_client
-        cls.valet_client = ValetClient(
-            cls.os.auth_provider, CONF.placement.catalog_type,
-            CONF.identity.region, **cls.os.default_params_with_timeout_values)
+        cls.valet_client = ValetClient(cls.os.auth_provider,
+                                       CONF.placement.catalog_type,
+                                       CONF.identity.region,
+                                       CONF.placement.endpoint_type,
+                                       CONF.valet.build_interval,
+                                       CONF.valet.build_timeout)
 
         cls.topdir = os.path.normpath(os.path.join(os.path.abspath(__file__),
                                       os.pardir))
