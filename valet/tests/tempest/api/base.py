@@ -44,7 +44,9 @@ class BaseValetTest(test.BaseTestCase):
             cls.os.auth_provider,
             CONF.placement.catalog_type,
             CONF.identity.region,
-            **cls.os.default_params_with_timeout_values)
+            CONF.placement.endpoint_type,
+            CONF.valet.build_interval,
+            CONF.valet.build_timeout)
 
     @classmethod
     def resource_setup(cls):

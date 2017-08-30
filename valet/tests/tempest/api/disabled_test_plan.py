@@ -16,7 +16,7 @@
 """Disabled Test Plan."""
 
 from tempest import test
-from tempest_lib.common.utils import data_utils
+from tempest.lib.common.utils import data_utils
 from valet.tests.tempest.api import base
 
 
