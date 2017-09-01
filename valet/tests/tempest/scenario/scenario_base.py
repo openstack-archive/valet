@@ -193,6 +193,14 @@ class ScenarioTestCase(test.BaseTestCase):
                                traceback.format_exc())
             raise
 
+    def get_list_groups(self):
+        list_response = self.valet_client.list_groups()
+        return list_response["groups"]
+
+    def get_group(self, grp_id):
+        group_response = self.valet_client.show_group(grp_id)
+        return group_response
+
     def show_stack(self, stack_id):
         """Return show stack with given id from heat client."""
         return self.heat_client.show_stack(stack_id)
@@ -227,26 +235,56 @@ class ScenarioTestCase(test.BaseTestCase):
         else:
             return None
 
-    def create_stack(self, stack_name, template_path, env_path=None):
-        """Create more generic stack (valet or not) """
+    def create_stack_no_env_self_clean(self, stack_name, template_path, env_path=None, params=None):
+        ''' Create stack w/o env or cleanup (test explicity does cleanup '''
+        if env_path is None:
+            full_env_path = None
+        else:
+            full_env_path = self.topdir + env_path
+
+        full_stack_id, name = self._create_stack_base(stack_name, template_path, full_env_path, params)
+        return full_stack_id, name
+
+    def create_stack_no_env(self, stack_name, template_path, env_path=None, params=None):
+        ''' Create stack w/o env (all info from params) '''
+        if env_path is None:
+            full_env_path = None
+        else:
+            full_env_path = self.topdir + env_path
+
+        full_stack_id, name = self._create_stack_base(stack_name, template_path, full_env_path, params)
+        self.addCleanup(self.delete_stack, full_stack_id)
+        return full_stack_id, name
+
+    def create_stack(self, stack_name, template_path, env_path=None, params=None):
+        ''' Create stack using env and cleanup '''
         if env_path is None:
             env_path = "/templates/std_env.env"
         full_env_path = self.topdir + env_path
 
-        full_template_path = self.topdir + template_path
-        tpl_files, template = template_utils.get_template_contents(
-            full_template_path)
-        env = self.get_env(full_env_path)
+        full_stack_id, name = self._create_stack_base(stack_name, template_path, full_env_path, params)
+        self.addCleanup(self.delete_stack, full_stack_id)
+        return full_stack_id, name
 
+    def _create_stack_base(self, stack_name, template_path, full_env_path, params):
+        full_template_path = self.topdir + template_path
+        tpl_files, template = template_utils.get_template_contents(full_template_path)
         name = data_utils.rand_name(name=stack_name)
-        new_stack = self.heat_client.create_stack(name, template=template,
-                                                  environment=env,
-                                                  files=tpl_files)
+
+        if full_env_path is not None:
+            env = self.get_env(full_env_path)
+            new_stack = self.heat_client.create_stack(name, template=template,
+                                                      environment=env, files=tpl_files,
+                                                      parameters=params)
+        else:
+            new_stack = self.heat_client.create_stack(name, template=template,
+                                                      files=tpl_files,
+                                                      parameters=params)
+
         stack_id = new_stack["stack"]["id"]
         full_stack_id = name + "/" + stack_id
 
         self.heat_client.wait_for_stack_status(stack_id, "CREATE_COMPLETE")
-        self.addCleanup(self.delete_stack, full_stack_id)
 
         return full_stack_id, name
 
@@ -257,19 +295,35 @@ class ScenarioTestCase(test.BaseTestCase):
         self.assertEqual(True, analyzer.check(template_res, levels,
                          group_types))
 
-    def update_stack(self, stack_id, stack_name, template_path, env_path=None):
+    def update_stack_no_env(self, stack_id, stack_name, template_path, env_path=None, params=None):
+        if env_path is None:
+            full_env_path = None
+        else:
+            full_env_path = self.topdir + env_path
+        self._update_stack_base(stack_id, stack_name, template_path, full_env_path, params)
+
+    def update_stack(self, stack_id, stack_name, template_path, env_path=None, params=None):
         if env_path is None:
             env_path = "/templates/std_env.env"
         full_env_path = self.topdir + env_path
+        self._update_stack_base(stack_id, stack_name, template_path, full_env_path, params)
 
+    def _update_stack_base(self, stack_id, stack_name, template_path, full_env_path, params):
         full_template_path = self.topdir + template_path
-        tpl_files, template = template_utils.get_template_contents(
-            full_template_path)
-        env = self.get_env(full_env_path)
+        tpl_files, template = template_utils.get_template_contents(full_template_path)
 
-        self.heat_client.update_stack(stack_identifier=stack_id,
-                                      name=stack_name, template=template,
-                                      environment=env, files=tpl_files)
+        if full_env_path is not None:
+            env = self.get_env(full_env_path)
+            self.heat_client.update_stack(stack_identifier=stack_id,
+                                          name=stack_name, template=template,
+                                          environment=env, files=tpl_files,
+                                          parameters=params)
+        else:
+            self.heat_client.update_stack(stack_identifier=stack_id,
+                                          name=stack_name, template=template,
+                                          files=tpl_files,
+                                          parameters=params)
+
         self.heat_client.wait_for_stack_status(stack_id, "UPDATE_COMPLETE")
 
     def delete_stack(self, stack_id):
