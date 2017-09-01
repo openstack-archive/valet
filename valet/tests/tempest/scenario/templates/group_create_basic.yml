@@ -1,0 +1,28 @@
+heat_template_version: 2015-04-30
+
+description: >
+  A template  showing how to create a Valet Group.
+
+parameters:
+  group_type:
+    type: string
+    description: Type of the group to be created.
+
+  group_level:
+    type: string
+    description: Level for the group.
+
+  group_name:
+    type: string
+
+  group_desc:
+    type: string
+
+resources:
+    valet_group:
+        type: OS::Valet::Group
+        properties:
+            name: { get_param: group_name }
+            type: { get_param: group_type }
+            level: { get_param: group_level }
+            description: { get_param: group_desc }
