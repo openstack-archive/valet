@@ -15,8 +15,8 @@
 
 """Auth."""
 
+from keystoneauth1 import session
 from keystoneclient.auth.identity import v2 as identity
-from keystoneclient import session
 from oslo_log import log as logging
 from valet.tests.functional.valet_validator.common.init import CONF
 
