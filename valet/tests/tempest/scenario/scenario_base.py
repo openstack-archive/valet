@@ -60,12 +60,13 @@ class ScenarioTestCase(test.BaseTestCase):
     def setup_clients(cls):
         """Setup clients (valet)."""
         super(ScenarioTestCase, cls).setup_clients()
-        cls.heat_client = cls.os.orchestration_client
-        cls.nova_client = cls.os.servers_client
-        cls.tenants_client = cls.os.identity_client
+        cls.heat_client = cls.os_primary.orchestration_client
+        cls.nova_client = cls.os_primary.servers_client
+        cls.tenants_client = cls.os_primary.identity_client
         cls.valet_client = ValetClient(
-            cls.os.auth_provider, CONF.placement.catalog_type,
-            CONF.identity.region, **cls.os.default_params_with_timeout_values)
+            cls.os_primary.auth_provider, CONF.placement.catalog_type,
+            CONF.identity.region,
+            **cls.os_primary.default_params_with_timeout_values)
 
         cls.topdir = os.path.normpath(os.path.join(os.path.abspath(__file__),
                                       os.pardir))

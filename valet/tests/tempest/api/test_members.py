@@ -28,8 +28,8 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         """Setup client for Valet client and tenants."""
         super(ValetGroupsMembersTest, cls).setup_clients()
         cls.client = cls.valet_client
-        cls.TenantsClient = getattr(cls.os, "tenants_client",
-                                    cls.os.identity_client)
+        cls.TenantsClient = getattr(cls.os_primary, "tenants_client",
+                                    cls.os_primary.identity_client)
 
     def _create_group(self):
         group_name = data_utils.rand_name('membergroup')
