@@ -41,10 +41,10 @@ class BaseValetTest(test.BaseTestCase):
         """Setup Valet Clients."""
         super(BaseValetTest, cls).setup_clients()
         cls.valet_client = client.ValetClient(
-            cls.os.auth_provider,
+            cls.os_primary.auth_provider,
             CONF.placement.catalog_type,
             CONF.identity.region,
-            **cls.os.default_params_with_timeout_values)
+            **cls.os_primary.default_params_with_timeout_values)
 
     @classmethod
     def resource_setup(cls):
