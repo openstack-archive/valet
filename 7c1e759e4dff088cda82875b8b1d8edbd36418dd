@@ -1,0 +1,8 @@
+Code-Review+2: Tin Lam <tin@irrational.io>
+Workflow+1: Tin Lam <tin@irrational.io>
+Verified+2: Zuul
+Submitted-by: Zuul
+Submitted-at: Fri, 17 Nov 2017 12:26:19 +0000
+Reviewed-on: https://review.openstack.org/521037
+Project: openstack/valet
+Branch: refs/heads/master
