@@ -20,7 +20,7 @@
 See http://pecan.readthedocs.org/en/latest/deployment.html for details.
 """
 
-from valet     import service
 from valet.api import app
+from valet import service
 conf = service.prepare_service([])
 application = app.load_app(config_file='/var/www/valet/config.py')
