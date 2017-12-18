@@ -68,7 +68,7 @@ class ConstraintSolver(object):
 
         if len(candidate_list) == 0:
             self.status = "no candidate for node = " + _n.orch_id
-            LOG.warn(self.status)
+            LOG.warning(self.status)
             return candidate_list
 
         LOG.debug("num of candidates = " + str(len(candidate_list)))

@@ -80,7 +80,7 @@ class Optimizer(object):
 
             if host_name != "none" and \
                host_name in _app_topology.candidate_list_map[orch_id]:
-                LOG.warn("vm is already placed in one of candidate hosts")
+                LOG.warning("vm is already placed in one of candidate hosts")
 
                 if not _app_topology.update_placement_state(orch_id,
                                                             host=host_name):
@@ -282,7 +282,7 @@ class Optimizer(object):
         if host.update_uuid(_orch_id, _uuid) is True:
             self.resource.update_host_time(_host_name)
         else:
-            LOG.warn("fail to update uuid in host = " + host.name)
+            LOG.warning("fail to update uuid in host = " + host.name)
 
         self.resource.update_uuid_in_groups(_orch_id, _uuid, host)
 

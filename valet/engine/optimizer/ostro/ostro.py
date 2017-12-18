@@ -173,7 +173,7 @@ class Ostro(object):
                 #     if decision_key is not None:
                 #         self.ahandler.record_history(decision_key, result)
                 # else:
-                #     LOG.warn("decision(" + decision_key + ") already made")
+                #     LOG.warning("decision(" + decision_key + ") already made")
                 #     result = old_decision
 
                 if app_topology.action in ("ping", "create", "replan",
@@ -224,7 +224,7 @@ class Ostro(object):
             query_result["status"] = "no type in query"
 
         if query_result["status"] != "ok":
-            LOG.warn(query_result["status"])
+            LOG.warning(query_result["status"])
             query_result["result"] = None
 
         return query_result

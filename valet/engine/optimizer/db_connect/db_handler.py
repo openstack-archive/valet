@@ -94,8 +94,8 @@ class DBHandler(object):
                 try:
                     args = json.loads(args_data)
                 except (ValueError, KeyError, TypeError):
-                    LOG.warn("DB: while decoding to json event = " + method +
-                             ":" + event_id)
+                    LOG.warning("DB: while decoding to json event = " + method +
+                                ":" + event_id)
                     continue
 
                 # TODO(lamt) this block of code can use refactoring
@@ -191,11 +191,11 @@ class DBHandler(object):
                        e.host is None or e.host == "none" or \
                        e.vcpus == -1 or e.mem == -1:
                         error_event_list.append(e)
-                        LOG.warn("DB: data missing in instance object event")
+                        LOG.warning("DB: data missing in instance object event")
                 elif e.object_name == 'ComputeNode':
                     if e.host is None or e.host == "none":
                         error_event_list.append(e)
-                        LOG.warn("DB: data missing in compute object event")
+                        LOG.warning("DB: data missing in compute object event")
             elif e.method == "build_and_run_instance":
                 if e.uuid is None or e.uuid == "none":
                     error_event_list.append(e)
