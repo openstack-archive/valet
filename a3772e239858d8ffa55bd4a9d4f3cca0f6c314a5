@@ -1,0 +1,9 @@
+Code-Review+2: Tin Lam <tin@irrational.io>
+Code-Review+1: Dai Dang Van <daidv@vn.fujitsu.com>
+Workflow+1: Tin Lam <tin@irrational.io>
+Verified+2: Zuul
+Submitted-by: Zuul
+Submitted-at: Fri, 29 Dec 2017 01:07:23 +0000
+Reviewed-on: https://review.openstack.org/528660
+Project: openstack/valet
+Branch: refs/heads/master
