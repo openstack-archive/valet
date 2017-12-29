@@ -78,7 +78,7 @@ class ComputeManager(threading.Thread):
     def _run(self):
         """Run this batch job."""
         if self.set_hosts() is not True:
-            LOG.warn("fail to set hosts from nova")
+            LOG.warning("fail to set hosts from nova")
 
     def set_hosts(self):
         """Check any inconsistency and perform garbage collection if necessary.
@@ -262,7 +262,7 @@ class ComputeManager(threading.Thread):
 
             else:
                 if hk != placement.host:
-                    LOG.warn("PANIC: placed in different host")
+                    LOG.warning("PANIC: placed in different host")
 
                     vm_info = _hosts[hk].get_vm_info(uuid=vk)
                     vm_info["stack_id"] = placement.stack_id
@@ -275,7 +275,7 @@ class ComputeManager(threading.Thread):
                     rhost.vm_list.append(vm_info)
                     inconsistent_hosts[hk] = rhost
 
-                    LOG.warn("host (" + rhost.name + ") updated (vm added)")
+                    LOG.warning("host (" + rhost.name + ") updated (vm added)")
 
                     # FIXME(gjung): add to corresponding groups with
                     # verification?
@@ -283,8 +283,8 @@ class ComputeManager(threading.Thread):
                     if placement.host in self.resource.hosts.keys():
                         old_rhost = self.resource.hosts[placement.host]
                         if old_rhost.remove_vm(uuid=vk) is True:
-                            LOG.warn("host (" + old_rhost.name +
-                                     ") updated (vm removed)")
+                            LOG.warning("host (" + old_rhost.name + ") "
+                                        "updated (vm removed)")
 
                             inconsistent_hosts[placement.host] = old_rhost
 
@@ -309,7 +309,7 @@ class ComputeManager(threading.Thread):
                     new_state = "created"
 
                 if placement.state not in ("created", "rebuilt", "migrated"):
-                    LOG.warn("vm is incomplete state = " + placement.state)
+                    LOG.warning("vm is incomplete state = " + placement.state)
 
                     if (placement.state == "planned" or
                        placement.state == "building"):
@@ -332,7 +332,7 @@ class ComputeManager(threading.Thread):
 
             for vm_info in rhost.vm_list:
                 if vm_info["uuid"] is None or vm_info["uuid"] == "none":
-                    LOG.warn("host (" + rhost.name + ") pending vm removed")
+                    LOG.warning("host (" + rhost.name + ") pending vm removed")
 
                     deletion_list.append(vm_info)
 
@@ -348,8 +348,8 @@ class ComputeManager(threading.Thread):
                         return None
 
                     if vm_info["uuid"] not in _vm_locations.keys():
-                        LOG.warn("vm is mising with state = " +
-                                 placement.state)
+                        LOG.warning("vm is mising with state = " +
+                                    placement.state)
 
                         deletion_list.append(vm_info)
 
@@ -363,10 +363,11 @@ class ComputeManager(threading.Thread):
                             return None
 
                     elif _vm_locations[vm_info["uuid"]] != rk:
-                        LOG.warn("placed in different host")
+                        LOG.warning("placed in different host")
 
                         if rhost.remove_vm(uuid=vm_info["uuid"]) is True:
-                            LOG.warn("host (" + rk + ") updated (vm removed)")
+                            LOG.warning("host (" + rk + ") updated (vm "
+                                        "removed)")
 
                             inconsistent_hosts[rk] = rhost
 
@@ -376,7 +377,7 @@ class ComputeManager(threading.Thread):
                             # FIXME(gjung): placement.status?
 
             if len(deletion_list) > 0:
-                LOG.warn("host (" + rhost.name + ") updated (vms removed)")
+                LOG.warning("host (" + rhost.name + ") updated (vms removed)")
 
                 inconsistent_hosts[rk] = rhost
 
@@ -388,7 +389,7 @@ class ComputeManager(threading.Thread):
                             rhost, orch_id=vm_info["orch_id"])
                     else:
                         if not rhost.remove_vm(uuid=vm_info["uuid"]):
-                            LOG.warn("fail to remove vm from host")
+                            LOG.warning("fail to remove vm from host")
 
                         self.resource.remove_vm_from_groups(
                             rhost, uuid=vm_info["uuid"])

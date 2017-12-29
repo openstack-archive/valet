@@ -315,8 +315,8 @@ class AppHandler(object):
                     if placement is None:
                         return None
                     elif placement.uuid == "none":
-                        LOG.warn("vm (" + rk + ") in original stack missing. "
-                                 "Perhaps it was deleted?")
+                        LOG.warning("vm (" + rk + ") in original stack "
+                                    "missing. Perhaps it was deleted?")
 
                         if rk in _app_topology.stack["placements"].keys():
                             del _app_topology.stack["placements"][rk]
@@ -329,10 +329,10 @@ class AppHandler(object):
 
                             if placement.stack_id is None or \
                                placement.stack_id == "none":
-                                LOG.warn("stack id in valet record is unknown")
+                                LOG.warning("stack id in valet record is unknown")
                             else:
-                                LOG.warn("stack id in valet record is "
-                                         "different")
+                                LOG.warning("stack id in valet record is "
+                                            "different")
 
                             curr_state = None
                             if placement.state is None or \
@@ -372,8 +372,8 @@ class AppHandler(object):
                                 return _app_topology
 
                 else:
-                    LOG.warn("vm (" + rk + ") in original stack does not have"
-                             " uuid")
+                    LOG.warning("vm (" + rk + ") in original stack does not have"
+                                " uuid")
 
         if old_groups is not None and len(old_groups) > 0:
             for gk, g in old_groups.iteritems():
@@ -512,8 +512,8 @@ class AppHandler(object):
         flavor = self.resource.get_flavor(_flavor_name)
 
         if flavor is None:
-            LOG.warn("not exist flavor (" + _flavor_name + ") and try to "
-                     "refetch")
+            LOG.warning("not exist flavor (" + _flavor_name + ") and try to "
+                        "refetch")
 
             if not self.metadata.set_flavors():
                 status = "failed to read flavors from nova"

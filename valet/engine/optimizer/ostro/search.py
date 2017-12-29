@@ -171,7 +171,7 @@ class Search(object):
                 hk = self.app_topology.planned_vm_map[vk]
                 if hk not in self.avail_hosts.keys():
                     # if prior host is not available
-                    LOG.warn("host (" + hk + ") is not available")
+                    LOG.warning("host (" + hk + ") is not available")
                     continue
                 if vm.host is None or vm.host == "none":
                     vm.host = hk
@@ -186,12 +186,12 @@ class Search(object):
                     hk = self.app_topology.planned_vm_map[vk]
                     if hk not in self.avail_hosts.keys():
                         # if prior host is not available
-                        LOG.warn("host (" + hk + ") is not available")
+                        LOG.warning("host (" + hk + ") is not available")
                         continue
                     if g.host is None or g.host == "none":
                         resource_name = search_helper.get_resource_of_level(hk, g.level, self.avail_hosts)
                         if resource_name is None:
-                            LOG.warn("host {} is not available".format(resource_name))
+                            LOG.warning("host {} is not available".format(resource_name))
                             continue
                         g.host = resource_name
                     node = None
@@ -305,7 +305,7 @@ class Search(object):
         for lgk, lg in self.resource.groups.iteritems():
             if lg.status != "enabled" or \
                (lg.group_type in ("AFF", "EX", "DIV") and len(lg.vm_list) == 0):
-                LOG.warn("group (" + lg.name + ") disabled")
+                LOG.warning("group (" + lg.name + ") disabled")
                 continue
 
             lgr = GroupResource()
@@ -601,7 +601,7 @@ class Search(object):
                             if resource_name not in resource_list:
                                 resource_list.append(resource_name)
                         else:
-                            LOG.warn("cannot find candidate resource while replanning")
+                            LOG.warning("cannot find candidate resource while replanning")
                     for rk in resource_list:
                         _avail_resources.set_candidate(rk)
 
@@ -648,7 +648,7 @@ class Search(object):
                     break
                 else:
                     if planned_resource is None:
-                        LOG.warn("rollback candidate = " + resource_name)
+                        LOG.warning("rollback candidate = " + resource_name)
                         self._rollback_resources(_n)
                         self._rollback_node_placement(_n)
                         if len(candidate_list) > 0 and \
@@ -660,7 +660,7 @@ class Search(object):
         if best_resource is None and len(candidate_list) == 0:
             if self.app_topology.status == "success":
                 self.app_topology.status = "no available hosts"
-            LOG.warn(self.app_topology.status)
+            LOG.warning(self.app_topology.status)
 
         return best_resource
 

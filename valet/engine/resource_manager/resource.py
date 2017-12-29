@@ -76,7 +76,7 @@ class Resource(object):
                     self.groups[lgk] = group
 
             if len(self.groups) == 0:
-                LOG.warn("no groups in db record")
+                LOG.warning("no groups in db record")
 
             flavors = _resource_status.get("flavors")
             if flavors:
@@ -92,7 +92,7 @@ class Resource(object):
                     self.flavors[fk] = flavor
 
             if len(self.flavors) == 0:
-                LOG.warn("no flavors in db record")
+                LOG.warning("no flavors in db record")
 
             hosts = _resource_status.get("hosts")
             if hosts:
@@ -122,7 +122,7 @@ class Resource(object):
                     self.hosts[hk] = host
 
                 if len(self.hosts) == 0:
-                    LOG.warn("no hosts in db record")
+                    LOG.warning("no hosts in db record")
 
             host_groups = _resource_status.get("host_groups")
             if host_groups:
@@ -149,7 +149,7 @@ class Resource(object):
                     self.host_groups[hgk] = host_group
 
                 if len(self.host_groups) == 0:
-                    LOG.warn("no host_groups (rack)")
+                    LOG.warning("no host_groups (rack)")
 
             dc = _resource_status.get("datacenter")
             if dc:
@@ -179,7 +179,7 @@ class Resource(object):
                         self.datacenter.resources[ck] = self.hosts[ck]
 
                 if len(self.datacenter.resources) == 0:
-                    LOG.warn("fail loading datacenter")
+                    LOG.warning("fail loading datacenter")
 
             hgs = _resource_status.get("host_groups")
             if hgs:
@@ -406,7 +406,7 @@ class Resource(object):
         host = self.hosts[_vm_alloc["host"]]
 
         if host.exist_vm(orch_id=_vm_info["orch_id"], uuid=_vm_info["uuid"]):
-            LOG.warn("vm already exists in the host")
+            LOG.warning("vm already exists in the host")
 
             # host.remove_vm(orch_id=_vm_info["orch_id"],
             # uuid=_vm_info["uuid"])
@@ -440,7 +440,7 @@ class Resource(object):
             host.disk_available_least += _vm_alloc["local_volume"]
             return True
         else:
-            LOG.warn("vm to be removed not exist")
+            LOG.warning("vm to be removed not exist")
             return False
 
     def update_host_resources(self, _hn, _st):
@@ -448,7 +448,7 @@ class Resource(object):
         host = self.hosts[_hn]
         if host.status != _st:
             host.status = _st
-            LOG.warn("host(" + _hn + ") status changed")
+            LOG.warning("host(" + _hn + ") status changed")
             return True
         else:
             return False
@@ -488,7 +488,7 @@ class Resource(object):
             else:
                 success = False
         else:
-            LOG.warn("host not found while adding group")
+            LOG.warning("host not found while adding group")
             return False
 
         return success
@@ -505,7 +505,7 @@ class Resource(object):
                         if lg.add_vm(_vm_info, _host.name) is True:
                             lg.last_update = time.time()
                         else:
-                            LOG.warn("vm already exists in group")
+                            LOG.warning("vm already exists in group")
                     elif isinstance(_host, HostGroup):
                         if lg.group_type == "EX" or \
                            lg.group_type == "AFF" or lg.group_type == "DIV":
@@ -513,9 +513,9 @@ class Resource(object):
                                 if lg.add_vm(_vm_info, _host.name) is True:
                                     lg.last_update = time.time()
                                 else:
-                                    LOG.warn("vm already exists in group")
+                                    LOG.warning("vm already exists in group")
                 else:
-                    LOG.warn("nof found group while adding vm")
+                    LOG.warning("nof found group while adding vm")
 
         if isinstance(_host, Host) and _host.host_group is not None:
             self.add_vm_to_groups(_host.host_group, _vm_info, _groups_of_vm)
@@ -567,7 +567,7 @@ class Resource(object):
 
         for lgk in _host.memberships.keys():
             if lgk not in self.groups.keys():
-                LOG.warn("group (" + lgk + ") already removed")
+                LOG.warning("group (" + lgk + ") already removed")
                 continue
             lg = self.groups[lgk]
 
