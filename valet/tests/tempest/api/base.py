@@ -15,15 +15,15 @@
 
 """Base."""
 
+from tempest.common import utils
 from tempest import config
-from tempest import test
 
 from valet.tests.tempest.services import client
 
 CONF = config.CONF
 
 
-class BaseValetTest(test.BaseTestCase):
+class BaseValetTest(utils.BaseTestCase):
     """Vase Valet Tempest Test Class."""
 
     credentials = ['primary']

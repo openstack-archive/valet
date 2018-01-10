@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tempest import test
+from tempest.common import utils
 from valet.tests.tempest.scenario.scenario_base import ScenarioTestCase
 
 
 class TestNestedStackTemplates(ScenarioTestCase):
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00000')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00000')
     def test_affinity_nested_one_instances(self):
         self.create_valet_group("test_affinity_group1", 'host', 'affinity')
         template_file = "/templates/affinity_nested_1_instances.yml"
@@ -28,7 +28,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00001')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00001')
     def test_diversity_nested_one_instances(self):
         self.create_valet_group("test_diversity_group1", 'host', 'diversity')
         template_file = "/templates/diversity_nested_1_instances.yml"
@@ -37,7 +37,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00002')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00002')
     def test_exclusivity_nested_one_instances(self):
         self.create_valet_group("test_exclusivity_group1", 'host',
                                 'exclusivity')
@@ -47,7 +47,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00003')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00003')
     def test_affinity_nested_two_instances(self):
         self.create_valet_group("test_affinity_group2", 'host', 'affinity')
         template_file = "/templates/affinity_nested_2_instances.yml"
@@ -56,7 +56,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00004')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00004')
     def test_diversity_nested_two_instances(self):
         self.create_valet_group("test_diversity_group2", 'host', 'diversity')
         template_file = "/templates/diversity_nested_2_instances.yml"
@@ -65,7 +65,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00005')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00005')
     def test_exclusivity_nested_two_instances(self):
         self.create_valet_group("test_exclusivity_group2", 'host',
                                 'exclusivity')
@@ -75,7 +75,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00006')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00006')
     def test_affinity_nested_three_instances(self):
         self.create_valet_group("test_affinity_group3", 'host', 'affinity')
         template_file = "/templates/affinity_nested_3_instances.yml"
@@ -84,7 +84,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00007')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00007')
     def test_exclusivity_nested_three_instances(self):
         self.create_valet_group("test_exclusivity_group3", 'host',
                                 'exclusivity')
@@ -94,7 +94,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00008')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00008')
     def test_exclusivity_nested_diversity_one_instances(self):
         self.create_valet_group("test_exclusivity_group4", 'host',
                                 'exclusivity')
@@ -107,7 +107,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host'],
                          ['exclusivity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00009')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00009')
     def test_exclusivity_nested_diversity_two_instances(self):
         self.create_valet_group("test_exclusivity_group5", 'host',
                                 'exclusivity')
@@ -121,7 +121,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host', 'host'],
                          ['exclusivity', 'diversity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000a')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000a')
     def test_exclusivity_nested_affinity_two_instances(self):
         self.create_valet_group("test_exclusivity_group6", 'host',
                                 'exclusivity')
@@ -135,7 +135,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host', 'host'],
                          ['exclusivity', 'affinity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000b')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000b')
     def test_affinity_nested_diversity_one_instances(self):
         self.create_valet_group("test_affinity_group7", 'host', 'affinity')
         self.create_valet_group("test_diversity_group7", 'host', 'diversity')
@@ -146,7 +146,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host'],
                          ['affinity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000c')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000c')
     def test_affinity_nested_exclusivity_one_instances(self):
         self.create_valet_group("test_affinity_group9", 'host', 'affinity')
         self.create_valet_group("test_exclusivity_group9", 'host',
@@ -159,7 +159,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host'],
                          ['affinity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000d')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000d')
     def test_exclusivity_nested_diversity_and_affinity_one_instances(self):
         self.create_valet_group("test_exclusivity_group15", 'host',
                                 'exclusivity')
@@ -174,7 +174,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host', 'host'],
                          ['exclusivity', 'diversity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000e')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000e')
     def test_diversity_nested_exclusivity_and_affinity_one_instances(self):
         self.create_valet_group("test_diversity_group17", 'host', 'diversity')
         self.create_valet_group("test_exclusivity_group17", 'host',
@@ -189,7 +189,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['host', 'host', 'host'],
                          ['diversity', 'exclusivity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000f')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0000f')
     def test_rack_affinity_nested_two_instances(self):
         self.create_valet_group("test_affinity_group20", 'rack', 'affinity')
         template_file = "/templates/affinity_rack_nested_2_instances.yml"
@@ -198,7 +198,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['rack'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00010')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00010')
     def test_rack_diversity_nested_two_instances(self):
         self.create_valet_group("test_diversity_group20", 'rack', 'diversity')
         template_file = "/templates/diversity_rack_nested_2_instances.yml"
@@ -207,7 +207,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['rack'], ['diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00011')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00011')
     def test_rack_exclusivity_nested_two_instances(self):
         self.create_valet_group("test_exclusivity_group20", 'rack',
                                 'exclusivity')
@@ -217,7 +217,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['rack'], ['exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00012')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00012')
     def test_rack_affinity_nested_three_instances(self):
         self.create_valet_group("test_affinity_group21", 'rack', 'affinity')
         template_file = "/templates/affinity_rack_nested_3_instances.yml"
@@ -226,7 +226,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['rack'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00013')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00013')
     def test_rack_exclusivity_nested_diversity_one_instances(self):
         self.create_valet_group("test_exclusivity_group22", 'rack',
                                 'exclusivity')
@@ -239,7 +239,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host'],
                          ['exclusivity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00014')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00014')
     def test_rack_exclusivity_nested_diversity_two_instances(self):
         self.create_valet_group("test_exclusivity_group23", 'rack',
                                 'exclusivity')
@@ -253,7 +253,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host', 'host'],
                          ['exclusivity', 'diversity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00015')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00015')
     def test_rack_exclusivity_nested_affinity_one_instances(self):
         self.create_valet_group("test_exclusivity_group24", 'rack',
                                 'exclusivity')
@@ -266,7 +266,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host'],
                          ['exclusivity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00016')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00016')
     def test_rack_exclusivity_nested_affinity_two_instances(self):
         self.create_valet_group("test_exclusivity_group25", 'rack',
                                 'exclusivity')
@@ -280,7 +280,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host', 'host'],
                          ['exclusivity', 'affinity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00017')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00017')
     def test_rack_affinity_nested_diversity_one_instances(self):
         self.create_valet_group("test_affinity_group26", 'rack', 'affinity')
         self.create_valet_group("test_diversity_group26", 'host', 'diversity')
@@ -292,7 +292,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host'],
                          ['affinity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00018')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00018')
     def test_rack_affinity_nested_exclusivity_one_instances(self):
         self.create_valet_group("test_affinity_group28", 'rack', 'affinity')
         self.create_valet_group("test_exclusivity_group28", 'host',
@@ -305,7 +305,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host'],
                          ['affinity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00019')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00019')
     def test_rack_diversity_nested_affinity_one_instances(self):
         self.create_valet_group("test_diversity_group30", 'rack', 'diversity')
         self.create_valet_group("test_affinity_group30", 'host', 'affinity')
@@ -317,7 +317,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host'],
                          ['diversity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001a')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001a')
     def test_rack_diversity_nested_exclusivity_one_instances(self):
         self.create_valet_group("test_diversity_group32", 'rack', 'diversity')
         self.create_valet_group("test_exclusivity_group32", 'host',
@@ -330,7 +330,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host'],
                          ['diversity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001b')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001b')
     def test_rack_exclusivity_nested_diversity_and_affinity_one_instance(self):
         self.create_valet_group("test_exclusivity_group34", 'rack',
                                 'exclusivity')
@@ -345,7 +345,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host', 'host'],
                          ['exclusivity', 'diversity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001c')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001c')
     def test_rack_diversity_nested_exclusivity_and_affinity_one_instance(self):
         self.create_valet_group("test_diversity_group36", 'rack', 'diversity')
         self.create_valet_group("test_exclusivity_group36", 'host',
@@ -360,7 +360,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host', 'host'],
                          ['diversity', 'exclusivity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001d')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001d')
     def test_host_exclusivity_multiple_resource_types(self):
         self.create_valet_group("oam_exclusivity_group_1", 'host',
                                 'exclusivity')
@@ -371,7 +371,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001e')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001e')
     def test_host_affinity_multiple_resource_types(self):
         self.create_valet_group("oam_affinity_group_1", 'host', 'affinity')
         template_file = "/templates/affinity_host_multiple_resource_types.yaml"
@@ -380,7 +380,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001f')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0001f')
     def test_host_diversity_multiple_resource_types(self):
         self.create_valet_group("oam_diversity_group_1", 'host', 'diversity')
         template_file = \
@@ -390,7 +390,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00020')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00020')
     def test_rack_exclusivity_nested_affinity_multiple_resource_types(self):
         self.create_valet_group("oam_exclusivity_group_2", 'rack',
                                 'exclusivity')
@@ -405,7 +405,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host', 'host'],
                          ['exclusivity', 'affinity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00021')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00021')
     def test_rack_exclusivity_nested_diversity_multiple_resource_types(self):
         self.create_valet_group("oam_exclusivity_group_3", 'rack',
                                 'exclusivity')
@@ -420,7 +420,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'host', 'host'],
                          ['exclusivity', 'diversity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00024')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00024')
     def test_rack_rack_affinity_one_instances(self):
         self.create_valet_group("test_affinity_group37a", 'rack', 'affinity')
         self.create_valet_group("test_affinity_group37b", 'rack', 'affinity')
@@ -432,7 +432,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['affinity', 'affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00025')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00025')
     def test_rack_rack_diversity_one_instances(self):
         self.create_valet_group("test_diversity_group37a", 'rack', 'diversity')
         self.create_valet_group("test_diversity_group37b", 'rack', 'diversity')
@@ -444,7 +444,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['diversity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00026')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00026')
     def test_rack_rack_exclusivity_one_instances(self):
         self.create_valet_group("test_exclusivity_group37a", 'rack',
                                 'exclusivity')
@@ -458,7 +458,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['exclusivity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00027')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00027')
     def test_rack_affinity_rack_diversity_one_instances(self):
         self.create_valet_group("test_affinity_group38", 'rack', 'affinity')
         self.create_valet_group("test_diversity_group38", 'rack', 'diversity')
@@ -470,7 +470,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['affinity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00028')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00028')
     def test_rack_affinity_rack_exclusivity_one_instances(self):
         self.create_valet_group("test_affinity_group39", 'rack', 'affinity')
         self.create_valet_group("test_exclusivity_group39", 'rack',
@@ -483,7 +483,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['affinity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00029')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a00029')
     def test_rack_diversity_rack_exclusivity_one_instances(self):
         self.create_valet_group("test_diversity_group40", 'rack', 'diversity')
         self.create_valet_group("test_exclusivity_group40", 'rack',
@@ -496,7 +496,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['diversity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002a')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002a')
     def test_rack_affinity_rack_diversity_two_instances(self):
         self.create_valet_group("test_affinity_group41", 'rack', 'affinity')
         self.create_valet_group("test_diversity_group41", 'rack', 'diversity')
@@ -508,7 +508,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['affinity', 'diversity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002b')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002b')
     def test_rack_affinity_rack_exclusivity_two_instances(self):
         self.create_valet_group("test_affinity_group42", 'rack', 'affinity')
         self.create_valet_group("test_exclusivity_group42", 'rack',
@@ -521,7 +521,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
         self.check_stack(stack_id, template_file, ['rack', 'rack'],
                          ['affinity', 'exclusivity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002c')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002c')
     def test_affinity_one_instance_nested_one_instance(self):
         self.create_valet_group("test_affinity_group44", 'host', 'affinity')
         template_file = "/templates/affinity_1_instance_nested_1_instance.yml"
@@ -530,7 +530,7 @@ class TestNestedStackTemplates(ScenarioTestCase):
             "/templates/std_env_1_flavor.env")
         self.check_stack(stack_id, template_file, ['host'], ['affinity'])
 
-    @test.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002d')
+    @utils.idempotent_id('f61b522b-b84d-458d-b45b-f07f19a0002d')
     def test_diversity_one_instance_nested_one_instance(self):
         self.create_valet_group("test_diversity_group44", 'host', 'diversity')
         template_file = "/templates/diversity_1_instance_nested_1_instance.yml"

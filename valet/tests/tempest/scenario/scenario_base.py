@@ -19,8 +19,8 @@ import os
 import traceback
 
 from heatclient.common import template_utils
+from tempest.common import utils
 from tempest import config
-from tempest import test
 from tempest_lib.common.utils import data_utils
 
 from valet.tests.tempest.scenario.analyzer import Analyzer
@@ -31,7 +31,7 @@ from valet.tests.tempest.services.client import ValetClient
 CONF = config.CONF
 
 
-class ScenarioTestCase(test.BaseTestCase):
+class ScenarioTestCase(utils.BaseTestCase):
     """Base class for Scenario Test cases."""
 
     credentials = ['primary']

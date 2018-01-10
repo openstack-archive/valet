@@ -15,7 +15,7 @@
 
 """Test Members."""
 
-from tempest import test
+from tempest.common import utils
 from tempest_lib.common.utils import data_utils
 from valet.tests.tempest.api import base
 
@@ -54,7 +54,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         self.addCleanup(self.TenantsClient.delete_tenant, tenant_id)
         return tenant_id
 
-    @test.idempotent_id('5aeec320-65d5-11e6-8b77-86f30ca893d3')
+    @utils.idempotent_id('5aeec320-65d5-11e6-8b77-86f30ca893d3')
     def test_add_single_member_to_a_group(self):
         """Add single member to group, do comparison to verify."""
         # Create a tenant
@@ -74,7 +74,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         self.assertIn('type', resp)
         self.assertIn('name', resp)
 
-    @test.idempotent_id('5aeec6f4-65d5-11e6-8b77-86f30ca893d3')
+    @utils.idempotent_id('5aeec6f4-65d5-11e6-8b77-86f30ca893d3')
     def test_add_multiple_members_to_a_group(self):
         """Add multiple members to group, check items equality to verify."""
         # Create multiple tenants
@@ -96,7 +96,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         self.assertIn('name', resp)
         self.assertIn('members', resp)
 
-    @test.idempotent_id('5aeec8b6-65d5-11e6-8b77-86f30ca893d3')
+    @utils.idempotent_id('5aeec8b6-65d5-11e6-8b77-86f30ca893d3')
     def test_add_single_member_to_a_group_and_verify_membership(self):
         """Add a memer to a group, verify membership by checking status."""
         # Create a tenant
@@ -112,7 +112,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         status = int(resp.response['status'])
         self.assertEqual(204, status)
 
-    @test.idempotent_id('5aeec99c-65d5-11e6-8b77-86f30ca893d3')
+    @utils.idempotent_id('5aeec99c-65d5-11e6-8b77-86f30ca893d3')
     def test_delete_member_from_group(self):
         """Test deleting a single member from group, check status to verify."""
         # Create multiple tenants
@@ -129,7 +129,7 @@ class ValetGroupsMembersTest(base.BaseValetTest):
         status = int(resp.response['status'])
         self.assertEqual(204, status)
 
-    @test.idempotent_id('5aeecb68-65d5-11e6-8b77-86f30ca893d3')
+    @utils.idempotent_id('5aeecb68-65d5-11e6-8b77-86f30ca893d3')
     def test_delete_all_members_from_group(self):
         """Test that all members deleted from group, check status to verify."""
         # Create multiple tenants
