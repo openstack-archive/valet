@@ -15,8 +15,7 @@
 
 """Test Groups."""
 
-from tempest.common.utils import data_utils
-from tempest import test
+from tempest.common import utils
 
 from valet.tests.tempest.api import base
 
@@ -30,15 +29,15 @@ class ValetGroupsTest(base.BaseValetTest):
         super(ValetGroupsTest, cls).setup_clients()
         cls.client = cls.valet_client
 
-    @test.idempotent_id('b2655098-5a0d-11e6-9efd-525400af9658')
+    @utils.idempotent_id('b2655098-5a0d-11e6-9efd-525400af9658')
     def test_list_groups(self):
         """List groups using client assert no groups missing to verify."""
         group_ids = list()
         fetched_ids = list()
 
         for _ in range(3):
-            group_name = data_utils.rand_name('group')
-            description = data_utils.rand_name('Description')
+            group_name = utils.data_utils.rand_name('group')
+            description = utils.data_utils.rand_name('Description')
             group = self.client.create_group(
                 name=group_name, group_type='exclusivity',
                 description=description, level='host')
@@ -54,11 +53,11 @@ class ValetGroupsTest(base.BaseValetTest):
 
         self.assertEqual([], missing_groups)
 
-    @test.idempotent_id('2ab0337e-6472-11e6-b6c6-080027824017')
+    @utils.idempotent_id('2ab0337e-6472-11e6-b6c6-080027824017')
     def test_create_group(self):
         """Test created group by checking details equal to group details."""
-        group_name = data_utils.rand_name('group')
-        description = data_utils.rand_name('Description')
+        group_name = utils.data_utils.rand_name('group')
+        description = utils.data_utils.rand_name('Description')
         group = self.client.create_group(
             name=group_name, group_type='exclusivity',
             description=description, level='host')
@@ -70,12 +69,12 @@ class ValetGroupsTest(base.BaseValetTest):
         self.assertIn('type', group)
         self.assertIn('description', group)
 
-    @test.idempotent_id('35f0aa20-6472-11e6-b6c6-080027824017')
+    @utils.idempotent_id('35f0aa20-6472-11e6-b6c6-080027824017')
     def test_delete_group(self):
         """Client Delete group with id, check group with id not in groups."""
         # Create group
-        group_name = data_utils.rand_name('group')
-        description = data_utils.rand_name('Description')
+        group_name = utils.data_utils.rand_name('group')
+        description = utils.data_utils.rand_name('Description')
         body = self.client.create_group(
             name=group_name, group_type='exclusivity',
             description=description, level='host')
@@ -91,13 +90,13 @@ class ValetGroupsTest(base.BaseValetTest):
 
         self.assertNotIn(group_id, groups_id)
 
-    @test.attr(type='smoke')
-    @test.idempotent_id('460d86e4-6472-11e6-b6c6-080027824017')
+    @utils.attr(type='smoke')
+    @utils.idempotent_id('460d86e4-6472-11e6-b6c6-080027824017')
     def test_update_group(self):
         """Client Update group with id, using a new description."""
         # Create group
-        group_name = data_utils.rand_name('group')
-        description = data_utils.rand_name('Description')
+        group_name = utils.data_utils.rand_name('group')
+        description = utils.data_utils.rand_name('Description')
         group = self.client.create_group(
             name=group_name, group_type='exclusivity',
             description=description, level='host')
@@ -106,18 +105,18 @@ class ValetGroupsTest(base.BaseValetTest):
 
         group_id = group.get('id')
 
-        new_desc = data_utils.rand_name('UpdateDescription')
+        new_desc = utils.data_utils.rand_name('UpdateDescription')
         updated_group = self.client.update_group(
             group_id, new_desc)
 
         self.assertEqual(updated_group['description'], new_desc)
 
-    @test.idempotent_id('4f660e50-6472-11e6-b6c6-080027824017')
+    @utils.idempotent_id('4f660e50-6472-11e6-b6c6-080027824017')
     def test_show_group(self):
         """Test client show group by checking values against group_details."""
         # Create group
-        group_name = data_utils.rand_name('group')
-        description = data_utils.rand_name('Description')
+        group_name = utils.data_utils.rand_name('group')
+        description = utils.data_utils.rand_name('Description')
         group = self.client.create_group(
             name=group_name, group_type='exclusivity',
             description=description, level='host')

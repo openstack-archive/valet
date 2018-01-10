@@ -15,7 +15,7 @@
 
 """Disabled Test Plan."""
 
-from tempest import test
+from tempest.common import utils
 from tempest_lib.common.utils import data_utils
 from valet.tests.tempest.api import base
 
@@ -87,7 +87,7 @@ class ValetPlanTest(base.BaseValetTest):
         stack_and_plan['location'] = location
         return stack_and_plan
 
-    @test.idempotent_id('f25ea766-c91e-40ca-b96c-dff42129803d')
+    @utils.idempotent_id('f25ea766-c91e-40ca-b96c-dff42129803d')
     def test_create_plan(self):
         """Test plan was created by asserting stack_id and plan_name equal."""
         stack_and_plan = self._get_stack_and_plan_id()
@@ -97,7 +97,7 @@ class ValetPlanTest(base.BaseValetTest):
         self.assertEqual(stack_id, plan_name)
         self.addCleanup(self._delete_plan, plan_id)
 
-    @test.idempotent_id('973635f4-b5c9-4b78-81e7-d273e1782afc')
+    @utils.idempotent_id('973635f4-b5c9-4b78-81e7-d273e1782afc')
     def test_update_plan_action_migrate(self):
         """Test plan updated successfully."""
         stack_and_plan = self._get_stack_and_plan_id()
