@@ -6,7 +6,7 @@ Tempest has an external test plugin interface which enables anyone to integrate 
 external test suite as part of a tempest run. This will let any project leverage 
 being run with the rest of the tempest suite while not requiring the tests live in 
 the tempest tree.
-http://docs.openstack.org/developer/tempest/plugin.html
+https://docs.openstack.org/tempest/latest/
 
 Dealing with configuration options
 ----------------------------------
