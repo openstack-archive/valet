@@ -1,0 +1,9 @@
+Code-Review+1: Vu Cong Tuan <tuanvc@vn.fujitsu.com>
+Code-Review+2: Tin Lam <tin@irrational.io>
+Workflow+1: Tin Lam <tin@irrational.io>
+Verified+2: Zuul
+Submitted-by: Zuul
+Submitted-at: Thu, 20 Sep 2018 06:51:15 +0000
+Reviewed-on: https://review.openstack.org/541367
+Project: openstack/valet
+Branch: refs/heads/master
