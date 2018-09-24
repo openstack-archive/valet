@@ -11,4 +11,4 @@
 # sudo tox -epy27 -- '--concurrency=1'
 
 # use  commands = ostestr --slowest '{posargs}' in file tox.ini
-# http://docs.openstack.org/developer/os-testr/ostestr.html#running-tests
+# https://docs.openstack.org/os-testr/latest/#running-tests

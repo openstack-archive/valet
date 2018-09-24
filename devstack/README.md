@@ -1,7 +1,7 @@
 # All-in-1 Valet on Devstack Setup
 
 ### Pre-setup notes and disclaimers:
-* Valet as a plugin to Devstack has been tested with Ubuntu 16.04, according to the instructions on the [Devstack website](https://docs.openstack.org/developer/devstack/). The stable Newton version of Devstack was used for testing.
+* Valet as a plugin to Devstack has been tested with Ubuntu 16.04, according to the instructions on the [Devstack website](https://docs.openstack.org/devstack/latest/). The stable Newton version of Devstack was used for testing.
 
 ### Pre-requisites:
 * If you require proxies in order to upload/download files off of the internet, make sure those proxies are set.
@@ -17,7 +17,7 @@
 
 ### Stacking Instructions
 
-* Follow the quick setup instructions at the [Devstack website](https://docs.openstack.org/developer/devstack/) to clone and setup Devstack. Make sure to use the correct Devstack as specified in the pre-setup notes above. You may choose to create a "stack" user or just use the "ubuntu" (or default user) on your VM.
+* Follow the quick setup instructions at the [Devstack website](https://docs.openstack.org/devstack/latest/) to clone and setup Devstack. Make sure to use the correct Devstack as specified in the pre-setup notes above. You may choose to create a "stack" user or just use the "ubuntu" (or default user) on your VM.
 
 * When the stack.sh script is called, Valet will be cloned as part of the stacking process. Copy the following line into your local.conf file, underneath the "local|localrc" section:
 	enable_plugin valet https://git.openstack.org/openstack/valet
