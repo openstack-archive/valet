@@ -17,7 +17,7 @@
 
 import json
 
-from tempest_lib.common import rest_client
+from tempest.lib.common import rest_client
 
 
 class ValetClient(rest_client.RestClient):
