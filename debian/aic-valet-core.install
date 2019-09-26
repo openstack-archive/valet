@@ -1,6 +1,0 @@
-valet/valet/api/app.wsgi var/www/valet/
-valet/valet/api/config.py var/www/valet/
-valet/etc/apache2/180-valet.conf etc/apache2/sites-available/
-valet/etc/valet/valet.conf etc/valet/
-valet/tools/utils/* opt/app/valet/tools/
-valet/bin/valet-engine usr/bin

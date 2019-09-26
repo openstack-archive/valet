@@ -1,3 +1,0 @@
-#!/bin/sh
-
-unlink /usr/lib/python2.7/dist-packages/nova/scheduler/filters/valet_filter.py
